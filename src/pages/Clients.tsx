@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -6,18 +6,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { useClients, Client, CreateClientData, UpdateClientData } from '@/hooks/useClients';
 import { useProposals, Proposal } from '@/hooks/useProposals';
-import { UserPlus, Search, Edit, Trash2, Users as UsersIcon, Building, FileText, DollarSign, Calendar, Loader2, Printer } from 'lucide-react';
+import { UserPlus, Search, Edit, Trash2, Users as UsersIcon, Building, FileText, DollarSign, Calendar, Loader2, Printer, Eye, Mail, Phone, User as UserIcon, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Layout from '@/components/Layout';
 import PageHeader from '@/components/PageHeader'; 
-import { format, addDays } from 'date-fns';
+import { format, addDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale'; // Import ptBR locale
 import { useCurrency } from '@/context/CurrencyContext';
+import EditableField from '@/components/EditableField';
+import { useNavigate } from 'react-router-dom';
 
 // Zod schema for client form validation
 const clientSchema = z.object({
@@ -164,6 +169,7 @@ export default function Clients() {
 
   const { allProposals, loading: proposalsLoading } = useProposals();
   const { formatCurrency } = useCurrency();
+  const navigate = useNavigate();
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -174,6 +180,11 @@ export default function Clients() {
   const [showProposalsModal, setShowProposalsModal] = useState(false);
   const [selectedClientForProposals, setSelectedClientForProposals] = useState<Client | null>(null);
   const [clientProposals, setClientProposals] = useState<Proposal[]>([]);
+
+  // Estados para o sheet de detalhes do cliente
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState<Record<string, boolean>>({});
 
   const handleCreateClient = async (data: CreateClientData) => {
     const result = await createClient(data);
@@ -206,6 +217,35 @@ export default function Clients() {
     setClientProposals(proposalsForClient);
     setShowProposalsModal(true);
   };
+
+  const handleViewClientDetails = (client: Client) => {
+    setSelectedClient(client);
+    setIsSheetOpen(true);
+  };
+
+  const handleUpdateClientField = useCallback(async (field: keyof Client, newValue: string | null) => {
+    if (!selectedClient) return;
+
+    setIsSaving(prev => ({ ...prev, [field]: true }));
+    try {
+      const updateData: UpdateClientData = { [field]: newValue };
+      const { data, error } = await updateClient(selectedClient.id, updateData);
+
+      if (error) {
+        toast.error(`Erro ao atualizar ${field}: ${error.message}`);
+        fetchClients(); // Revert on error
+      } else {
+        setSelectedClient(prev => prev ? { ...prev, ...updateData } : null);
+        toast.success(`Campo atualizado com sucesso!`);
+        fetchClients(); // Refetch to ensure data consistency
+      }
+    } catch (err: any) {
+      console.error(`Error updating client ${field}:`, err);
+      toast.error(`Erro ao atualizar campo.`);
+    } finally {
+      setIsSaving(prev => ({ ...prev, [field]: false }));
+    }
+  }, [selectedClient, updateClient, fetchClients]);
 
   const handlePrintProposal = (shareToken: string | null) => {
     if (shareToken) {
@@ -311,7 +351,16 @@ export default function Clients() {
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={(e) => { e.stopPropagation(); handleViewClientDetails(client); }}
+                              title="Visualizar detalhes"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={(e) => { e.stopPropagation(); setEditingClient(client); }}
+                              title="Editar cliente"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -319,6 +368,7 @@ export default function Clients() {
                               variant="ghost"
                               size="sm"
                               onClick={(e) => { e.stopPropagation(); handleDeleteClient(client); }}
+                              title="Excluir cliente"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -439,6 +489,214 @@ export default function Clients() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Client Details Sheet */}
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+          <SheetContent className="w-full sm:max-w-lg">
+            {selectedClient && (
+              <ScrollArea className="h-[calc(100vh-24px)] pr-4">
+                <div className="py-4 space-y-6">
+                  {/* Header with Title */}
+                  <div className="space-y-2">
+                    <SheetHeader className="text-left">
+                      <SheetTitle className="sr-only">Detalhes do Cliente</SheetTitle>
+                    </SheetHeader>
+                    
+                    <div className="space-y-1">
+                      <EditableField
+                        value={selectedClient.name}
+                        onSave={(newValue) => handleUpdateClientField('name', newValue as string)}
+                        type="text"
+                        placeholder="Nome do Cliente"
+                        isLoading={isSaving.name}
+                        displayClassName="text-2xl font-bold gradient-text"
+                        label="Nome do Cliente"
+                        required={true}
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Informações completas do cliente.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <Separator />
+                  
+                  {/* Contact Information Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Informações de Contato</h3>
+                    
+                    <div className="space-y-4">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-muted-foreground">E-mail:</p>
+                        <EditableField
+                          value={selectedClient.email || ''}
+                          onSave={(newValue) => handleUpdateClientField('email', newValue as string)}
+                          type="text"
+                          placeholder="email@exemplo.com"
+                          isLoading={isSaving.email}
+                          displayClassName="flex items-center gap-2"
+                          formatDisplayValue={(value) => (
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-4 w-4 text-muted-foreground" />
+                              <span>{value || 'Não informado'}</span>
+                            </div>
+                          )}
+                          label="E-mail do Cliente"
+                        />
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-muted-foreground">Telefone:</p>
+                        <EditableField
+                          value={selectedClient.phone || ''}
+                          onSave={(newValue) => handleUpdateClientField('phone', newValue as string)}
+                          type="text"
+                          placeholder="(00) 00000-0000"
+                          isLoading={isSaving.phone}
+                          displayClassName="flex items-center gap-2"
+                          formatDisplayValue={(value) => (
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-4 w-4 text-muted-foreground" />
+                              <span>{value || 'Não informado'}</span>
+                            </div>
+                          )}
+                          label="Telefone do Cliente"
+                        />
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-muted-foreground">Empresa:</p>
+                        <EditableField
+                          value={selectedClient.company || ''}
+                          onSave={(newValue) => handleUpdateClientField('company', newValue as string)}
+                          type="text"
+                          placeholder="Nome da Empresa"
+                          isLoading={isSaving.company}
+                          displayClassName="flex items-center gap-2"
+                          formatDisplayValue={(value) => (
+                            <div className="flex items-center gap-2">
+                              <Building className="h-4 w-4 text-muted-foreground" />
+                              <span>{value || 'Não informado'}</span>
+                            </div>
+                          )}
+                          label="Empresa do Cliente"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Separator />
+
+                  {/* Client Statistics */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Estatísticas</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-3 bg-muted/30 rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <FileText className="h-4 w-4 text-primary" />
+                          <span className="text-sm font-medium">Total de Propostas</span>
+                        </div>
+                        <p className="text-2xl font-bold text-primary">
+                          {allProposals.filter(p => p.client_id === selectedClient.id).length}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-muted/30 rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <DollarSign className="h-4 w-4 text-green-600" />
+                          <span className="text-sm font-medium">Valor Total</span>
+                        </div>
+                        <p className="text-2xl font-bold text-green-600">
+                          {formatCurrency(
+                            allProposals
+                              .filter(p => p.client_id === selectedClient.id)
+                              .reduce((sum, p) => sum + Number(p.amount), 0)
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Separator />
+
+                  {/* Proposals Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Propostas</h3>
+                      <Button
+                        size="sm"
+                        onClick={() => navigate('/generator', { state: { clientId: selectedClient.id } })}
+                        className="flex items-center gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Nova Proposta
+                      </Button>
+                    </div>
+                    
+                    {(() => {
+                      const clientProposals = allProposals.filter(p => p.client_id === selectedClient.id);
+                      
+                      if (clientProposals.length === 0) {
+                        return (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <p>Nenhuma proposta encontrada para este cliente.</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="mt-4"
+                              onClick={() => navigate('/generator', { state: { clientId: selectedClient.id } })}
+                            >
+                              Criar Primeira Proposta
+                            </Button>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="space-y-3">
+                          {clientProposals
+                            .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+                            .map((proposal) => (
+                              <Card key={proposal.id} className="p-3">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="font-medium text-sm truncate">{proposal.title}</h4>
+                                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                                      <span className="flex items-center gap-1">
+                                        <DollarSign className="h-3 w-3" />
+                                        {formatCurrency(Number(proposal.amount))}
+                                      </span>
+                                      <span className="flex items-center gap-1">
+                                        <Calendar className="h-3 w-3" />
+                                        {format(parseISO(proposal.updated_at), 'dd/MM/yyyy', { locale: ptBR })}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 ml-2">
+                                    <Badge className={getStatusColor(proposal.status)}>
+                                      {proposal.status}
+                                    </Badge>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handlePrintProposal(proposal.share_token)}
+                                      title="Visualizar proposta"
+                                    >
+                                      <Eye className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </Card>
+                            ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </ScrollArea>
+            )}
+          </SheetContent>
+        </Sheet>
       </div>
     </Layout>
   );
