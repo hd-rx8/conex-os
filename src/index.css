@@ -1,0 +1,378 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 214 84% 56%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 214 84% 56%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Default gradient for text */
+    --gradient-text-background: linear-gradient(135deg, #1e40af 0%, #0d9488 50%, #059669 100%);
+    /* Default gradient for buttons */
+    --gradient-button-background: linear-gradient(135deg, #3b82f6 0%, #14b8a6 50%, #10b981 100%);
+    /* Default gradient for PDF header */
+    --gradient-pdf-header-background: linear-gradient(135deg, #1e40af 0%, #0d9488 50%, #059669 100%);
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 214 84% 56%;
+    --primary-foreground: 210 40% 98%; /* Changed to light color for selected button text/icon */
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 142 70% 30%;
+    --success-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Default gradient for text */
+    --gradient-text-background: linear-gradient(135deg, #1e40af 0%, #0d9488 50%, #059669 100%);
+    /* Default gradient for buttons */
+    --gradient-button-background: linear-gradient(135deg, #3b82f6 0%, #14b8a6 50%, #10b981 100%);
+    /* Default gradient for PDF header */
+    --gradient-pdf-header-background: linear-gradient(135deg, #1e40af 0%, #0d9488 50%, #059669 100%);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+.gradient-text {
+  background: var(--gradient-text-background);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-button-bg {
+  background: var(--gradient-button-background);
+}
+
+/* New class for PDF header background */
+.gradient-pdf-header-bg {
+  background: var(--gradient-pdf-header-background);
+}
+
+.glass-card {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Print Styles */
+@media print {
+  @page {
+    margin: 10mm;
+    size: A4;
+  }
+  
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+    background: white !important;
+    color: black !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+  }
+  
+  .print-content {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-header {
+    margin-bottom: 15px !important;
+    padding-bottom: 10px !important;
+  }
+  
+  .print-section {
+    margin-bottom: 12px !important;
+    break-inside: avoid;
+  }
+  
+  .print-service-item {
+    margin-bottom: 8px !important;
+    padding: 8px !important;
+    break-inside: avoid;
+  }
+  
+  .print-features {
+    font-size: 9px !important;
+    line-height: 1.2 !important;
+  }
+  
+  .print-totals {
+    margin-top: 15px !important;
+    padding: 10px !important;
+  }
+
+  /* Page break control */
+  .keep-together {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .avoid-break-after {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  .allow-break-before {
+    page-break-before: auto !important;
+    break-before: auto !important;
+  }
+
+  /* Investment section should stay together */
+  .print-investment-section {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-bottom: 8px !important;
+  }
+
+  /* Keep payment conditions together */
+  .print-payment-conditions {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Keep final values together */
+  .print-final-values {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Compact spacing for very limited space */
+  .print-compact {
+    margin-bottom: 6px !important;
+    padding: 6px !important;
+  }
+
+  /* Reduce header spacing in print */
+  .print-header h1 {
+    font-size: 18px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .print-header p {
+    font-size: 10px !important;
+    margin-bottom: 1px !important;
+  }
+}
+
+/* PDF Proposal A4 responsive spacing system */
+.print-content {
+  /* A4 dimensions with proper spacing */
+  min-height: 297mm;
+  max-width: 210mm;
+  
+  /* Use flexbox to distribute content with space-between */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Enhanced print responsive spacing */
+@media print {
+  .print-content {
+    /* Override existing styles for better spacing control */
+    padding: 16mm !important;
+    font-size: 12pt !important;
+    line-height: 1.4 !important;
+    
+    /* Distribute content with optimal spacing */
+    gap: 6mm;
+  }
+  
+  /* Section spacing optimization */
+  .print-section {
+    margin-bottom: 6mm !important;
+  }
+  
+  /* Header compact spacing */
+  .print-header {
+    padding: 12px !important;
+    margin-bottom: 20px !important;
+  }
+  
+  /* Typography adjustments for single page fit */
+  h2 {
+    font-size: 14pt !important;
+    margin-bottom: 8px !important;
+  }
+  
+  h3 {
+    font-size: 12pt !important;
+    margin-bottom: 6px !important;
+  }
+  
+  /* Responsive content blocks */
+  .print-investment-section,
+  .print-payment-conditions,
+  .print-final-values {
+    margin-bottom: 16px !important;
+  }
+  
+  /* Footer spacing */
+  .print-footer {
+    margin-top: auto;
+    padding-top: 16px !important;
+  }
+}
+
+/* Screen view optimizations */
+@media screen {
+  .print-content {
+    /* Better screen readability with larger spacing */
+    gap: 32px;
+    padding: 20mm;
+  }
+}
+
+/* Responsive Bullet Lists System */
+.responsive-bullets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px 16px;
+  margin-top: 8px;
+}
+
+.bullet-item {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* Responsive breakpoints for bullet columns */
+@media screen and (min-width: 768px) {
+  .responsive-bullets {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px 20px;
+  }
+}
+
+@media screen and (min-width: 1024px) {
+  .responsive-bullets {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px 24px;
+  }
+}
+
+/* Print optimizations for bullets */
+@media print {
+  .responsive-bullets {
+    /* Use 2 columns in print to save vertical space */
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px 16px;
+    margin-top: 6px;
+  }
+  
+  /* If content is too wide, fall back to single column */
+  @page {
+    size: A4;
+  }
+  
+  /* For narrow print areas, use single column */
+  .responsive-bullets {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+
+/* Compact mode for very limited space */
+@media print and (max-width: 180mm) {
+  .responsive-bullets {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
