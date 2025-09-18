@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Users from "./pages/Users";
 import Proposals from "./pages/Proposals";
+import ProposalPrint from "./pages/ProposalPrint";
 import Clients from "./pages/Clients"; // Import the new Clients page
 import Pipeline from "./pages/Pipeline"; // Import the new Pipeline page
 import QuoteGeneratorPage from "./pages/QuoteGeneratorPage"; // Import the new QuoteGeneratorPage
@@ -67,6 +68,10 @@ const AppContent = () => {
         <Route 
           path="/proposals" 
           element={user ? <Proposals /> : <Navigate to="/login" replace />} 
+        />
+        <Route 
+          path="/proposals/:id/print" 
+          element={user ? <ProposalPrint /> : <Navigate to="/login" replace />} 
         />
         <Route 
           path="/pipeline" // New route for Pipeline

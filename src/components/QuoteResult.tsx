@@ -380,7 +380,7 @@ const QuoteResult = forwardRef<QuoteResultRef, QuoteResultProps>(({
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-green-700 font-medium">Condição à Vista ({cashDiscount}% de desconto)</span>
                   <span className="text-green-800 font-semibold">
-                    {formatCurrency(total - (total * cashDiscount / 100))}
+                    {formatCurrency(subtotal - (subtotal * cashDiscount / 100))}
                   </span>
                 </div>
                 <p className="text-sm text-green-600">

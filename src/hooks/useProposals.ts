@@ -1,12 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useCurrency } from '@/context/CurrencyContext';
-import { format, startOfMonth, subMonths, endOfMonth } from 'date-fns'; // Adicionado endOfMonth
-import { ptBR } from 'date-fns/locale'; // Import ptBR locale
-import { Database } from '@/integrations/supabase/types'; // Import Database types
-import { useSession } from './useSession'; // Import useSession
+import { format, startOfMonth, subMonths, endOfMonth } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Database } from '@/integrations/supabase/types';
+import { useSession } from './useSession';
 
 type BillingType = Database['public']['Enums']['billing_type'];
 
@@ -35,7 +35,7 @@ export interface Proposal {
   title: string;
   amount: number;
   client_id: string | null;
-  status: 'Criada' | 'Enviada' | 'Aprovada' | 'Rejeitada' | 'Rascunho';
+  status: 'Rascunho' | 'Criada' | 'Enviada' | 'Negociando' | 'Aprovada' | 'Rejeitada';
   owner: string;
   created_at: string;
   updated_at: string;
@@ -63,6 +63,18 @@ export interface CreateProposalData {
   notes?: string | null; // Added notes field
   expected_close_date?: string | null; // NEW: expected_close_date
   services?: Omit<ProposalService, 'id' | 'proposal_id' | 'created_at'>[]; // Services to be inserted
+  // Payment and settings
+  payment_type?: string | null;
+  cash_discount_percentage?: number | null;
+  installment_number?: number | null;
+  installment_value?: number | null;
+  manual_installment_total?: number | null;
+  // Validity settings
+  is_validity_enabled?: boolean | null;
+  validity_days?: number | null;
+  // Theme settings
+  proposal_logo_url?: string | null;
+  proposal_gradient_theme?: string | null;
 }
 
 export interface UpdateProposalData {
@@ -103,8 +115,6 @@ export interface ChartData {
 export const useProposals = () => {
   const queryClient = useQueryClient();
   const { user } = useSession(); // Get current user for RLS in RPC
-  const [proposals, setProposals] = useState<Proposal[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<ProposalFilters>({
     status: 'all',
     ownerId: 'all',
@@ -116,70 +126,90 @@ export const useProposals = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const fetchProposals = async () => {
-    try {
-      setLoading(true);
-      let query = supabase
-        .from('proposals')
-        .select(`
-          *,
-          app_users(name),
-          clients(name, email, company, phone)
-        `);
+  // Use React Query to fetch and cache proposals
+  const { 
+    data: proposals = [], 
+    isLoading: loading,
+    refetch: refetchProposals
+  } = useQuery({
+    queryKey: ['proposals', filters, currentPage],
+    queryFn: async () => {
+      try {
+        let query = supabase
+          .from('proposals')
+          .select(`
+            *,
+            app_users(name),
+            clients(name, email, company, phone)
+          `);
 
-      if (filters.status && filters.status !== 'all') {
-        query = query.eq('status', filters.status);
-      }
-
-      if (filters.ownerId && filters.ownerId !== 'all') {
-        query = query.eq('owner', filters.ownerId);
-      }
-
-      if (filters.search) {
-        query = query.or(`title.ilike.%${filters.search}%,clients.name.ilike.%${filters.search}%`);
-      }
-
-      if (filters.period !== 'all') {
-        const now = new Date();
-        let filterDate = new Date();
-
-        switch (filters.period) {
-          case 'today':
-            filterDate.setHours(0, 0, 0, 0);
-            break;
-          case '7days':
-            filterDate.setDate(now.getDate() - 7);
-            break;
-          case '30days':
-            filterDate.setDate(now.getDate() - 30);
-            break;
+        if (filters.status && filters.status !== 'all') {
+          query = query.eq('status', filters.status);
         }
-        query = query.gte('created_at', filterDate.toISOString());
+
+        if (filters.ownerId && filters.ownerId !== 'all') {
+          query = query.eq('owner', filters.ownerId);
+        }
+
+        if (filters.search) {
+          query = query.or(`title.ilike.%${filters.search}%,clients.name.ilike.%${filters.search}%`);
+        }
+
+        if (filters.period !== 'all') {
+          const now = new Date();
+          let filterDate = new Date();
+
+          switch (filters.period) {
+            case 'today':
+              filterDate.setHours(0, 0, 0, 0);
+              break;
+            case '7days':
+              filterDate.setDate(now.getDate() - 7);
+              break;
+            case '30days':
+              filterDate.setDate(now.getDate() - 30);
+              break;
+          }
+          query = query.gte('created_at', filterDate.toISOString());
+        }
+
+        if (filters.sortBy) {
+          query = query.order(filters.sortBy, { ascending: filters.sortOrder === 'asc' });
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+        return data as Proposal[];
+      } catch (error) {
+        console.error('Error fetching proposals:', error);
+        toast.error('Erro ao carregar propostas');
+        return [];
       }
-
-      if (filters.sortBy) {
-        query = query.order(filters.sortBy, { ascending: filters.sortOrder === 'asc' });
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      setProposals((data as Proposal[]) || []);
-    } catch (error) {
-      console.error('Error fetching proposals:', error);
-      toast.error('Erro ao carregar propostas');
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    staleTime: 30000, // 30 seconds before refetching
+  });
+  
+  const fetchProposals = useCallback(() => {
+    return refetchProposals();
+  }, [refetchProposals]);
 
   const createProposal = async (proposalData: CreateProposalData) => {
     try {
-      const { services, ...proposalHeaderData } = proposalData;
-
+      // Extrair serviços e garantir que não estamos passando id ou share_token
+      const { services, id, share_token, ...proposalHeaderData } = proposalData as any;
+      
+      // Definir created_at e updated_at para a data atual
+      const currentTimestamp = new Date().toISOString();
+      
       const { data: newProposal, error: proposalError } = await supabase
         .from('proposals')
-        .insert({ ...proposalHeaderData, status: proposalHeaderData.status || 'Enviada' })
+        .insert({ 
+          ...proposalHeaderData, 
+          status: proposalHeaderData.status || 'Enviada',
+          created_at: currentTimestamp,
+          updated_at: currentTimestamp
+        })
         .select(`
           *,
           app_users(name),
@@ -187,7 +217,10 @@ export const useProposals = () => {
         `)
         .single();
 
-      if (proposalError) throw proposalError;
+      if (proposalError) {
+        console.error('Proposal creation error:', proposalError);
+        throw proposalError;
+      }
 
       if (services && newProposal) {
         const servicesToInsert = services.map(service => ({
@@ -215,9 +248,9 @@ export const useProposals = () => {
 
       if (fetchError) throw fetchError;
 
-      setProposals(prev => [fetchedProposal as Proposal, ...prev]);
+      // Invalidate all proposal queries to refresh data everywhere
+      queryClient.invalidateQueries();
       toast.success('Proposta criada com sucesso');
-      queryClient.invalidateQueries({ queryKey: ['proposals', proposalData.owner] });
       return { data: fetchedProposal as Proposal, error: null };
     } catch (error: any) {
       console.error('Error creating proposal:', error);
@@ -228,11 +261,20 @@ export const useProposals = () => {
 
   const createDraftProposal = async (proposalData: CreateProposalData) => {
     try {
-      const { services, ...proposalHeaderData } = proposalData;
+      // Extrair serviços e garantir que não estamos passando id ou share_token
+      const { services, id, share_token, ...proposalHeaderData } = proposalData as any;
+      
+      // Definir created_at e updated_at para a data atual
+      const currentTimestamp = new Date().toISOString();
 
       const { data: newProposal, error: proposalError } = await supabase
         .from('proposals')
-        .insert({ ...proposalHeaderData, status: 'Rascunho' })
+        .insert({ 
+          ...proposalHeaderData, 
+          status: 'Rascunho',
+          created_at: currentTimestamp,
+          updated_at: currentTimestamp
+        })
         .select(`
           id,
           share_token,
@@ -336,9 +378,9 @@ export const useProposals = () => {
 
       if (fetchError) throw fetchError;
 
-      setProposals(prev => prev.map(proposal => proposal.id === id ? fetchedProposal as Proposal : proposal));
+      // Invalidate all proposal queries to refresh data everywhere
+      queryClient.invalidateQueries();
       toast.success('Proposta atualizada com sucesso');
-      queryClient.invalidateQueries({ queryKey: ['proposals', updatedProposal.owner] });
       return { data: fetchedProposal as Proposal, error: null };
     } catch (error: any) {
       console.error('Error updating proposal:', error);
@@ -351,12 +393,21 @@ export const useProposals = () => {
     return updateProposal(id, { status });
   };
 
-  const duplicateProposal = async (id: string, currentUserId: string) => {
+  const duplicateProposal = async (id: string, currentUserId: string, options?: {
+    newClientId?: string | null;
+    newTitle?: string;
+  }) => {
     try {
-      const originalProposal = proposals.find(p => p.id === id);
-      if (!originalProposal) {
+      // Fetch the proposal to duplicate
+      const { data: originalProposal, error: fetchError } = await supabase
+        .from('proposals')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
+      if (fetchError || !originalProposal) {
         toast.error('Proposta não encontrada');
-        return { data: null, error: 'Proposal not found' };
+        return { data: null, error: fetchError || 'Proposal not found' };
       }
 
       // Fetch original proposal services
@@ -367,32 +418,61 @@ export const useProposals = () => {
 
       if (servicesFetchError) throw servicesFetchError;
 
+      // Data atual para os campos created_at e updated_at
+      const currentTimestamp = new Date().toISOString();
+
+      // Converter todos os valores numéricos com segurança
+      const safeNumber = (value: any): number => {
+        if (value === null || value === undefined || value === '') return 0;
+        const num = Number(value);
+        return isNaN(num) ? 0 : num;
+      };
+
       const duplicateData: CreateProposalData = {
-        title: `${originalProposal.title} (Cópia)`,
-        amount: originalProposal.amount,
-        client_id: originalProposal.client_id,
+        title: options?.newTitle || `${originalProposal.title} (Cópia)`,
+        amount: safeNumber(originalProposal.amount),
+        client_id: options?.newClientId !== undefined ? options.newClientId : originalProposal.client_id,
         owner: currentUserId,
-        status: 'Rascunho', // Duplicates start as Rascunho
-        notes: originalProposal.notes, // Include notes from original proposal
-        expected_close_date: originalProposal.expected_close_date, // Include expected_close_date
+        status: 'Criada', // Sempre define o status como 'Criada' para evitar o constraint error
+        notes: originalProposal.notes || null,
+        expected_close_date: originalProposal.expected_close_date || null,
+        // Copy all payment and theme settings
+        payment_type: originalProposal.payment_type || null,
+        cash_discount_percentage: safeNumber(originalProposal.cash_discount_percentage),
+        installment_number: safeNumber(originalProposal.installment_number),
+        installment_value: safeNumber(originalProposal.installment_value),
+        manual_installment_total: safeNumber(originalProposal.manual_installment_total),
+        is_validity_enabled: originalProposal.is_validity_enabled || null,
+        validity_days: safeNumber(originalProposal.validity_days),
+        proposal_logo_url: originalProposal.proposal_logo_url || null,
+        proposal_gradient_theme: originalProposal.proposal_gradient_theme || null,
         services: originalServices?.map(s => ({
-          service_id: s.service_id,
-          name: s.name,
-          description: s.description,
-          base_price: s.base_price,
-          quantity: s.quantity,
-          custom_price: s.custom_price,
-          discount: s.discount,
-          discount_percentage: s.discount_percentage,
-          discount_type: s.discount_type,
-          features: s.features,
-          category: s.category,
-          icon: s.icon,
-          is_custom: s.is_custom,
-          billing_type: s.billing_type,
+          service_id: s.service_id || '',
+          name: s.name || '',
+          description: s.description || null,
+          base_price: safeNumber(s.base_price),
+          quantity: safeNumber(s.quantity) || 1,
+          custom_price: s.custom_price !== null ? safeNumber(s.custom_price) : null,
+          discount: safeNumber(s.discount),
+          discount_percentage: safeNumber(s.discount_percentage),
+          discount_type: s.discount_type || 'fixed',
+          features: Array.isArray(s.features) ? s.features : [],
+          category: s.category || null,
+          icon: s.icon || '✨',
+          is_custom: Boolean(s.is_custom),
+          billing_type: s.billing_type || 'one_time',
         })) || []
       };
 
+      // Log para debug dos valores copiados
+      console.log('Duplicating proposal with data:', {
+        cash_discount_percentage: duplicateData.cash_discount_percentage,
+        installment_number: duplicateData.installment_number,
+        installment_value: duplicateData.installment_value,
+        manual_installment_total: duplicateData.manual_installment_total,
+        services_with_discount: duplicateData.services?.filter(s => s.discount > 0 || s.discount_percentage > 0)
+      });
+      
       return createProposal(duplicateData);
     } catch (error: any) {
       console.error('Error duplicating proposal:', error);
@@ -403,7 +483,19 @@ export const useProposals = () => {
 
   const deleteProposal = async (id: string) => {
     try {
-      // Deleting proposal_services is handled by CASCADE DELETE on proposal_id
+      // First, explicitly delete all related proposal_services
+      const { error: servicesError } = await supabase
+        .from('proposal_services')
+        .delete()
+        .eq('proposal_id', id);
+
+      if (servicesError) {
+        console.warn('Error deleting proposal services:', servicesError);
+        // Continue with proposal deletion even if services deletion fails
+        // (CASCADE DELETE should handle this)
+      }
+
+      // Then delete the proposal itself
       const { error } = await supabase
         .from('proposals')
         .delete()
@@ -411,9 +503,11 @@ export const useProposals = () => {
 
       if (error) throw error;
       
-      setProposals(prev => prev.filter(proposal => proposal.id !== id));
-      toast.success('Proposta excluída com sucesso');
-      queryClient.invalidateQueries({ queryKey: ['proposals'] });
+      // Invalidate ALL queries that might contain proposals
+      // This will force all components using proposals to refetch
+      queryClient.invalidateQueries();
+      
+      toast.success('Proposta e todos os dados relacionados foram excluídos com sucesso');
       return { error: null };
     } catch (error: any) {
       console.error('Error deleting proposal:', error);
@@ -448,19 +542,18 @@ export const useProposals = () => {
     };
   }, [proposals]);
 
-  // Fetch chart data using Supabase RPC function
-  const [chartData, setChartData] = useState<ChartData[]>([]);
-  const [chartLoading, setChartLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchChartData = async () => {
+  // Fetch chart data using React Query
+  const { 
+    data: chartData = [], 
+    isLoading: chartLoading,
+    refetch: refetchChartData
+  } = useQuery({
+    queryKey: ['proposal-chart-data', user?.id],
+    queryFn: async () => {
       if (!user?.id) {
-        setChartData([]);
-        setChartLoading(false);
-        return;
+        return [];
       }
 
-      setChartLoading(true);
       try {
         const now = new Date();
         const sixMonthsAgo = subMonths(startOfMonth(now), 5); // Start of the month 6 months ago
@@ -480,17 +573,16 @@ export const useProposals = () => {
           approvedValue: Number(item.total_amount),
           createdCount: Number(item.total_count)
         }));
-        setChartData(formattedData);
+        return formattedData;
       } catch (error) {
         console.error('Error fetching chart data:', error);
         toast.error('Erro ao carregar dados do gráfico');
-      } finally {
-        setChartLoading(false);
+        return [];
       }
-    };
-
-    fetchChartData();
-  }, [user?.id]); // Refetch when user changes
+    },
+    staleTime: 60000, // 1 minute before refetching
+    enabled: !!user?.id
+  });
 
   // Pagination
   const totalItems = proposals.length;
@@ -499,10 +591,6 @@ export const useProposals = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
-  useEffect(() => {
-    fetchProposals();
-  }, [filters, currentPage]);
 
   return {
     proposals: paginatedProposals,
@@ -524,7 +612,7 @@ export const useProposals = () => {
     deleteProposal,
     metrics,
     chartData,
-    chartLoading, // Export chart loading state
+    chartLoading,
     refetch: fetchProposals
   };
 };

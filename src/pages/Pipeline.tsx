@@ -23,6 +23,7 @@ import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Separator } from '@/components/ui/separator';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import DuplicateProposalModal from '@/components/DuplicateProposalModal';
 
 // Define os status possíveis para as propostas
 const PROPOSAL_STATUSES = ['Rascunho', 'Criada', 'Enviada', 'Negociando', 'Aprovada', 'Rejeitada'] as const;
@@ -60,7 +61,7 @@ const getStatusIcon = (status: ProposalStatus) => {
 
 const Pipeline: React.FC = () => {
   const { user: currentUser } = useSession();
-  const { allProposals, loading, updateProposalStatus, updateProposal, refetch } = useProposals();
+  const { allProposals, loading, updateProposalStatus, updateProposal, deleteProposal, duplicateProposal, refetch } = useProposals();
   const { clients: allClients, updateClient } = useClients(); // Get allClients and updateClient
   const { allUsers } = useUsers(); // Get allUsers
   const { formatCurrency } = useCurrency();
@@ -83,6 +84,7 @@ const Pipeline: React.FC = () => {
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isSaving, setIsSaving] = useState<Record<string, boolean>>({});
+  const [duplicatingProposal, setDuplicatingProposal] = useState<Proposal | null>(null);
   
   // Estados para filtros
   const [searchTerm, setSearchTerm] = useState('');
@@ -244,28 +246,34 @@ const Pipeline: React.FC = () => {
 
   const handleDeleteProposal = async (proposalId: string) => {
     if (window.confirm('Tem certeza que deseja excluir esta proposta?')) {
-      const { error } = await updateProposal(proposalId, { status: 'Rejeitada' });
+      // Usar deleteProposal em vez de updateProposal para realmente excluir a proposta
+      const { error } = await deleteProposal(proposalId);
       if (error) {
         toast.error('Erro ao excluir proposta.');
       } else {
         toast.success('Proposta excluída com sucesso.');
-        refetch();
+        // Não é necessário chamar refetch() pois deleteProposal já invalida o cache
       }
     }
   };
 
-  const handleDuplicateProposal = async (proposal: Proposal) => {
-    if (currentUser) {
-      const { error } = await updateProposal(proposal.id, {
-        title: `${proposal.title} (Cópia)`,
-        status: 'Rascunho'
-      });
-      if (error) {
-        toast.error('Erro ao duplicar proposta.');
-      } else {
-        toast.success('Proposta duplicada com sucesso.');
-        refetch();
-      }
+  const handleDuplicateProposal = (proposal: Proposal) => {
+    setDuplicatingProposal(proposal);
+  };
+
+  const handleDuplicateWithOptions = async (proposalId: string, newClientId: string | null, newTitle: string) => {
+    if (!currentUser) return;
+    
+    const result = await duplicateProposal(proposalId, currentUser.id, {
+      newClientId,
+      newTitle
+    });
+    
+    if (result.data) {
+      toast.success('Proposta duplicada com sucesso!');
+    } else if (result.error) {
+      console.error('Duplicate error:', result.error);
+      toast.error('Erro ao duplicar proposta: ' + (result.error.message || 'Erro desconhecido'));
     }
   };
 
@@ -916,6 +924,14 @@ const Pipeline: React.FC = () => {
             )}
           </SheetContent>
         </Sheet>
+
+        {/* Duplicate Proposal Modal */}
+        <DuplicateProposalModal
+          isOpen={!!duplicatingProposal}
+          onClose={() => setDuplicatingProposal(null)}
+          proposal={duplicatingProposal}
+          onDuplicate={handleDuplicateWithOptions}
+        />
       </div>
     </Layout>
   );

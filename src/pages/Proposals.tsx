@@ -17,6 +17,7 @@ import { useForm } from 'react-hook-form';
 import Layout from '@/components/Layout';
 import PageHeader from '@/components/PageHeader'; 
 import { useCurrency } from '@/context/CurrencyContext'; // Import useCurrency
+import DuplicateProposalModal from '@/components/DuplicateProposalModal';
 
 interface ProposalFormData {
   title: string;
@@ -152,11 +153,12 @@ const ProposalSkeleton = () => (
 
 const getStatusColor = (status: Proposal['status']) => {
   switch (status) {
+    case 'Rascunho': return 'bg-purple-100 text-purple-800';
     case 'Criada': return 'bg-gray-100 text-gray-800';
     case 'Enviada': return 'bg-blue-100 text-blue-800';
+    case 'Negociando': return 'bg-yellow-100 text-yellow-800';
     case 'Aprovada': return 'bg-green-100 text-green-800';
     case 'Rejeitada': return 'bg-red-100 text-red-800';
-    case 'Rascunho': return 'bg-purple-100 text-purple-800'; // Added Rascunho color
     default: return 'bg-gray-100 text-gray-800';
   }
 };
@@ -184,6 +186,7 @@ export default function Proposals() {
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingProposal, setEditingProposal] = useState<Proposal | null>(null);
+  const [duplicatingProposal, setDuplicatingProposal] = useState<Proposal | null>(null);
 
   const handleCreateProposal = async (data: CreateProposalData) => {
     const result = await createProposal(data);
@@ -205,9 +208,24 @@ export default function Proposals() {
     await updateProposalStatus(proposal.id, newStatus);
   };
 
-  const handleDuplicate = async (proposal: Proposal) => {
+  const handleDuplicate = (proposal: Proposal) => {
+    setDuplicatingProposal(proposal);
+  };
+
+  const handleDuplicateWithOptions = async (proposalId: string, newClientId: string | null, newTitle: string) => {
     if (!currentUser) return;
-    await duplicateProposal(proposal.id, currentUser.id);
+    
+    const result = await duplicateProposal(proposalId, currentUser.id, {
+      newClientId,
+      newTitle
+    });
+    
+    if (result.data) {
+      toast.success('Proposta duplicada com sucesso!');
+    } else if (result.error) {
+      console.error('Duplicate error:', result.error);
+      toast.error('Erro ao duplicar proposta: ' + (result.error.message || 'Erro desconhecido'));
+    }
   };
 
   const handleDelete = async (proposal: Proposal) => {
@@ -216,11 +234,11 @@ export default function Proposals() {
     }
   };
 
-  const handlePrintProposal = (shareToken: string | null) => {
-    if (shareToken) {
-      window.open(`/p/${shareToken}`, '_blank');
+  const handlePrintProposal = (proposalId: string) => {
+    if (proposalId) {
+      window.open(`/proposals/${proposalId}/print`, '_blank');
     } else {
-      toast.error('Token de compartilhamento não disponível para esta proposta.');
+      toast.error('ID da proposta não disponível.');
     }
   };
 
@@ -380,7 +398,7 @@ export default function Proposals() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handlePrintProposal(proposal.share_token)}
+                              onClick={() => handlePrintProposal(proposal.id)}
                               title="Imprimir/Salvar PDF"
                             >
                               <Printer className="h-4 w-4" />
@@ -461,6 +479,14 @@ export default function Proposals() {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Duplicate Proposal Modal */}
+        <DuplicateProposalModal
+          isOpen={!!duplicatingProposal}
+          onClose={() => setDuplicatingProposal(null)}
+          proposal={duplicatingProposal}
+          onDuplicate={handleDuplicateWithOptions}
+        />
       </div>
     </Layout>
   );
