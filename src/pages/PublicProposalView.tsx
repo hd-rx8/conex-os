@@ -1,32 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useProposals, Proposal, ProposalService } from '@/hooks/useProposals'; // Import ProposalService
-import QuoteResult from '@/components/QuoteResult';
+import ProposalDocument from '@/components/ProposalDocument';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { useQuoteGenerator } from '@/hooks/useQuoteGenerator'; // To get default values for calculations
-import { useGradientTheme } from '@/context/GradientThemeContext'; // To get gradient theme options
+import { reconstructService, calculateServiceTotals, normalizeProposal, computeTotals } from '@/lib/proposalUtils';
+import { ProposalSnapshot } from '@/types/proposalSnapshot';
 
 const PublicProposalView: React.FC = () => {
   const { share_token } = useParams<{ share_token: string }>();
   const { getProposalByShareToken } = useProposals();
   const [proposal, setProposal] = useState<Proposal | null>(null);
+  const [snapshot, setSnapshot] = useState<ProposalSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Use useQuoteGenerator to get default calculation functions and static services
-  const {
-    services: staticServices,
-    paymentOptions,
-    calculateOriginalSubtotal,
-    calculateTotal,
-    calculateCashDiscount,
-    calculateFinalTotal,
-    calculateInstallmentInterestRate,
-    getTotalInstallmentValue,
-    calculateOneTimeTotal, // New
-    calculateMonthlyTotal, // New
-  } = useQuoteGenerator('public-user-id'); // Pass a dummy user ID for public view
 
   useEffect(() => {
     const fetchProposal = async () => {
@@ -41,6 +28,79 @@ const PublicProposalView: React.FC = () => {
         setError('Proposta não encontrada ou token inválido.');
       } else {
         setProposal(data);
+        
+        // Create snapshot from the proposal data
+        if (data) {
+          const normalizedProposal = normalizeProposal(data);
+          const { totalCash, totalInstallment } = computeTotals(normalizedProposal);
+          const reconstructedServices = data.proposal_services?.map(ps => reconstructService(ps)) || [];
+          const { oneTimeTotal, monthlyTotal } = calculateServiceTotals(reconstructedServices);
+          
+          const proposalSnapshot: ProposalSnapshot = {
+            id: data.id,
+            title: data.title,
+            amount: normalizedProposal.amount,
+            status: data.status,
+            created_at: data.created_at,
+            updated_at: data.updated_at,
+            notes: data.notes,
+            
+            client: {
+              id: data.clients?.id || '',
+              name: data.clients?.name || 'Cliente',
+              email: data.clients?.email || 'contato@conexhub.com.br',
+              company: data.clients?.company || 'Empresa',
+              phone: data.clients?.phone || '(XX) X XXXX-XXXX',
+            },
+            
+            services: data.proposal_services?.map(ps => ({
+              id: ps.id,
+              service_id: ps.service_id,
+              name: ps.name,
+              description: ps.description || '',
+              base_price: Number(ps.base_price) || 0,
+              quantity: Number(ps.quantity) || 1,
+              custom_price: ps.custom_price ? Number(ps.custom_price) : undefined,
+              discount: Number(ps.discount) || 0,
+              discount_percentage: Number(ps.discount_percentage) || 0,
+              discount_type: ps.discount_type || 'percentage',
+              features: Array.isArray(ps.features) ? ps.features : [],
+              category: ps.category || 'Geral',
+              icon: ps.icon || '✨',
+              is_custom: Boolean(ps.is_custom),
+              billing_type: ps.billing_type || 'one_time',
+            })) || [],
+            
+            payment: {
+              type: (data.payment_type as 'cash' | 'installment') || 'cash',
+              cash_discount_percentage: normalizedProposal.cash_discount_percentage,
+              installment_number: normalizedProposal.installment_number,
+              installment_value: normalizedProposal.installment_value,
+              manual_installment_total: normalizedProposal.manual_installment_total,
+            },
+            
+            validity: {
+              enabled: Boolean(data.is_validity_enabled),
+              days: Number(data.validity_days) || 0,
+            },
+            
+            theme: {
+              logo_url: data.proposal_logo_url || '/lovable-uploads/7ef1a887-0fe7-4cc3-bfc3-2d24e0251f8e.png',
+              resolved_logo_url: data.proposal_logo_url || '/lovable-uploads/7ef1a887-0fe7-4cc3-bfc3-2d24e0251f8e.png',
+              gradient_theme: data.proposal_gradient_theme || 'conexhub',
+            },
+            
+            totals: {
+              oneTimeTotal,
+              monthlyTotal,
+              subtotal: oneTimeTotal + monthlyTotal,
+              totalCash,
+              totalInstallment,
+            },
+          };
+          
+          setSnapshot(proposalSnapshot);
+        }
       }
       setLoading(false);
     };
@@ -57,7 +117,7 @@ const PublicProposalView: React.FC = () => {
     );
   }
 
-  if (error || !proposal) {
+  if (error || !proposal || !snapshot) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-red-50/50 p-4">
         <Card className="w-full max-w-md text-center">
@@ -78,82 +138,10 @@ const PublicProposalView: React.FC = () => {
     );
   }
 
-  // Reconstruct data for QuoteResult based on fetched proposal
-  // This part would be more robust if full proposal details were stored in DB
-  // Now we use proposal.proposal_services directly
-  const reconstructedServices = proposal.proposal_services?.map(ps => ({
-    id: ps.service_id,
-    name: ps.name,
-    description: ps.description || '',
-    basePrice: ps.base_price,
-    category: ps.category || 'Geral',
-    icon: ps.icon || '✨',
-    features: ps.features || [],
-    quantity: ps.quantity,
-    customPrice: ps.custom_price || undefined,
-    discount: ps.discount,
-    discountPercentage: ps.discount_percentage,
-    discountType: ps.discount_type as 'percentage' | 'value',
-    customFeatures: ps.features || [],
-    isCustom: ps.is_custom,
-    billing_type: ps.billing_type,
-  })) || [];
-
-  const reconstructedClientInfo = {
-    name: proposal.clients?.name || 'Cliente',
-    email: proposal.clients?.email || 'contato@conexhub.com.br',
-    company: proposal.clients?.company || 'Empresa',
-    phone: proposal.clients?.phone || '(XX) X XXXX-XXXX',
-  };
-
-  // For public view, we'll simplify payment to just the final amount
-  const finalAmount = proposal.amount;
-  const cashDiscountPercentage = 0; // No cash discount shown in public view unless explicitly stored
-  const totalAfterCashDiscount = finalAmount;
-
-  const reconstructedPayment = {
-    name: 'Valor Total',
-    fee: 0,
-    installments: 1,
-    type: 'cash',
-    installmentValue: finalAmount,
-    totalInstallmentValue: finalAmount,
-  };
-
-  // Calculate one-time and monthly totals from reconstructed services
-  const oneTimeTotal = reconstructedServices
-    .filter(s => s.billing_type === 'one_time')
-    .reduce((sum, s) => sum + ((s.customPrice || s.basePrice) * s.quantity - (s.discount || 0)), 0);
-
-  const monthlyTotal = reconstructedServices
-    .filter(s => s.billing_type === 'monthly')
-    .reduce((sum, s) => sum + ((s.customPrice || s.basePrice) * s.quantity - (s.discount || 0)), 0);
-
-
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto">
-        <QuoteResult
-          selectedServices={reconstructedServices}
-          clientInfo={reconstructedClientInfo}
-          subtotal={oneTimeTotal + monthlyTotal} // Total subtotal
-          discount={0}
-          discountType="percentage"
-          discountPercentage={0}
-          total={oneTimeTotal + monthlyTotal} // Total after service discounts
-          cashDiscount={cashDiscountPercentage}
-          finalTotal={totalAfterCashDiscount}
-          selectedPayment={reconstructedPayment}
-          installmentTotal={finalAmount}
-          notes={proposal.notes || ''} // Now uses the actual notes from the proposal
-          isValidityEnabled={false} // Public view doesn't show validity
-          validityDays={0}
-          proposalTitle={proposal.title}
-          proposalLogoUrl="/lovable-uploads/7ef1a887-0fe7-4cc3-bfc3-2d24e0251f8e.png" // Default logo for public view
-          proposalGradientTheme="conexhub" // Default theme for public view
-          oneTimeTotal={oneTimeTotal} // Pass one-time total
-          monthlyTotal={monthlyTotal} // Pass monthly total
-        />
+        <ProposalDocument snapshot={snapshot} />
       </div>
     </div>
   );

@@ -283,6 +283,18 @@ export const QuoteWizardProvider = ({ children, userId }: { children: ReactNode;
       status: status,
       notes: notes, // Include notes from state
       services: proposalServices, // Include services
+      // Payment and settings
+      payment_type: paymentType,
+      cash_discount_percentage: cashDiscountPercentage,
+      installment_number: installmentNumber,
+      installment_value: installmentValue,
+      manual_installment_total: manualInstallmentTotal,
+      // Validity settings
+      is_validity_enabled: isValidityEnabled,
+      validity_days: validityDays,
+      // Theme settings
+      proposal_logo_url: proposalLogoUrl,
+      proposal_gradient_theme: proposalGradientTheme,
     };
   };
 

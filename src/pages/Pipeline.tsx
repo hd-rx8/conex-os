@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, LayoutDashboard as LayoutDashboardIcon, FileText, DollarSign, Calendar, Building, Mail, Phone, User as UserIcon, Plus, Edit } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Loader2, LayoutDashboard as LayoutDashboardIcon, FileText, DollarSign, Calendar, Building, Mail, Phone, User as UserIcon, Plus, Edit, Eye, Trash2, MoreVertical, Search, Filter, ArrowUpDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useCurrency } from '@/context/CurrencyContext';
@@ -20,29 +22,52 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Separator } from '@/components/ui/separator';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import DuplicateProposalModal from '@/components/DuplicateProposalModal';
 
 // Define os status possíveis para as propostas
-const PROPOSAL_STATUSES = ['Rascunho', 'Criada', 'Enviada', 'Aprovada', 'Rejeitada'] as const;
+const PROPOSAL_STATUSES = ['Rascunho', 'Criada', 'Enviada', 'Negociando', 'Aprovada', 'Rejeitada'] as const;
 type ProposalStatus = typeof PROPOSAL_STATUSES[number];
+
+// Status ativos (que aparecem no board)
+const ACTIVE_STATUSES: ProposalStatus[] = ['Rascunho', 'Criada', 'Enviada', 'Negociando'];
+
+// Status fechados (que aparecem na aba Closed)
+const CLOSED_STATUSES: ProposalStatus[] = ['Aprovada', 'Rejeitada'];
 
 const getStatusColor = (status: ProposalStatus) => {
   switch (status) {
     case 'Rascunho': return 'bg-purple-100 text-purple-800 border-purple-200';
-    case 'Criada': return 'bg-gray-100 text-gray-800 border-gray-200';
-    case 'Enviada': return 'bg-blue-100 text-blue-800 border-blue-200';
+    case 'Criada': return 'bg-blue-100 text-blue-800 border-blue-200';
+    case 'Enviada': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    case 'Negociando': return 'bg-orange-100 text-orange-800 border-orange-200';
     case 'Aprovada': return 'bg-green-100 text-green-800 border-green-200';
     case 'Rejeitada': return 'bg-red-100 text-red-800 border-red-200';
     default: return 'bg-gray-100 text-gray-800 border-gray-200';
   }
 };
 
+const getStatusIcon = (status: ProposalStatus) => {
+  switch (status) {
+    case 'Rascunho': return '📝';
+    case 'Criada': return '📋';
+    case 'Enviada': return '📤';
+    case 'Negociando': return '🤝';
+    case 'Aprovada': return '✅';
+    case 'Rejeitada': return '❌';
+    default: return '📄';
+  }
+};
+
 const Pipeline: React.FC = () => {
   const { user: currentUser } = useSession();
-  const { allProposals, loading, updateProposalStatus, updateProposal, refetch } = useProposals();
+  const { allProposals, loading, updateProposalStatus, updateProposal, deleteProposal, duplicateProposal, refetch } = useProposals();
   const { clients: allClients, updateClient } = useClients(); // Get allClients and updateClient
   const { allUsers } = useUsers(); // Get allUsers
   const { formatCurrency } = useCurrency();
   const navigate = useNavigate();
+  
+  // Estados para o board Kanban
   const [groupedProposals, setGroupedProposals] = useState<Record<ProposalStatus, Proposal[]>>(() => {
     const initialGroups: Record<ProposalStatus, Proposal[]> = {} as Record<ProposalStatus, Proposal[]>;
     PROPOSAL_STATUSES.forEach(status => {
@@ -50,20 +75,116 @@ const Pipeline: React.FC = () => {
     });
     return initialGroups;
   });
+  
+  // Estados para drag and drop
   const [draggingProposalId, setDraggingProposalId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  
+  // Estados para detalhes da proposta
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isSaving, setIsSaving] = useState<Record<string, boolean>>({}); // State to track saving status per field
+  const [isSaving, setIsSaving] = useState<Record<string, boolean>>({});
+  const [duplicatingProposal, setDuplicatingProposal] = useState<Proposal | null>(null);
+  
+  // Estados para filtros
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterOwner, setFilterOwner] = useState<string>('all');
+  const [filterClient, setFilterClient] = useState<string>('all');
+  const [filterPeriod, setFilterPeriod] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'created_at' | 'amount' | 'updated_at'>('updated_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // Função para filtrar propostas
+  const filterProposals = useCallback((proposals: Proposal[]) => {
+    return proposals.filter(proposal => {
+      // Filtro por termo de busca
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const matchesSearch = 
+          proposal.title.toLowerCase().includes(searchLower) ||
+          proposal.clients?.name?.toLowerCase().includes(searchLower) ||
+          proposal.app_users?.name?.toLowerCase().includes(searchLower);
+        if (!matchesSearch) return false;
+      }
+
+      // Filtro por owner
+      if (filterOwner !== 'all' && proposal.owner !== filterOwner) {
+        return false;
+      }
+
+      // Filtro por cliente
+      if (filterClient !== 'all' && proposal.client_id !== filterClient) {
+        return false;
+      }
+
+      // Filtro por período
+      if (filterPeriod !== 'all') {
+        const now = new Date();
+        const proposalDate = new Date(proposal.created_at);
+        let filterDate = new Date();
+
+        switch (filterPeriod) {
+          case 'today':
+            filterDate.setHours(0, 0, 0, 0);
+            break;
+          case '7days':
+            filterDate.setDate(now.getDate() - 7);
+            break;
+          case '30days':
+            filterDate.setDate(now.getDate() - 30);
+            break;
+          case '90days':
+            filterDate.setDate(now.getDate() - 90);
+            break;
+        }
+        
+        if (proposalDate < filterDate) return false;
+      }
+
+      return true;
+    });
+  }, [searchTerm, filterOwner, filterClient, filterPeriod]);
+
+  // Função para ordenar propostas
+  const sortProposals = useCallback((proposals: Proposal[]) => {
+    return [...proposals].sort((a, b) => {
+      let aValue: any, bValue: any;
+      
+      switch (sortBy) {
+        case 'amount':
+          aValue = Number(a.amount);
+          bValue = Number(b.amount);
+          break;
+        case 'created_at':
+          aValue = new Date(a.created_at).getTime();
+          bValue = new Date(b.created_at).getTime();
+          break;
+        case 'updated_at':
+        default:
+          aValue = new Date(a.updated_at).getTime();
+          bValue = new Date(b.updated_at).getTime();
+          break;
+      }
+
+      if (sortOrder === 'asc') {
+        return aValue - bValue;
+      } else {
+        return bValue - aValue;
+      }
+    });
+  }, [sortBy, sortOrder]);
 
   useEffect(() => {
     if (allProposals) {
+      const filteredProposals = filterProposals(allProposals);
+      const sortedProposals = sortProposals(filteredProposals);
+      
       const newGroupedProposals: Record<ProposalStatus, Proposal[]> = {} as Record<ProposalStatus, Proposal[]>;
       PROPOSAL_STATUSES.forEach(status => {
         newGroupedProposals[status] = [];
       });
 
-      allProposals.forEach(proposal => {
+      sortedProposals.forEach(proposal => {
         if (PROPOSAL_STATUSES.includes(proposal.status as ProposalStatus)) {
           newGroupedProposals[proposal.status as ProposalStatus].push(proposal);
         } else {
@@ -72,7 +193,7 @@ const Pipeline: React.FC = () => {
       });
       setGroupedProposals(newGroupedProposals);
     }
-  }, [allProposals]);
+  }, [allProposals, filterProposals, sortProposals]);
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, proposalId: string) => {
     setDraggingProposalId(proposalId);
@@ -121,6 +242,39 @@ const Pipeline: React.FC = () => {
   const handleCardClick = (proposal: Proposal) => {
     setSelectedProposal(proposal);
     setIsSheetOpen(true);
+  };
+
+  const handleDeleteProposal = async (proposalId: string) => {
+    if (window.confirm('Tem certeza que deseja excluir esta proposta?')) {
+      // Usar deleteProposal em vez de updateProposal para realmente excluir a proposta
+      const { error } = await deleteProposal(proposalId);
+      if (error) {
+        toast.error('Erro ao excluir proposta.');
+      } else {
+        toast.success('Proposta excluída com sucesso.');
+        // Não é necessário chamar refetch() pois deleteProposal já invalida o cache
+      }
+    }
+  };
+
+  const handleDuplicateProposal = (proposal: Proposal) => {
+    setDuplicatingProposal(proposal);
+  };
+
+  const handleDuplicateWithOptions = async (proposalId: string, newClientId: string | null, newTitle: string) => {
+    if (!currentUser) return;
+    
+    const result = await duplicateProposal(proposalId, currentUser.id, {
+      newClientId,
+      newTitle
+    });
+    
+    if (result.data) {
+      toast.success('Proposta duplicada com sucesso!');
+    } else if (result.error) {
+      console.error('Duplicate error:', result.error);
+      toast.error('Erro ao duplicar proposta: ' + (result.error.message || 'Erro desconhecido'));
+    }
   };
 
   const handleUpdateProposalField = useCallback(async (field: keyof Proposal, newValue: string | number | Date | null) => {
@@ -221,6 +375,86 @@ const Pipeline: React.FC = () => {
     client_phone: 'Telefone do Cliente',
   };
 
+  // Componente para card da proposta
+  const ProposalCard: React.FC<{ proposal: Proposal }> = ({ proposal }) => (
+    <Card
+      draggable
+      onDragStart={(e) => handleDragStart(e, proposal.id)}
+      onClick={() => handleCardClick(proposal)}
+      className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200 border-l-4 border-l-primary/20 hover:border-l-primary/40 hover:scale-[1.02] group"
+    >
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-sm font-semibold line-clamp-2 mb-1">
+              {proposal.title}
+            </CardTitle>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+              <Building className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">{proposal.clients?.name || 'Cliente Desconhecido'}</span>
+            </div>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                <MoreVertical className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={(e) => {
+                e.stopPropagation();
+                handleCardClick(proposal);
+              }}>
+                <Eye className="h-4 w-4 mr-2" />
+                Visualizar
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => {
+                e.stopPropagation();
+                handleDuplicateProposal(proposal);
+              }}>
+                <Edit className="h-4 w-4 mr-2" />
+                Duplicar
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteProposal(proposal.id);
+                }}
+                className="text-red-600"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Excluir
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1 text-sm font-medium text-conexhub-green-600">
+              <DollarSign className="h-3 w-3" />
+              {formatCurrency(Number(proposal.amount))}
+            </span>
+            <Badge variant="outline" className={cn("text-xs", getStatusColor(proposal.status as ProposalStatus))}>
+              {getStatusIcon(proposal.status as ProposalStatus)} {proposal.status}
+            </Badge>
+          </div>
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <UserIcon className="h-3 w-3" />
+              <span className="truncate">{proposal.app_users?.name || 'N/A'}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              <span>{format(parseISO(proposal.updated_at), 'dd/MM', { locale: ptBR })}</span>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   if (loading) {
     return (
       <Layout>
@@ -237,7 +471,7 @@ const Pipeline: React.FC = () => {
       <div className="space-y-6">
         <PageHeader
           title="Pipeline de Propostas"
-          subtitle="Visualize e gerencie suas propostas em um quadro Kanban"
+          subtitle="Gerencie suas propostas com um board Kanban estilo CRM"
           icon={LayoutDashboardIcon}
         >
           <Button 
@@ -250,90 +484,196 @@ const Pipeline: React.FC = () => {
           </Button>
         </PageHeader>
 
-        <div className="relative">
-          <ScrollArea className="w-full whitespace-nowrap rounded-md border">
-            <div className="flex space-x-4 p-4 min-h-[600px] items-start">
-              {PROPOSAL_STATUSES.map(status => (
-                <div
-                  key={status}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, status)}
-                  className={cn(
-                    "flex-shrink-0 w-80 bg-muted/40 rounded-lg p-4 shadow-sm border",
-                    draggingProposalId && "border-dashed border-primary"
-                  )}
-                >
-                  <h3 className="text-lg font-semibold mb-4 flex items-center justify-between">
-                    {status}
-                    <Badge variant="secondary" className={getStatusColor(status)}>
-                      {groupedProposals[status]?.length || 0}
-                    </Badge>
-                  </h3>
-                  <div className="space-y-3 min-h-[100px]">
-                    {groupedProposals[status]
-                        ?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                        .map(proposal => (
-                          <Card
-                            key={proposal.id}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, proposal.id)}
-                            onClick={() => handleCardClick(proposal)}
-                            className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow duration-200"
-                          >
-                            <CardHeader className="pb-2">
-                              <CardTitle className="text-base font-semibold flex items-center justify-between">
-                                <span className="truncate">{proposal.title}</span>
-                                <Badge variant="outline" className={cn("ml-2", getStatusColor(proposal.status))}>
-                                  {proposal.status}
-                                </Badge>
-                              </CardTitle>
-                              <p className="text-sm text-muted-foreground flex items-center gap-1">
-                                <Building className="h-3 w-3" />
-                                {proposal.clients?.name || 'Cliente Desconhecido'}
-                              </p>
-                            </CardHeader>
-                            <CardContent className="text-sm">
-                              <div className="flex items-center justify-between">
-                                <span className="flex items-center gap-1 text-conexhub-green-600 font-medium">
-                                  <DollarSign className="h-3 w-3" />
-                                  {formatCurrency(Number(proposal.amount))}
-                                </span>
-                                <span className="flex items-center gap-1 text-muted-foreground">
-                                  <Calendar className="h-3 w-3" />
-                                  {new Date(proposal.created_at).toLocaleDateString('pt-BR')}
-                                </span>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))
-                    }
+        {/* Filtros */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Buscar por título, cliente ou responsável..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
-          </ScrollArea>
-
-          {isDragging && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 bg-background/90 backdrop-blur-sm border rounded-lg shadow-lg w-full max-w-lg no-print">
-              <div className="flex justify-center gap-2 p-2">
-                <div
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, 'Aprovada')}
-                  className="flex-1 py-2 px-4 rounded-md bg-green-600 text-white text-sm font-semibold flex items-center justify-center transition-colors duration-300 hover:bg-green-700 cursor-pointer border-2 border-transparent hover:border-white"
-                >
-                  APROVADA
-                </div>
-                <div
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, 'Rejeitada')}
-                  className="flex-1 py-2 px-4 rounded-md bg-red-600 text-white text-sm font-semibold flex items-center justify-center transition-colors duration-300 hover:bg-red-700 cursor-pointer border-2 border-transparent hover:border-white"
-                >
-                  REJEITADA
+                <div className="flex flex-wrap gap-2">
+                  <Select value={filterOwner} onValueChange={setFilterOwner}>
+                    <SelectTrigger className="w-full sm:w-40">
+                      <SelectValue placeholder="Responsável" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {allUsers.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterClient} onValueChange={setFilterClient}>
+                    <SelectTrigger className="w-full sm:w-40">
+                      <SelectValue placeholder="Cliente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {allClients.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterPeriod} onValueChange={setFilterPeriod}>
+                    <SelectTrigger className="w-full sm:w-32">
+                      <SelectValue placeholder="Período" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="today">Hoje</SelectItem>
+                      <SelectItem value="7days">7 dias</SelectItem>
+                      <SelectItem value="30days">30 dias</SelectItem>
+                      <SelectItem value="90days">90 dias</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={`${sortBy}-${sortOrder}`} onValueChange={(value) => {
+                    const [field, order] = value.split('-');
+                    setSortBy(field as 'created_at' | 'amount' | 'updated_at');
+                    setSortOrder(order as 'asc' | 'desc');
+                  }}>
+                    <SelectTrigger className="w-full sm:w-40">
+                      <SelectValue placeholder="Ordenar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="updated_at-desc">Mais recente</SelectItem>
+                      <SelectItem value="updated_at-asc">Mais antigo</SelectItem>
+                      <SelectItem value="amount-desc">Maior valor</SelectItem>
+                      <SelectItem value="amount-asc">Menor valor</SelectItem>
+                      <SelectItem value="created_at-desc">Criado recente</SelectItem>
+                      <SelectItem value="created_at-asc">Criado antigo</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
-          )}
-        </div>
+          </CardContent>
+        </Card>
+
+        {/* Tabs para Active e Closed */}
+        <Tabs defaultValue="active" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="active" className="flex items-center gap-2">
+              <LayoutDashboardIcon className="h-4 w-4" />
+              Ativas ({ACTIVE_STATUSES.reduce((total, status) => total + (groupedProposals[status]?.length || 0), 0)})
+            </TabsTrigger>
+            <TabsTrigger value="closed" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Fechadas ({CLOSED_STATUSES.reduce((total, status) => total + (groupedProposals[status]?.length || 0), 0)})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="active" className="mt-6">
+            {/* Board Kanban para propostas ativas */}
+            <div className="relative">
+              <ScrollArea className="w-full whitespace-nowrap rounded-md border">
+                <div className="flex space-x-4 p-4 min-h-[600px] items-start">
+                  {ACTIVE_STATUSES.map(status => (
+                    <div
+                      key={status}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, status)}
+                      className={cn(
+                        "flex-shrink-0 w-72 sm:w-80 bg-muted/40 rounded-lg p-4 shadow-sm border",
+                        draggingProposalId && "border-dashed border-primary"
+                      )}
+                    >
+                      <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <span className="text-base sm:text-lg">{getStatusIcon(status)}</span>
+                          <span className="truncate">{status}</span>
+                        </span>
+                        <Badge variant="secondary" className={cn("text-xs", getStatusColor(status))}>
+                          {groupedProposals[status]?.length || 0}
+                        </Badge>
+                      </h3>
+                      <div className="space-y-3 min-h-[100px]">
+                        {groupedProposals[status]?.map(proposal => (
+                          <ProposalCard key={proposal.id} proposal={proposal} />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+
+              {isDragging && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 bg-background/90 backdrop-blur-sm border rounded-lg shadow-lg w-full max-w-lg no-print">
+                  <div className="flex justify-center gap-2 p-2">
+                    <div
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, 'Aprovada')}
+                      className="flex-1 py-2 px-4 rounded-md bg-green-600 text-white text-sm font-semibold flex items-center justify-center transition-colors duration-300 hover:bg-green-700 cursor-pointer border-2 border-transparent hover:border-white"
+                    >
+                      ✅ APROVADA
+                    </div>
+                    <div
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, 'Rejeitada')}
+                      className="flex-1 py-2 px-4 rounded-md bg-red-600 text-white text-sm font-semibold flex items-center justify-center transition-colors duration-300 hover:bg-red-700 cursor-pointer border-2 border-transparent hover:border-white"
+                    >
+                      ❌ REJEITADA
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="closed" className="mt-6">
+            {/* Lista para propostas fechadas */}
+            <div className="space-y-4">
+              {CLOSED_STATUSES.map(status => {
+                const proposals = groupedProposals[status] || [];
+                if (proposals.length === 0) return null;
+
+                return (
+                  <Card key={status}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <span className="text-lg">{getStatusIcon(status)}</span>
+                        {status}
+                        <Badge variant="secondary" className={getStatusColor(status)}>
+                          {proposals.length}
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {proposals.map(proposal => (
+                          <ProposalCard key={proposal.id} proposal={proposal} />
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+              {CLOSED_STATUSES.every(status => (groupedProposals[status]?.length || 0) === 0) && (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Nenhuma proposta fechada</h3>
+                    <p className="text-muted-foreground">
+                      Propostas aprovadas ou rejeitadas aparecerão aqui.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Side Panel for Proposal Details */}
         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
@@ -584,6 +924,14 @@ const Pipeline: React.FC = () => {
             )}
           </SheetContent>
         </Sheet>
+
+        {/* Duplicate Proposal Modal */}
+        <DuplicateProposalModal
+          isOpen={!!duplicatingProposal}
+          onClose={() => setDuplicatingProposal(null)}
+          proposal={duplicatingProposal}
+          onDuplicate={handleDuplicateWithOptions}
+        />
       </div>
     </Layout>
   );
