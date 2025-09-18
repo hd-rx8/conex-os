@@ -301,9 +301,10 @@ export default function Proposals() {
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="Criada">Criada</SelectItem>
                   <SelectItem value="Enviada">Enviada</SelectItem>
+                  <SelectItem value="Negociando">Negociando</SelectItem>
                   <SelectItem value="Aprovada">Aprovada</SelectItem>
                   <SelectItem value="Rejeitada">Rejeitada</SelectItem>
-                  <SelectItem value="Rascunho">Rascunho</SelectItem> {/* Added Rascunho */}
+                  <SelectItem value="Rascunho">Rascunho</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -387,9 +388,10 @@ export default function Proposals() {
                             <SelectContent>
                               <SelectItem value="Criada">Criada</SelectItem>
                               <SelectItem value="Enviada">Enviada</SelectItem>
+                              <SelectItem value="Negociando">Negociando</SelectItem>
                               <SelectItem value="Aprovada">Aprovada</SelectItem>
                               <SelectItem value="Rejeitada">Rejeitada</SelectItem>
-                              <SelectItem value="Rascunho">Rascunho</SelectItem> {/* Added Rascunho */}
+                              <SelectItem value="Rascunho">Rascunho</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>
