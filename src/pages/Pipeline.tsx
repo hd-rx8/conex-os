@@ -381,7 +381,7 @@ const Pipeline: React.FC = () => {
       draggable
       onDragStart={(e) => handleDragStart(e, proposal.id)}
       onClick={() => handleCardClick(proposal)}
-      className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200 border-l-4 border-l-primary/20 hover:border-l-primary/40 hover:scale-[1.02] group"
+      className="cursor-grab active:cursor-grabbing hover:shadow-lg transition-shadow duration-200 group border"
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
