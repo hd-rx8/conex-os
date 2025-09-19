@@ -305,11 +305,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Título</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="border-r">Data</TableHead>
+                  <TableHead className="border-r">Título</TableHead>
+                  <TableHead className="border-r">Cliente</TableHead>
+                  <TableHead className="border-r">Valor</TableHead>
+                  <TableHead className="border-r">Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -327,13 +327,13 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
                 ) : (
                   proposals.map((proposal) => (
                     <TableRow key={proposal.id} className="hover:bg-muted/50">
-                      <TableCell>
+                      <TableCell className="border-r align-middle h-[40px]">
                         {new Date(proposal.created_at).toLocaleDateString('pt-BR')}
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium border-r align-middle h-[40px]">
                         {proposal.title}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border-r align-middle h-[40px]">
                         <div>
                           <div className="font-medium">{proposal.clients?.name || 'Sem cliente'}</div>
                           {proposal.clients?.company && (
@@ -343,12 +343,12 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border-r align-middle h-[40px]">
                         <span className="font-semibold text-conexhub-green-600">
                           {formatCurrency(Number(proposal.amount))}
                         </span>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border-r align-middle h-[40px]">
                         <Badge 
                           variant="outline" 
                           className={getStatusColor(proposal.status)}
@@ -356,7 +356,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
                           {proposal.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right align-middle h-[40px]">
                         <div className="flex justify-end gap-2">
                           <Button
                             variant="ghost"

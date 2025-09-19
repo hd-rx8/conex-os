@@ -151,15 +151,15 @@ const ProposalSkeleton = () => (
   </TableRow>
 );
 
-const getStatusColor = (status: Proposal['status']) => {
+const getStatusClasses = (status: Proposal['status']) => {
   switch (status) {
-    case 'Rascunho': return 'bg-purple-100 text-purple-800';
-    case 'Criada': return 'bg-gray-100 text-gray-800';
-    case 'Enviada': return 'bg-blue-100 text-blue-800';
-    case 'Negociando': return 'bg-yellow-100 text-yellow-800';
-    case 'Aprovada': return 'bg-green-100 text-green-800';
-    case 'Rejeitada': return 'bg-red-100 text-red-800';
-    default: return 'bg-gray-100 text-gray-800';
+    case 'Rascunho': return 'bg-purple-200/50 text-purple-700 hover:bg-purple-200/80';
+    case 'Criada': return 'bg-gray-200/50 text-gray-700 hover:bg-gray-200/80';
+    case 'Enviada': return 'bg-yellow-200/50 text-yellow-700 hover:bg-yellow-200/80';
+    case 'Negociando': return 'bg-orange-200/50 text-orange-700 hover:bg-orange-200/80';
+    case 'Aprovada': return 'bg-green-200/50 text-green-700 hover:bg-green-200/80';
+    case 'Rejeitada': return 'bg-red-200/50 text-red-700 hover:bg-red-200/80';
+    default: return 'bg-gray-200/50 text-gray-700 hover:bg-gray-200/80';
   }
 };
 
@@ -335,12 +335,12 @@ export default function Proposals() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Título</TableHead>
-                    <TableHead>Responsável</TableHead>
-                    <TableHead>Cliente</TableHead> {/* Changed to Cliente */}
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead className="border-r">Data</TableHead>
+                    <TableHead className="border-r">Título</TableHead>
+                    <TableHead className="border-r">Responsável</TableHead>
+                    <TableHead className="border-r">Cliente</TableHead>
+                    <TableHead className="border-r">Valor</TableHead>
+                    <TableHead className="border-r">Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -360,30 +360,32 @@ export default function Proposals() {
                   ) : (
                     proposals.map((proposal) => (
                       <TableRow key={proposal.id}>
-                        <TableCell>
+                        <TableCell className="border-r align-middle h-[40px]">
                           {new Date(proposal.created_at).toLocaleDateString('pt-BR')}
                         </TableCell>
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium border-r align-middle h-[40px]">
                           {proposal.title}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="border-r align-middle h-[40px]">
                           {proposal.app_users?.name || 'N/A'}
                         </TableCell>
-                        <TableCell>
-                          {proposal.clients?.name || '-'} {/* Display client name from joined table */}
+                        <TableCell className="border-r align-middle h-[40px]">
+                          {proposal.clients?.name || '-'}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="border-r align-middle h-[40px]">
                           {formatCurrency(Number(proposal.amount))}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="border-r p-0 align-middle h-[40px]">
                           <Select
                             value={proposal.status}
                             onValueChange={(value) => handleStatusChange(proposal, value as Proposal['status'])}
                           >
-                            <SelectTrigger className="w-24 h-8">
-                              <Badge className={getStatusColor(proposal.status)}>
-                                {proposal.status}
-                              </Badge>
+                            <SelectTrigger
+                              className={`w-full h-full justify-center rounded-none border-none bg-transparent py-1 px-2 text-xs font-semibold uppercase tracking-wider transition-colors focus:ring-0 focus:ring-offset-0 ${getStatusClasses(
+                                proposal.status
+                              )}`}
+                            >
+                              <span className="flex items-center">{proposal.status}</span>
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="Criada">Criada</SelectItem>
@@ -395,7 +397,7 @@ export default function Proposals() {
                             </SelectContent>
                           </Select>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right align-middle h-[40px]">
                           <div className="flex justify-end space-x-1">
                             <Button
                               variant="ghost"

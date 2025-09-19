@@ -317,10 +317,10 @@ export default function Clients() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>E-mail</TableHead>
-                    <TableHead>Empresa</TableHead>
-                    <TableHead>Telefone</TableHead>
+                    <TableHead className="border-r">Nome</TableHead>
+                    <TableHead className="border-r">E-mail</TableHead>
+                    <TableHead className="border-r">Empresa</TableHead>
+                    <TableHead className="border-r">Telefone</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -342,11 +342,11 @@ export default function Clients() {
                         onClick={() => handleViewClientProposals(client)}
                         className="cursor-pointer hover:bg-muted/50"
                       >
-                        <TableCell className="font-medium">{client.name}</TableCell>
-                        <TableCell>{client.email || '-'}</TableCell>
-                        <TableCell>{client.company || '-'}</TableCell>
-                        <TableCell>{client.phone || '-'}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="font-medium border-r align-middle h-[40px]">{client.name}</TableCell>
+                        <TableCell className="border-r align-middle h-[40px]">{client.email || '-'}</TableCell>
+                        <TableCell className="border-r align-middle h-[40px]">{client.company || '-'}</TableCell>
+                        <TableCell className="border-r align-middle h-[40px]">{client.phone || '-'}</TableCell>
+                        <TableCell className="text-right align-middle h-[40px]">
                           <div className="flex justify-end space-x-2">
                             <Button
                               variant="ghost"
@@ -446,11 +446,11 @@ export default function Clients() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Título</TableHead>
-                        <TableHead>Valor</TableHead>
-                        <TableHead>Criação</TableHead>
-                        <TableHead>Expiração</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead className="border-r">Título</TableHead>
+                        <TableHead className="border-r">Valor</TableHead>
+                        <TableHead className="border-r">Criação</TableHead>
+                        <TableHead className="border-r">Expiração</TableHead>
+                        <TableHead className="border-r">Status</TableHead>
                         <TableHead className="text-right">Ações</TableHead> {/* Added Actions column */}
                       </TableRow>
                     </TableHeader>
@@ -460,16 +460,16 @@ export default function Clients() {
                         const expirationDate = addDays(createdAt, 30);
                         return (
                           <TableRow key={proposal.id}>
-                            <TableCell className="font-medium">{proposal.title}</TableCell>
-                            <TableCell>{formatCurrency(Number(proposal.amount))}</TableCell>
-                            <TableCell>{format(createdAt, 'dd/MM/yyyy', { locale: ptBR })}</TableCell> {/* Use ptBR locale */}
-                            <TableCell>{format(expirationDate, 'dd/MM/yyyy', { locale: ptBR })}</TableCell> {/* Use ptBR locale */}
-                            <TableCell>
+                            <TableCell className="font-medium border-r align-middle h-[40px]">{proposal.title}</TableCell>
+                            <TableCell className="border-r align-middle h-[40px]">{formatCurrency(Number(proposal.amount))}</TableCell>
+                            <TableCell className="border-r align-middle h-[40px]">{format(createdAt, 'dd/MM/yyyy', { locale: ptBR })}</TableCell> {/* Use ptBR locale */}
+                            <TableCell className="border-r align-middle h-[40px]">{format(expirationDate, 'dd/MM/yyyy', { locale: ptBR })}</TableCell> {/* Use ptBR locale */}
+                            <TableCell className="border-r align-middle h-[40px]">
                               <Badge className={getStatusColor(proposal.status)}>
                                 {proposal.status}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-right align-middle h-[40px]">
                               <Button
                                 variant="ghost"
                                 size="sm"
