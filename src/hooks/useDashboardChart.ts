@@ -100,9 +100,74 @@ export const useDashboardChart = (filters: DashboardChartFilters) => {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
+  // Buscar dados específicos para o gráfico de funil
+  const { data: funnelData, isLoading: funnelLoading } = useQuery({
+    queryKey: ['dashboard-funnel', user?.id, { from: dateRange.from.toISOString(), to: dateRange.to.toISOString() }],
+    queryFn: async () => {
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      // Buscar todas as propostas no período
+      const { data, error } = await supabase
+        .from('proposals')
+        .select('status, amount')
+        .gte('created_at', dateRange.from.toISOString())
+        .lte('created_at', dateRange.to.toISOString());
+
+      if (error) {
+        throw error;
+      }
+
+      // Inicializar contadores
+      let totalCount = 0;
+      let totalValue = 0;
+      let negotiatingCount = 0;
+      let negotiatingValue = 0;
+      let approvedCount = 0;
+      let approvedValue = 0;
+
+      // Processar dados
+      data.forEach(proposal => {
+        // Total (todas as propostas)
+        totalCount++;
+        totalValue += Number(proposal.amount) || 0;
+
+        // Negociando (status 'Enviada' ou 'Negociando')
+        if (proposal.status === 'Enviada' || proposal.status === 'Negociando') {
+          negotiatingCount++;
+          negotiatingValue += Number(proposal.amount) || 0;
+        }
+
+        // Aprovadas (status 'Aprovada')
+        if (proposal.status === 'Aprovada') {
+          approvedCount++;
+          approvedValue += Number(proposal.amount) || 0;
+        }
+      });
+
+      // Criar estrutura do funil
+      const stages = [
+        { stage: 'Total de Propostas', status: 'total', count: totalCount, valueSum: totalValue },
+        { stage: 'Em Negociação', status: 'negotiating', count: negotiatingCount, valueSum: negotiatingValue },
+        { stage: 'Aprovadas', status: 'approved', count: approvedCount, valueSum: approvedValue }
+      ];
+
+      return stages;
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
   return {
     chartData: data || [],
+    funnelData: funnelData || [
+      { stage: 'Total de Propostas', status: 'total', count: 0, valueSum: 0 },
+      { stage: 'Em Negociação', status: 'negotiating', count: 0, valueSum: 0 },
+      { stage: 'Aprovadas', status: 'approved', count: 0, valueSum: 0 }
+    ],
     isLoading,
+    isFunnelLoading: funnelLoading,
     error,
     refetch,
     dateRange
