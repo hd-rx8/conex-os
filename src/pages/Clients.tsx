@@ -148,12 +148,13 @@ const ClientSkeleton = () => (
 
 const getStatusColor = (status: Proposal['status']) => {
   switch (status) {
-    case 'Criada': return 'bg-gray-100 text-gray-800';
-    case 'Enviada': return 'bg-blue-100 text-blue-800';
-    case 'Aprovada': return 'bg-green-100 text-green-800';
-    case 'Rejeitada': return 'bg-red-100 text-red-800';
-    case 'Rascunho': return 'bg-purple-100 text-purple-800';
-    default: return 'bg-gray-100 text-gray-800';
+    case 'Criada': return 'bg-gray-200/50 text-gray-700 dark:bg-gray-700/50 dark:text-gray-300';
+    case 'Enviada': return 'bg-yellow-200/50 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300';
+    case 'Negociando': return 'bg-orange-200/50 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300';
+    case 'Aprovada': return 'bg-green-200/50 text-green-700 dark:bg-green-900/50 dark:text-green-300';
+    case 'Rejeitada': return 'bg-red-200/50 text-red-700 dark:bg-red-900/50 dark:text-red-300';
+    case 'Rascunho': return 'bg-purple-200/50 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300';
+    default: return 'bg-gray-200/50 text-gray-700 dark:bg-gray-700/50 dark:text-gray-300';
   }
 };
 
