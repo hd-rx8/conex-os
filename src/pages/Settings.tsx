@@ -1,10 +1,9 @@
 import React from 'react';
-import Layout from '@/components/Layout';
+import MainLayout from '@/components/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Settings as SettingsIcon } from 'lucide-react';
-import PageHeader from '@/components/PageHeader'; 
 import { useGradientTheme } from '@/context/GradientThemeContext';
 import { useCurrency, currencies, CurrencyCode } from '@/context/CurrencyContext'; // Import currency context and types
 
@@ -13,13 +12,8 @@ const Settings = () => {
   const { selectedCurrency, setSelectedCurrencyCode } = useCurrency(); // Use currency context
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        <PageHeader
-          title="Configurações"
-          subtitle="Ajuste as configurações da sua conta e do aplicativo"
-          icon={SettingsIcon}
-        />
+    <MainLayout module="crm">
+      <div className="space-y-6 mt-6">
 
         <Card>
           <CardHeader>
@@ -28,7 +22,7 @@ const Settings = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium">Tema (Claro/Escuro)</p>
+              <p className="text-sm font-medium">Modo (Claro/Escuro)</p>
               <ThemeToggle />
             </div>
             <div className="flex items-center justify-between">
@@ -41,9 +35,9 @@ const Settings = () => {
                   <SelectValue placeholder="Selecionar tema" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="conexhub">CONEX.HUB Padrão</SelectItem>
-                  <SelectItem value="alt1">Alternativo 1</SelectItem>
-                  <SelectItem value="alt2">Alternativo 2</SelectItem>
+                  <SelectItem value="conexhub">Andromeda</SelectItem>
+                  <SelectItem value="alt1">Nebula</SelectItem>
+                  <SelectItem value="alt2">Quasar</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -77,7 +71,7 @@ const Settings = () => {
           </CardContent>
         </Card>
       </div>
-    </Layout>
+    </MainLayout>
   );
 };
 

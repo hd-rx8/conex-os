@@ -12,7 +12,7 @@ const Stepper: React.FC<StepperProps> = () => {
   const { steps, currentStep, setStep } = useQuoteWizard(); // Get state and setStep from context
 
   return (
-    <div className="flex items-center justify-between w-full max-w-3xl mx-auto mb-8 no-print">
+    <div className="flex items-center justify-between w-full max-w-3xl mx-auto mt-8 mb-8 no-print">
       {steps.map((step, index) => (
         <React.Fragment key={step.id}>
           <button

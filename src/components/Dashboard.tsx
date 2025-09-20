@@ -20,12 +20,12 @@ import {
 import { useProposals, ProposalFilters } from '@/hooks/useProposals';
 import { useDashboardChart, DashboardChartFilters } from '@/hooks/useDashboardChart';
 import { useNavigate } from 'react-router-dom';
-import PageHeader from './PageHeader'; 
 import { useCurrency } from '@/context/CurrencyContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import DashboardBarChart from './DashboardBarChart';
 import DashboardFunnelChart from './DashboardFunnelChart';
+import FloatingActionButton from './FloatingActionButton';
 
 interface DashboardProps {
   userId: string;
@@ -138,22 +138,13 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <PageHeader
-        title="Dashboard"
-        subtitle="CONEX.HUB - Gestão de Propostas"
-        icon={LayoutDashboardIcon}
-      >
-        <Button 
-          size="lg" 
-          className="gradient-button-bg hover:opacity-90 text-white mt-4 md:mt-0"
-          onClick={() => navigate('/generator')}
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Criar Nova Proposta
-        </Button>
-      </PageHeader>
+    <div className="space-y-6 relative pb-20">
+      {/* Floating Action Button */}
+      <FloatingActionButton
+        onClick={() => navigate('/generator')}
+        tooltip="Criar Nova Proposta"
+        icon={Plus}
+      />
 
       {/* Filtros */}
       <Card className="mb-6">

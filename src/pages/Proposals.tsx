@@ -11,11 +11,11 @@ import { useProposals, Proposal, CreateProposalData, UpdateProposalData } from '
 import { useUsers } from '@/hooks/useUsers';
 import { useClients, Client } from '@/hooks/useClients'; // Import useClients and Client
 import { useSession } from '@/hooks/useSession';
-import { FileText as FileTextIcon, Search, Edit, Copy, Trash2, Plus, Filter, Printer } from 'lucide-react'; 
+import { FileText as FileTextIcon, Search, Edit, Copy, Trash2, Plus, Filter, Printer } from 'lucide-react';
+import FloatingActionButton from '@/components/FloatingActionButton'; 
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
-import Layout from '@/components/Layout';
-import PageHeader from '@/components/PageHeader'; 
+import MainLayout from '@/components/MainLayout';
 import { useCurrency } from '@/context/CurrencyContext'; // Import useCurrency
 import DuplicateProposalModal from '@/components/DuplicateProposalModal';
 
@@ -243,37 +243,30 @@ export default function Proposals() {
   };
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        <PageHeader
-          title="Propostas"
-          subtitle="Gerencie todas as propostas criadas"
-          icon={FileTextIcon}
-        >
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                size="lg" 
-                className="gradient-button-bg hover:opacity-90 text-white mt-4 md:mt-0 flex items-center space-x-2"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Nova Proposta</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Criar Nova Proposta</DialogTitle>
-              </DialogHeader>
-              <ProposalForm 
-                allUsers={allUsers}
-                allClients={allClients}
-                currentUserId={currentUser?.id || ''}
-                onSubmit={handleCreateProposal}
-                onCancel={() => setIsCreateDialogOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
-        </PageHeader>
+    <MainLayout module="crm">
+      <div className="space-y-6 relative pb-20">
+        {/* Floating Action Button */}
+        <FloatingActionButton
+          onClick={() => setIsCreateDialogOpen(true)}
+          tooltip="Criar Nova Proposta"
+          icon={Plus}
+        />
+        
+        {/* Dialog moved outside FAB */}
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Criar Nova Proposta</DialogTitle>
+            </DialogHeader>
+            <ProposalForm 
+              allUsers={allUsers}
+              allClients={allClients}
+              currentUserId={currentUser?.id || ''}
+              onSubmit={handleCreateProposal}
+              onCancel={() => setIsCreateDialogOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
 
         <Card>
           <CardHeader>
@@ -492,6 +485,6 @@ export default function Proposals() {
           onDuplicate={handleDuplicateWithOptions}
         />
       </div>
-    </Layout>
+    </MainLayout>
   );
 }

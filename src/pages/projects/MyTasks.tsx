@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import Layout from '@/components/Layout';
-import PageHeader from '@/components/PageHeader';
+import MainLayout from '@/components/MainLayout';
 import { ClipboardList, Plus, Calendar, Clock, Search, Loader2, Edit, Trash2, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +14,7 @@ import useProjects from '@/hooks/useProjects';
 import useTasks, { Task } from '@/hooks/useTasks';
 import { useSession } from '@/hooks/useSession';
 import CreateTaskFromProjectModal from '@/components/projects/CreateTaskFromProjectModal';
+import FloatingActionButton from '@/components/FloatingActionButton';
 
 const MyTasks: React.FC = () => {
   const { user } = useSession();
@@ -126,193 +126,188 @@ const MyTasks: React.FC = () => {
 
   if (!user) {
     return (
-      <Layout module="projects">
+      <MainLayout module="work">
         <div className="text-center py-12">
           <p className="text-muted-foreground">Você precisa estar logado para ver suas tarefas.</p>
         </div>
-      </Layout>
+      </MainLayout>
     );
   }
 
   return (
-    <Layout module="projects">
-      <PageHeader
-        title="Minhas Tarefas"
-        subtitle="Gerencie todas as suas tarefas pessoais"
-        icon={ClipboardList}
-      >
+    <MainLayout module="work">
+      <div className="relative pb-20">
+        {/* Floating Action Button */}
         <CreateTaskFromProjectModal 
           projects={projects || []}
           onCreateTask={handleCreateTask}
         >
-          <Button 
-            size="lg" 
-            className="gradient-button-bg hover:opacity-90 text-white mt-4 md:mt-0"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Nova Tarefa
-          </Button>
+          <FloatingActionButton
+            onClick={() => {}}
+            tooltip="Criar Nova Tarefa"
+            icon={Plus}
+          />
         </CreateTaskFromProjectModal>
-      </PageHeader>
 
-      {/* Estatísticas rápidas */}
-      <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Clock className="h-4 w-4 text-yellow-500" />
-              <div>
-                <p className="text-2xl font-bold text-yellow-600">{counts.pending}</p>
-                <p className="text-xs text-muted-foreground">Pendentes</p>
+        {/* Estatísticas rápidas */}
+        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2">
+                <Clock className="h-4 w-4 text-yellow-500" />
+                <div>
+                  <p className="text-2xl font-bold text-yellow-600">{counts.pending}</p>
+                  <p className="text-xs text-muted-foreground">Pendentes</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <div className="h-4 w-4 rounded-full bg-blue-500"></div>
-              <div>
-                <p className="text-2xl font-bold text-blue-600">{counts.inProgress}</p>
-                <p className="text-xs text-muted-foreground">Em Progresso</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2">
+                <div className="h-4 w-4 rounded-full bg-blue-500"></div>
+                <div>
+                  <p className="text-2xl font-bold text-blue-600">{counts.inProgress}</p>
+                  <p className="text-xs text-muted-foreground">Em Progresso</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <div className="h-4 w-4 rounded-full bg-green-500"></div>
-              <div>
-                <p className="text-2xl font-bold text-green-600">{counts.completed}</p>
-                <p className="text-xs text-muted-foreground">Concluídas</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2">
+                <div className="h-4 w-4 rounded-full bg-green-500"></div>
+                <div>
+                  <p className="text-2xl font-bold text-green-600">{counts.completed}</p>
+                  <p className="text-xs text-muted-foreground">Concluídas</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <div className="h-4 w-4 rounded-full bg-red-500"></div>
-              <div>
-                <p className="text-2xl font-bold text-red-600">{counts.overdue}</p>
-                <p className="text-xs text-muted-foreground">Atrasadas</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2">
+                <div className="h-4 w-4 rounded-full bg-red-500"></div>
+                <div>
+                  <p className="text-2xl font-bold text-red-600">{counts.overdue}</p>
+                  <p className="text-xs text-muted-foreground">Atrasadas</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="mt-6">
+          {/* Filtros */}
+          <Card className="mb-6">
+            <CardContent className="p-4">
+              <div className="flex flex-col lg:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Buscar tarefas..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  <Select value={filterProject} onValueChange={setFilterProject}>
+                    <SelectTrigger className="w-full sm:w-40">
+                      <SelectValue placeholder="Projeto" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os projetos</SelectItem>
+                      {projects?.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="w-full sm:w-32">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="Pendente">Pendente</SelectItem>
+                      <SelectItem value="Em Progresso">Em Progresso</SelectItem>
+                      <SelectItem value="Concluída">Concluída</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                    <SelectTrigger className="w-full sm:w-40">
+                      <SelectValue placeholder="Ordenar por" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="due_date">Data de vencimento</SelectItem>
+                      <SelectItem value="created_at">Data de criação</SelectItem>
+                      <SelectItem value="title">Título</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Tabs defaultValue="all">
+            <TabsList className="mb-4">
+              <TabsTrigger value="all">Todas ({counts.total})</TabsTrigger>
+              <TabsTrigger value="pending">Pendentes ({counts.pending})</TabsTrigger>
+              <TabsTrigger value="in-progress">Em Progresso ({counts.inProgress})</TabsTrigger>
+              <TabsTrigger value="completed">Concluídas ({counts.completed})</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="all">
+              <TasksList 
+                tasks={filteredTasks}
+                loading={loading}
+                onStatusChange={handleUpdateTaskStatus}
+                onDelete={handleDeleteTask}
+                projects={projects || []}
+              />
+            </TabsContent>
+            
+            <TabsContent value="pending">
+              <TasksList 
+                tasks={getTasksByStatus('Pendente')}
+                loading={loading}
+                onStatusChange={handleUpdateTaskStatus}
+                onDelete={handleDeleteTask}
+                projects={projects || []}
+              />
+            </TabsContent>
+            
+            <TabsContent value="in-progress">
+              <TasksList 
+                tasks={getTasksByStatus('Em Progresso')}
+                loading={loading}
+                onStatusChange={handleUpdateTaskStatus}
+                onDelete={handleDeleteTask}
+                projects={projects || []}
+              />
+            </TabsContent>
+            
+            <TabsContent value="completed">
+              <TasksList 
+                tasks={getTasksByStatus('Concluída')}
+                loading={loading}
+                onStatusChange={handleUpdateTaskStatus}
+                onDelete={handleDeleteTask}
+                projects={projects || []}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
-
-      <div className="mt-6">
-        {/* Filtros */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="flex flex-col lg:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Buscar tarefas..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              
-              <div className="flex flex-wrap gap-2">
-                <Select value={filterProject} onValueChange={setFilterProject}>
-                  <SelectTrigger className="w-full sm:w-40">
-                    <SelectValue placeholder="Projeto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os projetos</SelectItem>
-                    {projects?.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-full sm:w-32">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="Pendente">Pendente</SelectItem>
-                    <SelectItem value="Em Progresso">Em Progresso</SelectItem>
-                    <SelectItem value="Concluída">Concluída</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-                  <SelectTrigger className="w-full sm:w-40">
-                    <SelectValue placeholder="Ordenar por" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="due_date">Data de vencimento</SelectItem>
-                    <SelectItem value="created_at">Data de criação</SelectItem>
-                    <SelectItem value="title">Título</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Tabs defaultValue="all">
-          <TabsList className="mb-4">
-            <TabsTrigger value="all">Todas ({counts.total})</TabsTrigger>
-            <TabsTrigger value="pending">Pendentes ({counts.pending})</TabsTrigger>
-            <TabsTrigger value="in-progress">Em Progresso ({counts.inProgress})</TabsTrigger>
-            <TabsTrigger value="completed">Concluídas ({counts.completed})</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="all">
-            <TasksList 
-              tasks={filteredTasks}
-              loading={loading}
-              onStatusChange={handleUpdateTaskStatus}
-              onDelete={handleDeleteTask}
-              projects={projects || []}
-            />
-          </TabsContent>
-          
-          <TabsContent value="pending">
-            <TasksList 
-              tasks={getTasksByStatus('Pendente')}
-              loading={loading}
-              onStatusChange={handleUpdateTaskStatus}
-              onDelete={handleDeleteTask}
-              projects={projects || []}
-            />
-          </TabsContent>
-          
-          <TabsContent value="in-progress">
-            <TasksList 
-              tasks={getTasksByStatus('Em Progresso')}
-              loading={loading}
-              onStatusChange={handleUpdateTaskStatus}
-              onDelete={handleDeleteTask}
-              projects={projects || []}
-            />
-          </TabsContent>
-          
-          <TabsContent value="completed">
-            <TasksList 
-              tasks={getTasksByStatus('Concluída')}
-              loading={loading}
-              onStatusChange={handleUpdateTaskStatus}
-              onDelete={handleDeleteTask}
-              projects={projects || []}
-            />
-          </TabsContent>
-        </Tabs>
-      </div>
-    </Layout>
+    </MainLayout>
   );
 };
 

@@ -16,13 +16,13 @@ import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import Layout from '@/components/Layout';
-import PageHeader from '@/components/PageHeader'; 
+import MainLayout from '@/components/MainLayout';
 import { format, addDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale'; // Import ptBR locale
 import { useCurrency } from '@/context/CurrencyContext';
 import EditableField from '@/components/EditableField';
 import { useNavigate } from 'react-router-dom';
+import FloatingActionButton from '@/components/FloatingActionButton';
 
 // Zod schema for client form validation
 const clientSchema = z.object({
@@ -269,31 +269,27 @@ export default function Clients() {
   );
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        <PageHeader
-          title="Clientes"
-          subtitle="Gerencie seus clientes e suas informações de contato"
-          icon={Building}
-        >
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center space-x-2">
-                <UserPlus className="h-4 w-4" />
-                <span>Novo Cliente</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Criar Novo Cliente</DialogTitle>
-              </DialogHeader>
-              <ClientForm 
-                onSubmit={handleCreateClient}
-                onCancel={() => setIsCreateDialogOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
-        </PageHeader>
+    <MainLayout module="crm">
+      <div className="space-y-6 relative pb-20">
+        {/* Floating Action Button */}
+        <FloatingActionButton
+          onClick={() => setIsCreateDialogOpen(true)}
+          tooltip="Criar Novo Cliente"
+          icon={UserPlus}
+        />
+        
+        {/* Dialog moved outside FAB */}
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Criar Novo Cliente</DialogTitle>
+            </DialogHeader>
+            <ClientForm 
+              onSubmit={handleCreateClient}
+              onCancel={() => setIsCreateDialogOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
 
         <Card>
           <CardHeader>
@@ -699,6 +695,6 @@ export default function Clients() {
           </SheetContent>
         </Sheet>
       </div>
-    </Layout>
+    </MainLayout>
   );
 }

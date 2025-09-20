@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Layout from '@/components/Layout';
-import PageHeader from '@/components/PageHeader';
+import MainMainLayout from '@/components/MainMainLayout';
 import { Clipboard, Plus, Loader2, Calendar, Clock, ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -120,17 +119,17 @@ const ProjectDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <Layout module="projects">
+      <MainLayout module="work">
         <div className="flex items-center justify-center min-h-[60vh]">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
         </div>
-      </Layout>
+      </MainLayout>
     );
   }
 
   if (!project) {
     return (
-      <Layout module="projects">
+      <MainLayout module="work">
         <div className="text-center py-12">
           <h2 className="text-2xl font-bold">Projeto não encontrado</h2>
           <p className="text-muted-foreground mt-2">O projeto que você está procurando não existe ou foi removido.</p>
@@ -142,12 +141,12 @@ const ProjectDetail: React.FC = () => {
             Voltar para Projetos
           </Button>
         </div>
-      </Layout>
+      </MainLayout>
     );
   }
 
   return (
-    <Layout module="projects">
+    <MainLayout module="work">
       <div className="flex items-center mb-6">
         <Button 
           variant="ghost" 
@@ -306,7 +305,7 @@ const ProjectDetail: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-    </Layout>
+    </MainLayout>
   );
 };
 

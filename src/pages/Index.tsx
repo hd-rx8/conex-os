@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '@/hooks/useSession';
 import Dashboard from '@/components/Dashboard';
-import Layout from '@/components/Layout';
+import MainLayout from '@/components/MainLayout';
 
 const Index = () => {
   const { user, loading } = useSession();
@@ -30,9 +30,9 @@ const Index = () => {
   }
 
   return (
-    <Layout>
+    <MainLayout module="crm">
       <Dashboard userId={user.id} />
-    </Layout>
+    </MainLayout>
   );
 };
 

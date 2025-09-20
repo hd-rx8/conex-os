@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import Layout from '@/components/Layout';
-import PageHeader from '@/components/PageHeader';
+import MainLayout from '@/components/MainLayout';
 import { Kanban, Plus, Calendar, Clock, Loader2, Trash2, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,6 +13,7 @@ import { cn } from '@/lib/utils';
 import useProjects from '@/hooks/useProjects';
 import useTasks, { Task } from '@/hooks/useTasks';
 import CreateTaskFromProjectModal from '@/components/projects/CreateTaskFromProjectModal';
+import FloatingActionButton from '@/components/FloatingActionButton';
 
 const TasksBoard: React.FC = () => {
   const { projects } = useProjects();
@@ -119,47 +119,41 @@ const TasksBoard: React.FC = () => {
   };
 
   return (
-    <Layout module="projects">
-      <PageHeader
-        title="Quadro Kanban"
-        subtitle="Visualize e gerencie tarefas no formato Kanban"
-        icon={Kanban}
-      >
+    <MainLayout module="work">
+      <div className="relative pb-20">
+        {/* Floating Action Button */}
         <CreateTaskFromProjectModal 
           projects={projects || []}
           onCreateTask={handleCreateTask}
         >
-          <Button 
-            size="lg" 
-            className="gradient-button-bg hover:opacity-90 text-white mt-4 md:mt-0"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Nova Tarefa
-          </Button>
+          <FloatingActionButton
+            onClick={() => {}}
+            tooltip="Criar Nova Tarefa"
+            icon={Plus}
+          />
         </CreateTaskFromProjectModal>
-      </PageHeader>
 
-      {/* Filtros */}
-      <div className="mt-6 flex gap-4">
-        <Select value={filterProject} onValueChange={setFilterProject}>
-          <SelectTrigger className="w-60">
-            <SelectValue placeholder="Filtrar por projeto" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os projetos</SelectItem>
-            {projects?.map((project) => (
-              <SelectItem key={project.id} value={project.id}>
-                {project.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+        {/* Filtros */}
+        <div className="mt-6 flex gap-4">
+          <Select value={filterProject} onValueChange={setFilterProject}>
+            <SelectTrigger className="w-60">
+              <SelectValue placeholder="Filtrar por projeto" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os projetos</SelectItem>
+              {projects?.map((project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-      <div className="mt-6">
-        <ScrollArea className="w-full whitespace-nowrap rounded-md border">
-          <div className="flex space-x-4 p-4 min-h-[600px] items-start">
-            {statuses.map((status) => {
+        <div className="mt-6">
+          <ScrollArea className="w-full whitespace-nowrap rounded-md border">
+            <div className="flex space-x-4 p-4 min-h-[600px] items-start">
+              {statuses.map((status) => {
               const statusTasks = getTasksByStatus(status.key);
               
               return (
@@ -207,10 +201,11 @@ const TasksBoard: React.FC = () => {
                 </div>
               );
             })}
-          </div>
-        </ScrollArea>
+            </div>
+          </ScrollArea>
+        </div>
       </div>
-    </Layout>
+    </MainLayout>
   );
 };
 

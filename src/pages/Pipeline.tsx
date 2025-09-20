@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useProposals, Proposal } from '@/hooks/useProposals';
 import { useSession } from '@/hooks/useSession';
-import Layout from '@/components/Layout';
-import PageHeader from '@/components/PageHeader';
+import MainLayout from '@/components/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -13,6 +12,7 @@ import { Loader2, LayoutDashboard as LayoutDashboardIcon, FileText, DollarSign, 
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useCurrency } from '@/context/CurrencyContext';
+import FloatingActionButton from '@/components/FloatingActionButton';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import EditableField from '@/components/EditableField'; // Import EditableField
@@ -457,32 +457,24 @@ const Pipeline: React.FC = () => {
 
   if (loading) {
     return (
-      <Layout>
+      <MainLayout module="crm">
         <div className="min-h-[calc(100vh-64px)] flex items-center justify-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
           <p className="ml-4 text-muted-foreground">Carregando pipeline...</p>
         </div>
-      </Layout>
+      </MainLayout>
     );
   }
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        <PageHeader
-          title="Pipeline de Propostas"
-          subtitle="Gerencie suas propostas com um board Kanban estilo CRM"
-          icon={LayoutDashboardIcon}
-        >
-          <Button 
-            size="lg" 
-            className="gradient-button-bg hover:opacity-90 text-white mt-4 md:mt-0"
-            onClick={() => navigate('/generator')}
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Criar Nova Proposta
-          </Button>
-        </PageHeader>
+    <MainLayout module="crm">
+      <div className="space-y-6 relative pb-20">
+        {/* Floating Action Button */}
+        <FloatingActionButton
+          onClick={() => navigate('/generator')}
+          tooltip="Criar Nova Proposta"
+          icon={Plus}
+        />
 
         {/* Filtros */}
         <Card>
@@ -933,7 +925,7 @@ const Pipeline: React.FC = () => {
           onDuplicate={handleDuplicateWithOptions}
         />
       </div>
-    </Layout>
+    </MainLayout>
   );
 };
 

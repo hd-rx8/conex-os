@@ -11,9 +11,9 @@ import { useSession } from '@/hooks/useSession';
 import { UserPlus, Search, Edit, Trash2, Users as UsersIcon, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
-import Layout from '@/components/Layout';
-import PageHeader from '@/components/PageHeader'; 
+import MainLayout from '@/components/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
+import FloatingActionButton from '@/components/FloatingActionButton';
 
 interface UserFormData {
   name: string;
@@ -162,31 +162,27 @@ export default function Users() {
   };
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        <PageHeader
-          title="Usuários"
-          subtitle="Gerencie os usuários da plataforma"
-          icon={UsersIcon}
-        >
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center space-x-2">
-                <UserPlus className="h-4 w-4" />
-                <span>Novo Usuário</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Criar Novo Usuário</DialogTitle>
-              </DialogHeader>
-              <UserForm 
-                onSubmit={handleCreateUser}
-                onCancel={() => setIsCreateDialogOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
-        </PageHeader>
+    <MainLayout module="crm">
+      <div className="space-y-6 relative pb-20">
+        {/* Floating Action Button */}
+        <FloatingActionButton
+          onClick={() => setIsCreateDialogOpen(true)}
+          tooltip="Criar Novo Usuário"
+          icon={UserPlus}
+        />
+        
+        {/* Dialog moved outside FAB */}
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Criar Novo Usuário</DialogTitle>
+            </DialogHeader>
+            <UserForm 
+              onSubmit={handleCreateUser}
+              onCancel={() => setIsCreateDialogOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
 
         <Card>
           <CardHeader>
@@ -322,6 +318,6 @@ export default function Users() {
           </DialogContent>
         </Dialog>
       </div>
-    </Layout>
+    </MainLayout>
   );
 }

@@ -19,9 +19,10 @@ interface UserNavProps {
   userName?: string | null;
   userEmail?: string | null;
   avatarUrl?: string | null;
+  collapsed?: boolean;
 }
 
-const UserNav: React.FC<UserNavProps> = ({ userName, userEmail, avatarUrl }) => {
+const UserNav: React.FC<UserNavProps> = ({ userName, userEmail, avatarUrl, collapsed = false }) => {
   const navigate = useNavigate();
   const { signOut } = useSession();
   const { theme, setTheme } = useTheme();
@@ -34,17 +35,19 @@ const UserNav: React.FC<UserNavProps> = ({ userName, userEmail, avatarUrl }) => 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-9 w-auto px-2 flex items-center space-x-2">
+        <Button variant="ghost" className={`relative ${collapsed ? 'h-9 w-9 px-0' : 'h-9 w-auto px-2'} flex items-center ${collapsed ? 'justify-center' : 'space-x-2'}`}>
           <Avatar className="h-8 w-8">
             <AvatarImage src={avatarUrl || undefined} alt={userName || "User"} />
             <AvatarFallback>
               {userName ? userName.charAt(0).toUpperCase() : <User className="h-4 w-4" />}
             </AvatarFallback>
           </Avatar>
-          <div className="flex flex-col items-start hidden sm:block">
-            <p className="text-sm font-medium leading-none">{userName || 'Usuário'}</p>
-            <p className="text-xs leading-none text-muted-foreground">{userEmail}</p>
-          </div>
+          {!collapsed && (
+            <div className="flex flex-col items-start hidden sm:block">
+              <p className="text-sm font-medium leading-none">{userName || 'Usuário'}</p>
+              <p className="text-xs leading-none text-muted-foreground">{userEmail}</p>
+            </div>
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>

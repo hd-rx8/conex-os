@@ -2,8 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { AppModuleProvider, useAppModule } from "./context/AppModuleContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -24,7 +25,7 @@ import TasksBoard from "./pages/projects/TasksBoard";
 import MyTasks from "./pages/projects/MyTasks";
 import { useSession } from "./hooks/useSession";
 import { useUsers } from "./hooks/useUsers";
-import Layout from "./components/Layout";
+import ModuleProtectedRoute from "./components/ModuleProtectedRoute";
 import { ThemeProvider } from "next-themes";
 import { GradientThemeProvider } from "./context/GradientThemeContext";
 import { CurrencyProvider } from "./context/CurrencyContext";
@@ -57,23 +58,53 @@ const AppContent = () => {
         />
         <Route 
           path="/clients"
-          element={user ? <Clients /> : <Navigate to="/login" replace />} 
+          element={
+            user ? (
+              <ModuleProtectedRoute requiredModule="crm" redirectTo="/projects">
+                <Clients />
+              </ModuleProtectedRoute>
+            ) : <Navigate to="/login" replace />
+          } 
         />
         <Route 
           path="/generator" 
-          element={user ? <Layout><QuoteGeneratorPage userId={user.id} /></Layout> : <Navigate to="/login" replace />} 
+          element={
+            user ? (
+              <ModuleProtectedRoute requiredModule="crm" redirectTo="/projects">
+                <QuoteGeneratorPage userId={user.id} />
+              </ModuleProtectedRoute>
+            ) : <Navigate to="/login" replace />
+          } 
         />
         <Route 
           path="/proposals" 
-          element={user ? <Proposals /> : <Navigate to="/login" replace />} 
+          element={
+            user ? (
+              <ModuleProtectedRoute requiredModule="crm" redirectTo="/projects">
+                <Proposals />
+              </ModuleProtectedRoute>
+            ) : <Navigate to="/login" replace />
+          } 
         />
         <Route 
           path="/proposals/:id/print" 
-          element={user ? <ProposalPrint /> : <Navigate to="/login" replace />} 
+          element={
+            user ? (
+              <ModuleProtectedRoute requiredModule="crm" redirectTo="/projects">
+                <ProposalPrint />
+              </ModuleProtectedRoute>
+            ) : <Navigate to="/login" replace />
+          } 
         />
         <Route 
           path="/pipeline"
-          element={user ? <Pipeline /> : <Navigate to="/login" replace />} 
+          element={
+            user ? (
+              <ModuleProtectedRoute requiredModule="crm" redirectTo="/projects">
+                <Pipeline />
+              </ModuleProtectedRoute>
+            ) : <Navigate to="/login" replace />
+          } 
         />
         <Route 
           path="/settings"
@@ -83,19 +114,43 @@ const AppContent = () => {
         {/* Rotas do módulo de Projetos */}
         <Route 
           path="/projects" 
-          element={user ? <ProjectsOverview /> : <Navigate to="/login" replace />} 
+          element={
+            user ? (
+              <ModuleProtectedRoute requiredModule="work" redirectTo="/">
+                <ProjectsOverview />
+              </ModuleProtectedRoute>
+            ) : <Navigate to="/login" replace />
+          } 
         />
         <Route 
           path="/projects/:projectId" 
-          element={user ? <ProjectDetail /> : <Navigate to="/login" replace />} 
+          element={
+            user ? (
+              <ModuleProtectedRoute requiredModule="work" redirectTo="/">
+                <ProjectDetail />
+              </ModuleProtectedRoute>
+            ) : <Navigate to="/login" replace />
+          } 
         />
         <Route 
           path="/projects/tasks" 
-          element={user ? <MyTasks /> : <Navigate to="/login" replace />} 
+          element={
+            user ? (
+              <ModuleProtectedRoute requiredModule="work" redirectTo="/">
+                <MyTasks />
+              </ModuleProtectedRoute>
+            ) : <Navigate to="/login" replace />
+          } 
         />
         <Route 
           path="/projects/board" 
-          element={user ? <TasksBoard /> : <Navigate to="/login" replace />} 
+          element={
+            user ? (
+              <ModuleProtectedRoute requiredModule="work" redirectTo="/">
+                <TasksBoard />
+              </ModuleProtectedRoute>
+            ) : <Navigate to="/login" replace />
+          } 
         />
 
         {/* Rotas de autenticação */}
@@ -130,7 +185,9 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <AppContent />
+              <AppModuleProvider>
+                <AppContent />
+              </AppModuleProvider>
             </BrowserRouter>
           </TooltipProvider>
         </CurrencyProvider>

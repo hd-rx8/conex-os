@@ -1,0 +1,109 @@
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import NavigationSidebar from './NavigationSidebar';
+import MobileMenuToggle from './MobileMenuToggle';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useAppModule } from '@/context/AppModuleContext';
+import { cn } from '@/lib/utils';
+
+interface MainLayoutProps {
+  children: React.ReactNode;
+  module?: 'crm' | 'work';
+}
+
+const MainLayout: React.FC<MainLayoutProps> = ({ children, module }) => {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const isMobile = useIsMobile();
+  const location = useLocation();
+  const { activeModule, setActiveModule } = useAppModule();
+  
+  // Atualizar o módulo ativo se for fornecido como prop
+  useEffect(() => {
+    if (module && module !== activeModule) {
+      setActiveModule(module);
+    }
+  }, [module, activeModule, setActiveModule]);
+
+  // Auto-collapse sidebar on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarCollapsed(true);
+    }
+  }, [isMobile]);
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarCollapsed(true);
+    }
+  }, [location.pathname, isMobile]);
+
+  // Load sidebar state from localStorage on desktop
+  useEffect(() => {
+    if (!isMobile) {
+      const saved = localStorage.getItem('sidebar-collapsed');
+      if (saved !== null) {
+        setSidebarCollapsed(JSON.parse(saved));
+      }
+    }
+  }, [isMobile]);
+
+  const toggleSidebar = () => {
+    const newState = !sidebarCollapsed;
+    setSidebarCollapsed(newState);
+    
+    // Save state to localStorage for desktop
+    if (!isMobile) {
+      localStorage.setItem('sidebar-collapsed', JSON.stringify(newState));
+    }
+  };
+
+  return (
+    <div className="h-screen overflow-hidden bg-background">
+      {/* Sidebar */}
+      <NavigationSidebar
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={toggleSidebar}
+      />
+
+      {/* Mobile overlay */}
+      {isMobile && !sidebarCollapsed && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={() => setSidebarCollapsed(true)}
+        />
+      )}
+
+      {/* Main content */}
+      <div
+        className={cn(
+          "flex flex-col h-full transition-all duration-300 ease-in-out",
+          // Desktop margins
+          !isMobile && !sidebarCollapsed && "md:ml-64",
+          !isMobile && sidebarCollapsed && "md:ml-16",
+          // Mobile full width
+          isMobile && "ml-0"
+        )}
+      >
+        {/* Mobile header with menu toggle */}
+        {isMobile && (
+          <header className="flex items-center justify-between p-4 border-b bg-background sticky top-0 z-30 md:hidden">
+            <div className="flex items-center gap-2">
+              <MobileMenuToggle onToggle={toggleSidebar} />
+              <h1 className="text-lg font-bold gradient-text">CONEX.HUB</h1>
+            </div>
+          </header>
+        )}
+
+        {/* Content area */}
+        <main className="flex-1 overflow-auto">
+          <div className="container mx-auto px-4 py-6 max-w-7xl">
+            {children}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default MainLayout;

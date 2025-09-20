@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight, Calculator as CalculatorIcon } from 'lucide-react';
-import PageHeader from '@/components/PageHeader';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import Stepper from '@/components/Stepper';
 import { useQuoteWizard } from '@/context/QuoteWizardContext';
 import StepServices from '@/components/quote-wizard/StepServices';
 import StepSettings from '@/components/quote-wizard/StepSettings';
 import StepClient from '@/components/quote-wizard/StepClient';
 import StepReview from '@/components/quote-wizard/StepReview';
-import Layout from '@/components/Layout';
+import MainLayout from '@/components/MainLayout';
 
 interface QuoteGeneratorPageProps {
   userId: string;
@@ -49,45 +48,41 @@ const QuoteGeneratorPage: React.FC<QuoteGeneratorPageProps> = ({ userId }) => {
   };
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-64px)]">
-      <PageHeader
-        title="Gerador de Orçamentos"
-        subtitle="Crie propostas profissionais em minutos"
-        icon={CalculatorIcon}
-      />
+    <MainLayout module="crm">
+      <div className="flex flex-col min-h-[calc(100vh-64px)]">
+        <Stepper />
 
-      <Stepper />
+        <div className="flex-1 pb-20">
+          {renderStepContent()}
+        </div>
 
-      <div className="flex-1 pb-20">
-        {renderStepContent()}
-      </div>
-
-      {/* Fixed Navigation Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t z-40 no-print">
-        <div className="container mx-auto px-4 py-3 flex justify-between">
-          <Button
-            variant="outline"
-            onClick={goToPreviousStep}
-            disabled={currentStep === 0}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar
-          </Button>
-          {currentStep < steps.length - 1 ? (
+        {/* Fixed Navigation Footer */}
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t z-40 no-print">
+          <div className="container mx-auto px-4 py-3 flex justify-between">
             <Button
-              onClick={goToNextStep}
-              disabled={!isStepValid()}
-              className="gradient-button-bg"
+              variant="outline"
+              onClick={goToPreviousStep}
+              disabled={currentStep === 0}
             >
-              Próximo
-              <ArrowRight className="w-4 h-4 ml-2" />
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar
             </Button>
-          ) : (
-            <div /> 
-          )}
+            {currentStep < steps.length - 1 ? (
+              <Button
+                onClick={goToNextStep}
+                disabled={!isStepValid()}
+                className="gradient-button-bg"
+              >
+                Próximo
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            ) : (
+              <div /> 
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </MainLayout>
   );
 };
 
