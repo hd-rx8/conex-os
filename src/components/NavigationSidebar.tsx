@@ -22,8 +22,7 @@ import { useAppModule, AppModuleType } from '@/context/AppModuleContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import UserNav from './UserNav';
-import { ThemeToggle } from './ThemeToggle';
-import AppSwitcher from './AppSwitcher';
+import SettingsButton from './SettingsButton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface NavigationItem {
@@ -253,7 +252,6 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-bold gradient-text">CONEX.HUB</h2>
-            <AppSwitcher />
           </div>
           <Button
             variant="ghost"
@@ -281,7 +279,7 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
               userEmail={user?.email} 
               avatarUrl={user?.user_metadata?.avatar_url}
             />
-            <ThemeToggle />
+            <SettingsButton />
           </div>
         </div>
       </div>
@@ -300,7 +298,6 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
         {!isCollapsed && (
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-bold gradient-text">CONEX.HUB</h2>
-            <AppSwitcher />
           </div>
         )}
         <TooltipProvider>
@@ -342,7 +339,7 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
             avatarUrl={user?.user_metadata?.avatar_url}
             collapsed={isCollapsed}
           />
-          {!isCollapsed && <ThemeToggle />}
+          {!isCollapsed && <SettingsButton />}
         </div>
       </div>
     </div>

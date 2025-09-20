@@ -5,6 +5,10 @@ import MobileMenuToggle from './MobileMenuToggle';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAppModule } from '@/context/AppModuleContext';
 import { cn } from '@/lib/utils';
+import { ThemeToggle } from './ThemeToggle';
+import AppSwitcher from './AppSwitcher';
+import UserNav from './UserNav';
+import { useSession } from '@/hooks/useSession';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -16,6 +20,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, module }) => {
   const isMobile = useIsMobile();
   const location = useLocation();
   const { activeModule, setActiveModule } = useAppModule();
+  const { user } = useSession();
   
   // Atualizar o módulo ativo se for fornecido como prop
   useEffect(() => {
@@ -85,15 +90,27 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, module }) => {
           isMobile && "ml-0"
         )}
       >
-        {/* Mobile header with menu toggle */}
-        {isMobile && (
-          <header className="flex items-center justify-between p-4 border-b bg-background sticky top-0 z-30 md:hidden">
-            <div className="flex items-center gap-2">
-              <MobileMenuToggle onToggle={toggleSidebar} />
-              <h1 className="text-lg font-bold gradient-text">CONEX.HUB</h1>
-            </div>
-          </header>
-        )}
+        {/* Desktop header with app switcher and theme toggle */}
+        <header className="flex items-center justify-between p-4 border-b bg-background sticky top-0 z-30">
+          {/* Mobile menu toggle and logo */}
+          <div className="flex items-center gap-2">
+            {isMobile && <MobileMenuToggle onToggle={toggleSidebar} />}
+            <h1 className="text-lg font-bold gradient-text">CONEX.HUB</h1>
+          </div>
+          
+          {/* Right side controls */}
+          <div className="flex items-center gap-3">
+            <AppSwitcher />
+            <ThemeToggle />
+            {isMobile && (
+              <UserNav 
+                userName={user?.user_metadata?.full_name} 
+                userEmail={user?.email} 
+                avatarUrl={user?.user_metadata?.avatar_url}
+              />
+            )}
+          </div>
+        </header>
 
         {/* Content area */}
         <main className="flex-1 overflow-auto">
