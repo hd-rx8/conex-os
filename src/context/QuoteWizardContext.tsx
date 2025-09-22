@@ -142,6 +142,11 @@ export const QuoteWizardProvider = ({ children, userId }: { children: ReactNode;
           toast.error('O título da proposta é obrigatório.');
           return false;
         }
+        // Validação para pagamento parcelado
+        if (paymentType === 'installment' && installmentValue === 0 && (manualInstallmentTotal === null || manualInstallmentTotal === 0)) {
+          toast.error('Para pagamento parcelado, preencha o valor da parcela ou o total parcelado manual.');
+          return false;
+        }
         return true;
       case 'client':
         if (!clientInfo.name.trim() || !clientInfo.email.trim()) {
@@ -159,7 +164,7 @@ export const QuoteWizardProvider = ({ children, userId }: { children: ReactNode;
       default:
         return true;
     }
-  }, [currentStep, selectedServices, proposalTitle, clientInfo.name, clientInfo.email, steps]);
+  }, [currentStep, selectedServices, proposalTitle, clientInfo.name, clientInfo.email, steps, paymentType, installmentValue, manualInstallmentTotal]);
 
 
   const goToNextStep = useCallback(() => {

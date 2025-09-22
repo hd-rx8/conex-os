@@ -114,8 +114,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, module }) => {
 
         {/* Content area */}
         <main className="flex-1 overflow-auto">
-          <div className="container mx-auto px-4 py-6 max-w-7xl">
-            {children}
+          <div className="w-full px-2 sm:px-4 lg:px-6 xl:px-8 py-6">
+            <div className="mx-auto max-w-none xl:max-w-[1400px] 2xl:max-w-[1600px]">
+              {children}
+            </div>
           </div>
         </main>
       </div>

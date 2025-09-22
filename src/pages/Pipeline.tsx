@@ -460,7 +460,7 @@ const Pipeline: React.FC = () => {
       <MainLayout module="crm">
         <div className="min-h-[calc(100vh-64px)] flex items-center justify-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <p className="ml-4 text-muted-foreground">Carregando pipeline...</p>
+          <p className="ml-4 text-muted-foreground">Carregando oportunidades...</p>
         </div>
       </MainLayout>
     );
@@ -559,11 +559,11 @@ const Pipeline: React.FC = () => {
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="active" className="flex items-center gap-2">
               <LayoutDashboardIcon className="h-4 w-4" />
-              Ativas ({ACTIVE_STATUSES.reduce((total, status) => total + (groupedProposals[status]?.length || 0), 0)})
+              Em Negociação ({ACTIVE_STATUSES.reduce((total, status) => total + (groupedProposals[status]?.length || 0), 0)})
             </TabsTrigger>
             <TabsTrigger value="closed" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Fechadas ({CLOSED_STATUSES.reduce((total, status) => total + (groupedProposals[status]?.length || 0), 0)})
+              Aprovadas ({CLOSED_STATUSES.reduce((total, status) => total + (groupedProposals[status]?.length || 0), 0)})
             </TabsTrigger>
           </TabsList>
 

@@ -5,9 +5,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useQuoteWizard } from '@/context/QuoteWizardContext';
 import { useGradientTheme } from '@/context/GradientThemeContext'; // To get gradient options
 import { useCurrency } from '@/context/CurrencyContext'; // Import useCurrency
+import { AlertCircle, CheckCircle, Info } from 'lucide-react';
 
 const StepSettings: React.FC = () => {
   const {
@@ -21,6 +23,28 @@ const StepSettings: React.FC = () => {
 
   const { gradientMap } = useGradientTheme(); // Get the gradient map for display
   const { formatCurrency } = useCurrency(); // Use formatCurrency from context
+
+  // Validação para campos de parcelamento
+  const isInstallmentValid = () => {
+    if (paymentType !== 'installment') return true;
+    return installmentValue > 0 || manualInstallmentTotal > 0;
+  };
+
+  const getInstallmentValidationMessage = () => {
+    if (paymentType !== 'installment') return null;
+    
+    if (installmentValue === 0 && (manualInstallmentTotal === null || manualInstallmentTotal === 0)) {
+      return {
+        type: 'warning' as const,
+        message: 'Para pagamento parcelado, preencha o valor da parcela ou o total parcelado manual para que as informações apareçam na proposta.'
+      };
+    }
+    
+    return {
+      type: 'success' as const,
+      message: 'Configuração de parcelamento completa! As informações serão exibidas na proposta.'
+    };
+  };
 
   return (
     <div className="space-y-6">
@@ -113,70 +137,92 @@ const StepSettings: React.FC = () => {
             </div>
 
             {paymentType === 'installment' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
-                <div>
-                  <Label htmlFor="installmentNumber">Número de Parcelas</Label>
-                  <Select 
-                    value={installmentNumber.toString()} 
-                    onValueChange={(value) => {
-                      setInstallmentNumber(parseInt(value));
-                      setManualInstallmentTotal(null);
-                    }}
-                  >
-                    <SelectTrigger className="bg-background border border-input">
-                      <SelectValue placeholder="Escolha as parcelas" />
-                    </SelectTrigger>
-                    <SelectContent className="z-50 bg-background border border-input shadow-lg">
-                      {Array.from({length: 11}, (_, i) => i + 2).map((num) => (
-                        <SelectItem key={num} value={num.toString()}>{num}x</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="installmentValue">Valor da Parcela ({formatCurrency(0).replace(/[\d.,]/g, '')})</Label>
-                  <Input
-                    id="installmentValue"
-                    type="number"
-                    value={installmentValue || ''}
-                    onChange={(e) => {
-                      setInstallmentValue(Number(e.target.value) || 0);
-                      setManualInstallmentTotal(null);
-                    }}
-                    placeholder="0,00"
-                    min="0"
-                  />
-                </div>
-                <div className="col-span-full">
-                  <Label htmlFor="manualInstallmentTotal">Total Parcelado Manual ({formatCurrency(0).replace(/[\d.,]/g, '')})</Label>
-                  <Input
-                    id="manualInstallmentTotal"
-                    type="number"
-                    value={manualInstallmentTotal !== null ? manualInstallmentTotal : ''}
-                    onChange={(e) => setManualInstallmentTotal(Number(e.target.value) || null)}
-                    placeholder="Opcional: Sobrescrever total"
-                    min="0"
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Preencha para definir um valor total parcelado exato, ignorando o cálculo automático.
-                  </p>
-                </div>
-                {getTotalInstallmentValue() > 0 && (
-                  <div className="col-span-full p-3 bg-background rounded border">
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span>Total parcelado:</span>
-                        <span className="font-semibold">{formatCurrency(getTotalInstallmentValue())}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Taxa de juros:</span>
-                        <span className={`font-semibold ${calculateInstallmentInterestRate() >= 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                          {calculateInstallmentInterestRate().toFixed(2)}%
-                        </span>
+              <div className="space-y-4">
+                {/* Alerta de validação */}
+                {getInstallmentValidationMessage() && (
+                  <Alert className={getInstallmentValidationMessage()?.type === 'warning' ? 'border-orange-200 bg-orange-50' : 'border-green-200 bg-green-50'}>
+                    {getInstallmentValidationMessage()?.type === 'warning' ? (
+                      <AlertCircle className="h-4 w-4 text-orange-600" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                    )}
+                    <AlertDescription className={getInstallmentValidationMessage()?.type === 'warning' ? 'text-orange-800' : 'text-green-800'}>
+                      {getInstallmentValidationMessage()?.message}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
+                  <div>
+                    <Label htmlFor="installmentNumber">Número de Parcelas *</Label>
+                    <Select 
+                      value={installmentNumber.toString()} 
+                      onValueChange={(value) => {
+                        setInstallmentNumber(parseInt(value));
+                        setManualInstallmentTotal(null);
+                      }}
+                    >
+                      <SelectTrigger className="bg-background border border-input">
+                        <SelectValue placeholder="Escolha as parcelas" />
+                      </SelectTrigger>
+                      <SelectContent className="z-50 bg-background border border-input shadow-lg">
+                        {Array.from({length: 11}, (_, i) => i + 2).map((num) => (
+                          <SelectItem key={num} value={num.toString()}>{num}x</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="installmentValue">Valor da Parcela ({formatCurrency(0).replace(/[\d.,]/g, '')}) *</Label>
+                    <Input
+                      id="installmentValue"
+                      type="number"
+                      value={installmentValue || ''}
+                      onChange={(e) => {
+                        setInstallmentValue(Number(e.target.value) || 0);
+                        setManualInstallmentTotal(null);
+                      }}
+                      placeholder="0,00"
+                      min="0"
+                      className={installmentValue === 0 ? 'border-orange-300 focus:border-orange-500' : ''}
+                    />
+                    {installmentValue === 0 && (
+                      <p className="text-xs text-orange-600 mt-1">
+                        ⚠️ Preencha o valor da parcela para exibir na proposta
+                      </p>
+                    )}
+                  </div>
+                  <div className="col-span-full">
+                    <Label htmlFor="manualInstallmentTotal">Total Parcelado Manual ({formatCurrency(0).replace(/[\d.,]/g, '')})</Label>
+                    <Input
+                      id="manualInstallmentTotal"
+                      type="number"
+                      value={manualInstallmentTotal !== null ? manualInstallmentTotal : ''}
+                      onChange={(e) => setManualInstallmentTotal(Number(e.target.value) || null)}
+                      placeholder="Opcional: Sobrescrever total"
+                      min="0"
+                    />
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Preencha para definir um valor total parcelado exato, ignorando o cálculo automático.
+                    </p>
+                  </div>
+                  {getTotalInstallmentValue() > 0 && (
+                    <div className="col-span-full p-3 bg-background rounded border">
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span>Total parcelado:</span>
+                          <span className="font-semibold">{formatCurrency(getTotalInstallmentValue())}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Taxa de juros:</span>
+                          <span className={`font-semibold ${calculateInstallmentInterestRate() >= 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                            {calculateInstallmentInterestRate().toFixed(2)}%
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
           </div>

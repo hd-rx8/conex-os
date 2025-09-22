@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import MainMainLayout from '@/components/MainMainLayout';
-import { Clipboard, Plus, Loader2, Calendar, Clock, ArrowLeft, Edit, Trash2 } from 'lucide-react';
+import MainLayout from '@/components/MainLayout';
+import { Clipboard, Plus, Loader2, Calendar, Clock, ArrowLeft, Edit, Trash2, User, Building, TrendingUp, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -145,165 +146,362 @@ const ProjectDetail: React.FC = () => {
     );
   }
 
+  const getProjectProgress = () => {
+    if (!tasks || tasks.length === 0) return 0;
+    const completedTasks = tasks.filter(task => task.status === 'Concluída').length;
+    return Math.round((completedTasks / tasks.length) * 100);
+  };
+
+  const getProjectStats = () => {
+    if (!tasks) return { total: 0, completed: 0, inProgress: 0, pending: 0 };
+    
+    return {
+      total: tasks.length,
+      completed: tasks.filter(task => task.status === 'Concluída').length,
+      inProgress: tasks.filter(task => task.status === 'Em Progresso').length,
+      pending: tasks.filter(task => task.status === 'Pendente').length
+    };
+  };
+
+  const stats = getProjectStats();
+
   return (
     <MainLayout module="work">
-      <div className="flex items-center mb-6">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate('/projects')}
-          className="mr-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar
-        </Button>
-        <PageHeader
-          title={project.title}
-          subtitle={project.description || 'Sem descrição'}
-          icon={Clipboard}
-          className="flex-1"
-        >
-          <div className="flex gap-2 mt-4 md:mt-0">
-            <Badge 
-              className={
-                project.status === 'Ativo' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
-                project.status === 'Concluído' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
-                'bg-gray-100 text-gray-800 hover:bg-gray-200'
-              }
-            >
-              {project.status}
-            </Badge>
-            
-            {project.status === 'Ativo' ? (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleUpdateProjectStatus('Concluído')}
-              >
-                Marcar como Concluído
-              </Button>
-            ) : project.status === 'Concluído' ? (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleUpdateProjectStatus('Ativo')}
-              >
-                Reativar Projeto
-              </Button>
-            ) : project.status === 'Arquivado' ? (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleUpdateProjectStatus('Ativo')}
-              >
-                Desarquivar
-              </Button>
-            ) : null}
-            
-            <Button 
-              variant="destructive" 
-              size="sm"
-              onClick={handleDeleteProject}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Excluir
-            </Button>
-          </div>
-        </PageHeader>
-      </div>
+      <div className="space-y-6">
+        {/* Header com navegação */}
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/projects')}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar para Projetos
+          </Button>
+        </div>
 
-      <div className="mb-6">
+        {/* Cabeçalho do Projeto */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Tarefas</CardTitle>
-            <CreateTaskModal 
-              projectId={projectId || ''}
-              onCreateTask={handleCreateTask}
-            >
-              <Button className="gradient-button-bg text-white">
-                <Plus className="w-4 h-4 mr-2" />
-                Nova Tarefa
-              </Button>
-            </CreateTaskModal>
+          <CardHeader>
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <Clipboard className="w-6 h-6 text-primary" />
+                  <h1 className="text-2xl font-bold">{project.title}</h1>
+                  <Badge 
+                    className={
+                      project.status === 'Ativo' ? 'bg-blue-100 text-blue-800' :
+                      project.status === 'Concluído' ? 'bg-green-100 text-green-800' :
+                      'bg-gray-100 text-gray-800'
+                    }
+                  >
+                    {project.status}
+                  </Badge>
+                </div>
+                {project.description && (
+                  <p className="text-muted-foreground">{project.description}</p>
+                )}
+              </div>
+              
+              <div className="flex gap-2">
+                {project.status === 'Ativo' ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleUpdateProjectStatus('Concluído')}
+                  >
+                    Marcar como Concluído
+                  </Button>
+                ) : project.status === 'Concluído' ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleUpdateProjectStatus('Ativo')}
+                  >
+                    Reativar Projeto
+                  </Button>
+                ) : null}
+                
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={handleDeleteProject}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Excluir
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="pendentes">
-              <TabsList className="mb-4">
-                <TabsTrigger value="pendentes">Pendentes ({getTasksByStatus('Pendente').length})</TabsTrigger>
-                <TabsTrigger value="em-progresso">Em Progresso ({getTasksByStatus('Em Progresso').length})</TabsTrigger>
-                <TabsTrigger value="concluidas">Concluídas ({getTasksByStatus('Concluída').length})</TabsTrigger>
-              </TabsList>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Responsável</p>
+                  <p className="font-medium">{project.app_users?.name || 'Não definido'}</p>
+                </div>
+              </div>
               
-              <TabsContent value="pendentes">
-                {tasksLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : getTasksByStatus('Pendente').length > 0 ? (
-                  <div className="space-y-3">
-                    {getTasksByStatus('Pendente').map(task => (
-                      <TaskCard 
-                        key={task.id} 
-                        task={task} 
-                        onStatusChange={handleUpdateTaskStatus}
-                        onDelete={handleDeleteTask}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">Não há tarefas pendentes.</p>
-                  </div>
-                )}
-              </TabsContent>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Criado em</p>
+                  <p className="font-medium">{format(parseISO(project.created_at), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                </div>
+              </div>
               
-              <TabsContent value="em-progresso">
-                {tasksLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : getTasksByStatus('Em Progresso').length > 0 ? (
-                  <div className="space-y-3">
-                    {getTasksByStatus('Em Progresso').map(task => (
-                      <TaskCard 
-                        key={task.id} 
-                        task={task} 
-                        onStatusChange={handleUpdateTaskStatus}
-                        onDelete={handleDeleteTask}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">Não há tarefas em progresso.</p>
-                  </div>
-                )}
-              </TabsContent>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Atualizado em</p>
+                  <p className="font-medium">{format(parseISO(project.updated_at), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                </div>
+              </div>
               
-              <TabsContent value="concluidas">
-                {tasksLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : getTasksByStatus('Concluída').length > 0 ? (
-                  <div className="space-y-3">
-                    {getTasksByStatus('Concluída').map(task => (
-                      <TaskCard 
-                        key={task.id} 
-                        task={task} 
-                        onStatusChange={handleUpdateTaskStatus}
-                        onDelete={handleDeleteTask}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">Não há tarefas concluídas.</p>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Progresso</p>
+                  <p className="font-medium">{getProjectProgress()}%</p>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
+
+        {/* Abas principais */}
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+            <TabsTrigger value="tasks">Tarefas ({stats.total})</TabsTrigger>
+            <TabsTrigger value="kanban">Kanban</TabsTrigger>
+          </TabsList>
+          
+          {/* Aba Visão Geral */}
+          <TabsContent value="overview" className="space-y-6">
+            {/* Estatísticas do Projeto */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total de Tarefas</CardTitle>
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.total}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Concluídas</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Em Progresso</CardTitle>
+                  <Clock className="h-4 w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">{stats.inProgress}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
+                  <Calendar className="h-4 w-4 text-yellow-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
+                </CardContent>
+              </Card>
+            </div>
+            
+            {/* Barra de Progresso */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Progresso do Projeto</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Progresso Geral</span>
+                    <span>{getProjectProgress()}%</span>
+                  </div>
+                  <Progress value={getProjectProgress()} className="w-full" />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Aba Tarefas */}
+          <TabsContent value="tasks">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Tarefas do Projeto</CardTitle>
+                <CreateTaskModal 
+                  projectId={projectId || ''}
+                  onCreateTask={handleCreateTask}
+                >
+                  <Button className="gradient-button-bg text-white">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nova Tarefa
+                  </Button>
+                </CreateTaskModal>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="pendentes">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="pendentes">Pendentes ({stats.pending})</TabsTrigger>
+                    <TabsTrigger value="em-progresso">Em Progresso ({stats.inProgress})</TabsTrigger>
+                    <TabsTrigger value="concluidas">Concluídas ({stats.completed})</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="pendentes">
+                    {tasksLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : getTasksByStatus('Pendente').length > 0 ? (
+                      <div className="space-y-3">
+                        {getTasksByStatus('Pendente').map(task => (
+                          <TaskCard 
+                            key={task.id} 
+                            task={task} 
+                            onStatusChange={handleUpdateTaskStatus}
+                            onDelete={handleDeleteTask}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">Não há tarefas pendentes.</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="em-progresso">
+                    {tasksLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : getTasksByStatus('Em Progresso').length > 0 ? (
+                      <div className="space-y-3">
+                        {getTasksByStatus('Em Progresso').map(task => (
+                          <TaskCard 
+                            key={task.id} 
+                            task={task} 
+                            onStatusChange={handleUpdateTaskStatus}
+                            onDelete={handleDeleteTask}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">Não há tarefas em progresso.</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="concluidas">
+                    {tasksLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : getTasksByStatus('Concluída').length > 0 ? (
+                      <div className="space-y-3">
+                        {getTasksByStatus('Concluída').map(task => (
+                          <TaskCard 
+                            key={task.id} 
+                            task={task} 
+                            onStatusChange={handleUpdateTaskStatus}
+                            onDelete={handleDeleteTask}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">Não há tarefas concluídas.</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Aba Kanban */}
+          <TabsContent value="kanban">
+            <Card>
+              <CardHeader>
+                <CardTitle>Quadro Kanban</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Coluna Pendente */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                      <h3 className="font-medium">Pendente ({stats.pending})</h3>
+                    </div>
+                    <div className="space-y-2 min-h-[200px]">
+                      {getTasksByStatus('Pendente').map(task => (
+                        <TaskCard 
+                          key={task.id} 
+                          task={task} 
+                          onStatusChange={handleUpdateTaskStatus}
+                          onDelete={handleDeleteTask}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Coluna Em Progresso */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                      <h3 className="font-medium">Em Progresso ({stats.inProgress})</h3>
+                    </div>
+                    <div className="space-y-2 min-h-[200px]">
+                      {getTasksByStatus('Em Progresso').map(task => (
+                        <TaskCard 
+                          key={task.id} 
+                          task={task} 
+                          onStatusChange={handleUpdateTaskStatus}
+                          onDelete={handleDeleteTask}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Coluna Concluída */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <h3 className="font-medium">Concluída ({stats.completed})</h3>
+                    </div>
+                    <div className="space-y-2 min-h-[200px]">
+                      {getTasksByStatus('Concluída').map(task => (
+                        <TaskCard 
+                          key={task.id} 
+                          task={task} 
+                          onStatusChange={handleUpdateTaskStatus}
+                          onDelete={handleDeleteTask}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </MainLayout>
   );

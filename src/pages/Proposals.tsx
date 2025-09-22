@@ -35,7 +35,7 @@ const ProposalForm = ({
   onCancel 
 }: { 
   proposal?: Proposal; 
-  allUsers: any[];
+  allUsers: { id: string; name: string }[];
   allClients: Client[]; // Type for allClients
   currentUserId: string;
   onSubmit: (data: CreateProposalData | UpdateProposalData) => void; 
@@ -244,7 +244,7 @@ export default function Proposals() {
 
   return (
     <MainLayout module="crm">
-      <div className="space-y-6 relative pb-20">
+      <div className="space-y-4 relative pb-20">
         {/* Floating Action Button */}
         <FloatingActionButton
           onClick={() => setIsCreateDialogOpen(true)}
@@ -271,7 +271,7 @@ export default function Proposals() {
         <Card>
           <CardHeader>
             <CardTitle>Lista de Propostas</CardTitle>
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-4">
               <div className="relative flex-1 min-w-64">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -282,59 +282,61 @@ export default function Proposals() {
                 />
               </div>
               
-              <Select 
-                value={filters.status || 'all'} 
-                onValueChange={(value) => setFilters(prev => ({ ...prev, status: value as any }))}
-              >
-                <SelectTrigger className="w-32">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="Criada">Criada</SelectItem>
-                  <SelectItem value="Enviada">Enviada</SelectItem>
-                  <SelectItem value="Negociando">Negociando</SelectItem>
-                  <SelectItem value="Aprovada">Aprovada</SelectItem>
-                  <SelectItem value="Rejeitada">Rejeitada</SelectItem>
-                  <SelectItem value="Rascunho">Rascunho</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex flex-wrap items-center gap-3">
+                <Select 
+                  value={filters.status || 'all'} 
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, status: value as Proposal['status'] }))}
+                >
+                  <SelectTrigger className="w-36">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="Criada">Criada</SelectItem>
+                    <SelectItem value="Enviada">Enviada</SelectItem>
+                    <SelectItem value="Negociando">Negociando</SelectItem>
+                    <SelectItem value="Aprovada">Aprovada</SelectItem>
+                    <SelectItem value="Rejeitada">Rejeitada</SelectItem>
+                    <SelectItem value="Rascunho">Rascunho</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              <Select 
-                value={filters.ownerId || 'all'} 
-                onValueChange={(value) => setFilters(prev => ({ ...prev, ownerId: value }))}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos Responsáveis</SelectItem>
-                  {allUsers.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Select 
+                  value={filters.ownerId || 'all'} 
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, ownerId: value }))}
+                >
+                  <SelectTrigger className="w-44">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos Responsáveis</SelectItem>
+                    {allUsers.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              <Badge variant="secondary">
-                {totalItems} proposta{totalItems !== 1 ? 's' : ''}
-              </Badge>
+                <Badge variant="secondary" className="whitespace-nowrap">
+                  {totalItems} proposta{totalItems !== 1 ? 's' : ''}
+                </Badge>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="border-r">Data</TableHead>
-                    <TableHead className="border-r">Título</TableHead>
-                    <TableHead className="border-r">Responsável</TableHead>
-                    <TableHead className="border-r">Cliente</TableHead>
-                    <TableHead className="border-r">Valor</TableHead>
-                    <TableHead className="border-r">Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                    <TableHead className="border-r min-w-[100px]">Data</TableHead>
+                    <TableHead className="border-r min-w-[200px]">Título</TableHead>
+                    <TableHead className="border-r min-w-[150px]">Responsável</TableHead>
+                    <TableHead className="border-r min-w-[150px]">Cliente</TableHead>
+                    <TableHead className="border-r min-w-[120px]">Valor</TableHead>
+                    <TableHead className="border-r min-w-[120px]">Status</TableHead>
+                    <TableHead className="text-right min-w-[120px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

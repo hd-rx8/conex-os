@@ -14,11 +14,13 @@ import {
   Menu,
   X,
   PanelLeftClose,
-  PanelLeft
+  PanelLeft,
+  Folder
 } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAppModule, AppModuleType } from '@/context/AppModuleContext';
+import { useProjects } from '@/hooks/useProjects';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import UserNav from './UserNav';
@@ -60,7 +62,7 @@ const NAV_CRM: NavigationItem[] = [
   },
   {
     id: 'pipeline',
-    label: 'Pipeline',
+    label: 'Oportunidades',
     icon: Kanban,
     path: '/pipeline'
   },
@@ -82,13 +84,19 @@ const NAV_CRM: NavigationItem[] = [
 const NAV_WORK: NavigationItem[] = [
   {
     id: 'projects-overview',
-    label: 'Visão Geral',
+    label: 'Dashboard',
     icon: LayoutDashboard,
     path: '/projects'
   },
   {
+    id: 'projects-folder',
+    label: 'Projetos',
+    icon: Folder,
+    children: [] // Será preenchido dinamicamente com os projetos
+  },
+  {
     id: 'my-tasks',
-    label: 'Minhas Tarefas',
+    label: 'Tarefas',
     icon: ClipboardList,
     path: '/projects/tasks'
   },
@@ -115,11 +123,32 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
   const location = useLocation();
   const isMobile = useIsMobile();
   const { activeModule } = useAppModule();
+  const { projects } = useProjects();
   
   // Seleciona os itens de navegação com base no módulo ativo
   const navigationItems = useMemo(() => {
-    return activeModule === 'crm' ? NAV_CRM : NAV_WORK;
-  }, [activeModule]);
+    if (activeModule === 'crm') {
+      return NAV_CRM;
+    }
+    
+    // Para o módulo Work Management, adiciona os projetos dinamicamente
+    const workItems = [...NAV_WORK];
+    const projectsFolderIndex = workItems.findIndex(item => item.id === 'projects-folder');
+    
+    if (projectsFolderIndex !== -1 && projects) {
+      workItems[projectsFolderIndex] = {
+        ...workItems[projectsFolderIndex],
+        children: projects.map(project => ({
+          id: `project-${project.id}`,
+          label: project.title,
+          icon: FolderOpen,
+          path: `/projects/${project.id}`
+        }))
+      };
+    }
+    
+    return workItems;
+  }, [activeModule, projects]);
   
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set([])

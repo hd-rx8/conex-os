@@ -71,7 +71,7 @@ const Layout = ({ children, module = 'crm' }: LayoutProps) => {
         className="flex items-center gap-2 w-full justify-start"
       >
         <Kanban className="w-4 h-4" />
-        Pipeline
+        Oportunidades
       </Button>
       <Button
         variant={isActive('/clients') ? 'default' : 'ghost'}
@@ -93,7 +93,7 @@ const Layout = ({ children, module = 'crm' }: LayoutProps) => {
         className="flex items-center gap-2 w-full justify-start"
       >
         <LayoutDashboard className="w-4 h-4" />
-        Visão Geral
+        Dashboard
       </Button>
       <Button
         variant={isActive('/projects/tasks') ? 'default' : 'ghost'}

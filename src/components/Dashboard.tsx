@@ -138,7 +138,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
   };
 
   return (
-    <div className="space-y-6 relative pb-20">
+    <div className="space-y-4 relative pb-20">
       {/* Floating Action Button */}
       <FloatingActionButton
         onClick={() => navigate('/generator')}
@@ -155,7 +155,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Período (Propostas)</label>
               <Select 
@@ -214,7 +214,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
       </Card>
 
       {/* Cards de Métricas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card className="hover:shadow-lg transition-shadow duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Propostas</CardTitle>
@@ -285,14 +285,14 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
       </div>
 
       {/* Gráficos: Barras (3/4) e Funil (1/4) */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
-        <div className="lg:col-span-3">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 mb-6">
+        <div className="xl:col-span-3">
           <DashboardBarChart 
             data={chartData} 
             isLoading={chartLoading} 
           />
         </div>
-        <div className="lg:col-span-1">
+        <div className="xl:col-span-1">
           <DashboardFunnelChart 
             data={funnelData}
             isLoading={isFunnelLoading}
@@ -310,12 +310,12 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="border-r">Data</TableHead>
-                  <TableHead className="border-r">Título</TableHead>
-                  <TableHead className="border-r">Cliente</TableHead>
-                  <TableHead className="border-r">Valor</TableHead>
-                  <TableHead className="border-r">Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="border-r min-w-[100px]">Data</TableHead>
+                  <TableHead className="border-r min-w-[200px]">Título</TableHead>
+                  <TableHead className="border-r min-w-[150px]">Cliente</TableHead>
+                  <TableHead className="border-r min-w-[120px]">Valor</TableHead>
+                  <TableHead className="border-r min-w-[120px]">Status</TableHead>
+                  <TableHead className="text-right min-w-[120px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

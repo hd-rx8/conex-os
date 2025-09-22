@@ -18,6 +18,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle, CheckCircle } from 'lucide-react';
 
 const StepReview: React.FC = () => {
   const { user } = useSession();
@@ -30,7 +32,7 @@ const StepReview: React.FC = () => {
     getSelectedPayment, getTotalInstallmentValue, notes, isValidityEnabled, validityDays,
     generateShareableLink, registerProposal,
     proposalTitle, proposalLogoUrl, proposalGradientTheme,
-    generatedShareLink, isGeneratingLink
+    generatedShareLink, isGeneratingLink, paymentType, installmentValue, manualInstallmentTotal
   } = useQuoteWizard();
 
   const [isRegistering, setIsRegistering] = React.useState(false);
@@ -77,6 +79,28 @@ const StepReview: React.FC = () => {
 
   const canProceed = selectedServices.length > 0 && clientInfo.name && clientInfo.email && proposalTitle;
 
+  // Validação para campos de parcelamento
+  const isInstallmentValid = () => {
+    if (paymentType !== 'installment') return true;
+    return installmentValue > 0 || manualInstallmentTotal > 0;
+  };
+
+  const getInstallmentStatusMessage = () => {
+    if (paymentType !== 'installment') return null;
+    
+    if (installmentValue === 0 && (manualInstallmentTotal === null || manualInstallmentTotal === 0)) {
+      return {
+        type: 'warning' as const,
+        message: '⚠️ Configuração de parcelamento incompleta: As informações de pagamento parcelado não aparecerão na proposta. Volte ao passo de configurações para preencher o valor da parcela.'
+      };
+    }
+    
+    return {
+      type: 'success' as const,
+      message: '✅ Configuração de parcelamento completa: As informações de pagamento parcelado serão exibidas na proposta.'
+    };
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -85,6 +109,20 @@ const StepReview: React.FC = () => {
           <CardDescription>Verifique todos os detalhes da proposta antes de salvar ou compartilhar.</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Alerta de status da configuração de pagamento */}
+          {getInstallmentStatusMessage() && (
+            <Alert className={getInstallmentStatusMessage()?.type === 'warning' ? 'border-orange-200 bg-orange-50 mb-6' : 'border-green-200 bg-green-50 mb-6'}>
+              {getInstallmentStatusMessage()?.type === 'warning' ? (
+                <AlertCircle className="h-4 w-4 text-orange-600" />
+              ) : (
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              )}
+              <AlertDescription className={getInstallmentStatusMessage()?.type === 'warning' ? 'text-orange-800' : 'text-green-800'}>
+                {getInstallmentStatusMessage()?.message}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {canProceed ? (
             <QuoteResult
               ref={quoteResultRef}
