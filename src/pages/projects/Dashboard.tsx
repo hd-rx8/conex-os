@@ -29,7 +29,7 @@ const ProjectSkeleton = () => (
   </TableRow>
 );
 
-const ProjectsOverview: React.FC = () => {
+const Dashboard: React.FC = () => {
   const { projects, loading, error, createProject, updateProject, deleteProject, refetch } = useProjects();
   const { tasks, loading: tasksLoading } = useTasks(); // Para contar tarefas
   const navigate = useNavigate();
@@ -432,4 +432,4 @@ const ProjectsOverview: React.FC = () => {
   );
 };
 
-export default ProjectsOverview;
+export default Dashboard;

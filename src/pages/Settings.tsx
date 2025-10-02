@@ -5,14 +5,16 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { useGradientTheme } from '@/context/GradientThemeContext';
-import { useCurrency, currencies, CurrencyCode } from '@/context/CurrencyContext'; // Import currency context and types
+import { useCurrency, currencies, CurrencyCode } from '@/context/CurrencyContext';
+import { useAppModule } from '@/context/AppModuleContext';
 
 const Settings = () => {
   const { currentGradientTheme, setGradientTheme } = useGradientTheme();
-  const { selectedCurrency, setSelectedCurrencyCode } = useCurrency(); // Use currency context
+  const { selectedCurrency, setSelectedCurrencyCode } = useCurrency();
+  const { activeModule } = useAppModule();
 
   return (
-    <MainLayout module="crm">
+    <MainLayout module={activeModule}>
       <div className="space-y-6 mt-6">
 
         <Card>

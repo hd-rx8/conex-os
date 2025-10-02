@@ -9,17 +9,19 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Users from "./pages/Users";
-import Proposals from "./pages/Proposals";
-import ProposalPrint from "./pages/ProposalPrint";
-import Clients from "./pages/Clients";
-import Pipeline from "./pages/Pipeline";
-import QuoteGeneratorPage from "./pages/QuoteGeneratorPage";
 import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
 import ResetPassword from "./pages/ResetPassword";
-import PublicProposalView from "./pages/PublicProposalView";
+// Importar as páginas do módulo CRM
+import Proposals from "./pages/crm/Proposals";
+import ProposalPrint from "./pages/crm/ProposalPrint";
+import Clients from "./pages/crm/Clients";
+import Pipeline from "./pages/crm/Pipeline";
+import QuoteGeneratorPage from "./pages/crm/QuoteGeneratorPage";
+import PublicProposalView from "./pages/crm/PublicProposalView";
 // Importar as páginas do módulo de projetos
-import ProjectsOverview from "./pages/projects/ProjectsOverview";
+import ProjectsDashboard from "./pages/projects/Dashboard";
+import ProjectsList from "./pages/projects/ProjectsList";
 import ProjectDetail from "./pages/projects/ProjectDetail";
 import TasksBoard from "./pages/projects/TasksBoard";
 import MyTasks from "./pages/projects/MyTasks";
@@ -112,45 +114,55 @@ const AppContent = () => {
         />
 
         {/* Rotas do módulo de Projetos */}
-        <Route 
-          path="/projects" 
+        <Route
+          path="/projects"
           element={
             user ? (
               <ModuleProtectedRoute requiredModule="work" redirectTo="/">
-                <ProjectsOverview />
+                <ProjectsDashboard />
               </ModuleProtectedRoute>
             ) : <Navigate to="/login" replace />
-          } 
+          }
         />
-        <Route 
-          path="/projects/:projectId" 
+        <Route
+          path="/projects/list"
+          element={
+            user ? (
+              <ModuleProtectedRoute requiredModule="work" redirectTo="/">
+                <ProjectsList />
+              </ModuleProtectedRoute>
+            ) : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/projects/:projectId"
           element={
             user ? (
               <ModuleProtectedRoute requiredModule="work" redirectTo="/">
                 <ProjectDetail />
               </ModuleProtectedRoute>
             ) : <Navigate to="/login" replace />
-          } 
+          }
         />
-        <Route 
-          path="/projects/tasks" 
+        <Route
+          path="/projects/tasks"
           element={
             user ? (
               <ModuleProtectedRoute requiredModule="work" redirectTo="/">
                 <MyTasks />
               </ModuleProtectedRoute>
             ) : <Navigate to="/login" replace />
-          } 
+          }
         />
-        <Route 
-          path="/projects/board" 
+        <Route
+          path="/projects/board"
           element={
             user ? (
               <ModuleProtectedRoute requiredModule="work" redirectTo="/">
                 <TasksBoard />
               </ModuleProtectedRoute>
             ) : <Navigate to="/login" replace />
-          } 
+          }
         />
 
         {/* Rotas de autenticação */}

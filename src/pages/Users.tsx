@@ -14,6 +14,7 @@ import { useForm } from 'react-hook-form';
 import MainLayout from '@/components/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
 import FloatingActionButton from '@/components/FloatingActionButton';
+import { useAppModule } from '@/context/AppModuleContext';
 
 interface UserFormData {
   name: string;
@@ -96,6 +97,7 @@ const UserSkeleton = () => (
 
 export default function Users() {
   const { user: currentUser } = useSession();
+  const { activeModule } = useAppModule();
   const {
     users,
     loading,
@@ -162,7 +164,7 @@ export default function Users() {
   };
 
   return (
-    <MainLayout module="crm">
+    <MainLayout module={activeModule}>
       <div className="space-y-6 relative pb-20">
         {/* Floating Action Button */}
         <FloatingActionButton

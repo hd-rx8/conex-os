@@ -20,7 +20,6 @@ import {
 import { useSession } from '@/hooks/useSession';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAppModule, AppModuleType } from '@/context/AppModuleContext';
-import { useProjects } from '@/hooks/useProjects';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import UserNav from './UserNav';
@@ -89,10 +88,10 @@ const NAV_WORK: NavigationItem[] = [
     path: '/projects'
   },
   {
-    id: 'projects-folder',
+    id: 'projects-list',
     label: 'Projetos',
-    icon: Folder,
-    children: [] // Será preenchido dinamicamente com os projetos
+    icon: FolderOpen,
+    path: '/projects/list'
   },
   {
     id: 'my-tasks',
@@ -123,32 +122,14 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
   const location = useLocation();
   const isMobile = useIsMobile();
   const { activeModule } = useAppModule();
-  const { projects } = useProjects();
   
   // Seleciona os itens de navegação com base no módulo ativo
   const navigationItems = useMemo(() => {
     if (activeModule === 'crm') {
       return NAV_CRM;
     }
-    
-    // Para o módulo Work Management, adiciona os projetos dinamicamente
-    const workItems = [...NAV_WORK];
-    const projectsFolderIndex = workItems.findIndex(item => item.id === 'projects-folder');
-    
-    if (projectsFolderIndex !== -1 && projects) {
-      workItems[projectsFolderIndex] = {
-        ...workItems[projectsFolderIndex],
-        children: projects.map(project => ({
-          id: `project-${project.id}`,
-          label: project.title,
-          icon: FolderOpen,
-          path: `/projects/${project.id}`
-        }))
-      };
-    }
-    
-    return workItems;
-  }, [activeModule, projects]);
+    return NAV_WORK;
+  }, [activeModule]);
   
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set([])
