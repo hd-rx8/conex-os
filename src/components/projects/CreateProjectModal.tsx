@@ -39,15 +39,23 @@ type FormData = z.infer<typeof formSchema>;
 interface CreateProjectModalProps {
   onCreateProject: (data: CreateProjectData) => Promise<void>;
   children?: React.ReactNode;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ 
-  onCreateProject, 
-  children 
+const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
+  onCreateProject,
+  children,
+  isOpen: externalIsOpen,
+  onClose: externalOnClose
 }) => {
   const { user } = useSession();
-  const [open, setOpen] = React.useState(false);
+  const [internalOpen, setInternalOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  // Use external control if provided, otherwise use internal state
+  const open = externalIsOpen !== undefined ? externalIsOpen : internalOpen;
+  const setOpen = externalOnClose !== undefined ? externalOnClose : setInternalOpen;
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -74,7 +82,12 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
 
       toast.success('Projeto criado com sucesso!');
       form.reset();
-      setOpen(false);
+      // Close modal using appropriate method
+      if (externalOnClose) {
+        externalOnClose();
+      } else {
+        setInternalOpen(false);
+      }
     } catch (error) {
       console.error('Erro ao criar projeto:', error);
       toast.error('Erro ao criar projeto. Tente novamente.');
@@ -83,11 +96,22 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     }
   };
 
+  const handleOpenChange = (newOpen: boolean) => {
+    if (externalOnClose && !newOpen) {
+      externalOnClose();
+    } else {
+      setInternalOpen(newOpen);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      {/* Only render trigger if using internal control */}
+      {externalIsOpen === undefined && children && (
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Criar Novo Projeto</DialogTitle>
@@ -131,10 +155,10 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             />
 
             <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setOpen(false)}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
                 disabled={isSubmitting}
               >
                 Cancelar

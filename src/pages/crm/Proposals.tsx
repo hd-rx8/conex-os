@@ -12,7 +12,7 @@ import { useUsers } from '@/hooks/useUsers';
 import { useClients, Client } from '@/hooks/useClients'; // Import useClients and Client
 import { useSession } from '@/hooks/useSession';
 import { FileText as FileTextIcon, Search, Edit, Copy, Trash2, Plus, Filter, Printer } from 'lucide-react';
-import FloatingActionButton from '@/components/FloatingActionButton'; 
+ 
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import MainLayout from '@/components/MainLayout';
@@ -245,28 +245,6 @@ export default function Proposals() {
   return (
     <MainLayout module="crm">
       <div className="space-y-4 relative pb-20">
-        {/* Floating Action Button */}
-        <FloatingActionButton
-          onClick={() => setIsCreateDialogOpen(true)}
-          tooltip="Criar Nova Proposta"
-          icon={Plus}
-        />
-        
-        {/* Dialog moved outside FAB */}
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Criar Nova Proposta</DialogTitle>
-            </DialogHeader>
-            <ProposalForm 
-              allUsers={allUsers}
-              allClients={allClients}
-              currentUserId={currentUser?.id || ''}
-              onSubmit={handleCreateProposal}
-              onCancel={() => setIsCreateDialogOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
 
         <Card>
           <CardHeader>

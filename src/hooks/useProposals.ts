@@ -39,6 +39,7 @@ export interface Proposal {
   owner: string;
   created_at: string;
   updated_at: string;
+  approved_at: string | null; // NEW: approved_at timestamp
   share_token: string | null;
   notes: string | null; // Added notes field
   expected_close_date: string | null; // NEW: expected_close_date
@@ -96,7 +97,10 @@ export interface ProposalFilters {
   search?: string;
   sortBy?: 'created_at' | 'amount';
   sortOrder?: 'asc' | 'desc';
-  period?: 'today' | '7days' | '30days' | 'all';
+  period?: 'today' | '7days' | '30days' | 'currentMonth' | 'all' | 'custom';
+  dateField?: 'created_at' | 'approved_at'; // NEW: choose which date to filter
+  customStartDate?: string; // NEW: custom date range start
+  customEndDate?: string; // NEW: custom date range end
 }
 
 export interface DashboardMetrics {
@@ -121,7 +125,10 @@ export const useProposals = () => {
     search: '',
     sortBy: 'created_at',
     sortOrder: 'desc',
-    period: 'all'
+    period: 'all',
+    dateField: 'created_at', // Default to creation date
+    customStartDate: undefined,
+    customEndDate: undefined
   });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -155,22 +162,53 @@ export const useProposals = () => {
           query = query.or(`title.ilike.%${filters.search}%,clients.name.ilike.%${filters.search}%`);
         }
 
+        // Date filtering logic
         if (filters.period !== 'all') {
           const now = new Date();
-          let filterDate = new Date();
+          const dateField = filters.dateField || 'created_at';
+          let filterStartDate: Date | null = null;
+          let filterEndDate: Date | null = null;
 
           switch (filters.period) {
             case 'today':
-              filterDate.setHours(0, 0, 0, 0);
+              filterStartDate = new Date();
+              filterStartDate.setHours(0, 0, 0, 0);
+              filterEndDate = new Date();
+              filterEndDate.setHours(23, 59, 59, 999);
               break;
             case '7days':
-              filterDate.setDate(now.getDate() - 7);
+              filterStartDate = new Date();
+              filterStartDate.setDate(now.getDate() - 7);
+              filterStartDate.setHours(0, 0, 0, 0);
               break;
             case '30days':
-              filterDate.setDate(now.getDate() - 30);
+              filterStartDate = new Date();
+              filterStartDate.setDate(now.getDate() - 30);
+              filterStartDate.setHours(0, 0, 0, 0);
+              break;
+            case 'currentMonth':
+              filterStartDate = startOfMonth(now);
+              filterEndDate = endOfMonth(now);
+              break;
+            case 'custom':
+              if (filters.customStartDate) {
+                filterStartDate = new Date(filters.customStartDate);
+                filterStartDate.setHours(0, 0, 0, 0);
+              }
+              if (filters.customEndDate) {
+                filterEndDate = new Date(filters.customEndDate);
+                filterEndDate.setHours(23, 59, 59, 999);
+              }
               break;
           }
-          query = query.gte('created_at', filterDate.toISOString());
+
+          // Apply date filters based on selected date field
+          if (filterStartDate) {
+            query = query.gte(dateField, filterStartDate.toISOString());
+          }
+          if (filterEndDate) {
+            query = query.lte(dateField, filterEndDate.toISOString());
+          }
         }
 
         if (filters.sortBy) {
@@ -516,24 +554,30 @@ export const useProposals = () => {
     }
   };
 
-  // Calculate dashboard metrics
+  // Calculate dashboard metrics based on FILTERED proposals (not paginated)
   const metrics = useMemo((): DashboardMetrics => {
     const now = new Date();
     const thisMonthStart = startOfMonth(now);
-    
-    // Total proposals count
+
+    // Total proposals count (filtered)
     const total = proposals.length;
 
-    // Total value across all proposals
+    // Total value across FILTERED proposals
     const totalValue = proposals.reduce((sum, p) => sum + Number(p.amount), 0);
 
-    // Total approved value in current month
+    // Total approved value in current CALENDAR month (always uses current month, not filtered period)
     const approvedThisMonth = proposals
-      .filter(p => p.status === 'Aprovada' && new Date(p.created_at) >= thisMonthStart)
+      .filter(p => {
+        if (p.status !== 'Aprovada') return false;
+
+        // Use approved_at if available, otherwise fallback to created_at
+        const dateToCheck = p.approved_at ? new Date(p.approved_at) : new Date(p.created_at);
+        return dateToCheck >= thisMonthStart && dateToCheck <= now;
+      })
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
     const approvedProposals = proposals.filter(p => p.status === 'Aprovada');
-    
+
     return {
       totalProposals: total,
       totalValue: totalValue,

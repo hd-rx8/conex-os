@@ -49,7 +49,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
 const DashboardBarChart: React.FC<DashboardBarChartProps> = ({ 
   data, 
   isLoading,
-  title = "Propostas por Mês (Valor Gerado vs. Fechado)"
+  title = "Oportunidades por Mês (Valor Gerado vs. Fechado)"
 }) => {
   const { formatCurrency } = useCurrency();
 

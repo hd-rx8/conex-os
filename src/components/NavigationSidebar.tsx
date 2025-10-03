@@ -49,21 +49,15 @@ const NAV_CRM: NavigationItem[] = [
   },
   {
     id: 'generator',
-    label: 'Gerador',
+    label: 'Gerador de Propostas',
     icon: Calculator,
     path: '/generator'
   },
   {
-    id: 'proposals',
-    label: 'Propostas',
-    icon: FileText,
-    path: '/proposals'
-  },
-  {
-    id: 'pipeline',
+    id: 'opportunities',
     label: 'Oportunidades',
     icon: Kanban,
-    path: '/pipeline'
+    path: '/opportunities'
   },
   {
     id: 'clients',

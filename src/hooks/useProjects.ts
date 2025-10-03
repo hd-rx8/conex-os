@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
@@ -22,32 +22,26 @@ export type UpdateProjectData = Partial<{
 }>;
 
 export const useProjects = () => {
-  const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
 
   // Fetch all projects for the current user
-  const { data: projects, error, refetch } = useQuery({
+  const { data: projects, error, refetch, isLoading } = useQuery({
     queryKey: ['projects'],
     queryFn: async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('projects')
-          .select(`
-            *,
-            app_users (
-              id,
-              name,
-              email
-            )
-          `)
-          .order('updated_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('projects')
+        .select(`
+          *,
+          app_users (
+            id,
+            name,
+            email
+          )
+        `)
+        .order('updated_at', { ascending: false });
 
-        if (error) throw error;
-        return data as Project[];
-      } finally {
-        setLoading(false);
-      }
+      if (error) throw error;
+      return data as Project[];
     },
   });
 
@@ -139,7 +133,7 @@ export const useProjects = () => {
 
   return {
     projects,
-    loading,
+    loading: isLoading,
     error,
     refetch,
     createProject,

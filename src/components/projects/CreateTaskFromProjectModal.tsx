@@ -52,26 +52,42 @@ interface CreateTaskFromProjectModalProps {
   projects: Project[];
   onCreateTask: (data: CreateTaskData) => Promise<void>;
   children?: React.ReactNode;
+  preselectedProjectId?: string;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-const CreateTaskFromProjectModal: React.FC<CreateTaskFromProjectModalProps> = ({ 
+const CreateTaskFromProjectModal: React.FC<CreateTaskFromProjectModalProps> = ({
   projects,
-  onCreateTask, 
-  children 
+  onCreateTask,
+  children,
+  preselectedProjectId,
+  isOpen: externalIsOpen,
+  onClose: externalOnClose
 }) => {
   const { user } = useSession();
-  const [open, setOpen] = React.useState(false);
+  const [internalOpen, setInternalOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  // Use external control if provided, otherwise use internal state
+  const open = externalIsOpen !== undefined ? externalIsOpen : internalOpen;
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
       description: '',
-      project_id: '',
+      project_id: preselectedProjectId || '',
       due_date: undefined,
     },
   });
+
+  // Update form when preselected project changes
+  React.useEffect(() => {
+    if (preselectedProjectId) {
+      form.setValue('project_id', preselectedProjectId);
+    }
+  }, [preselectedProjectId, form]);
 
   const handleSubmit = async (data: FormData) => {
     if (!user) {
@@ -92,7 +108,12 @@ const CreateTaskFromProjectModal: React.FC<CreateTaskFromProjectModalProps> = ({
 
       toast.success('Tarefa criada com sucesso!');
       form.reset();
-      setOpen(false);
+      // Close modal using appropriate method
+      if (externalOnClose) {
+        externalOnClose();
+      } else {
+        setInternalOpen(false);
+      }
     } catch (error) {
       console.error('Erro ao criar tarefa:', error);
       toast.error('Erro ao criar tarefa. Tente novamente.');
@@ -101,11 +122,22 @@ const CreateTaskFromProjectModal: React.FC<CreateTaskFromProjectModalProps> = ({
     }
   };
 
+  const handleOpenChange = (newOpen: boolean) => {
+    if (externalOnClose && !newOpen) {
+      externalOnClose();
+    } else {
+      setInternalOpen(newOpen);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      {/* Only render trigger if using internal control */}
+      {externalIsOpen === undefined && children && (
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Criar Nova Tarefa</DialogTitle>
@@ -216,10 +248,10 @@ const CreateTaskFromProjectModal: React.FC<CreateTaskFromProjectModalProps> = ({
             />
 
             <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setOpen(false)}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
                 disabled={isSubmitting}
               >
                 Cancelar

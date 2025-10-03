@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
@@ -25,44 +24,38 @@ export type UpdateTaskData = Partial<{
 }>;
 
 export const useTasks = (projectId?: string) => {
-  const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
 
   // Fetch tasks, optionally filtered by projectId
-  const { data: tasks, error, refetch } = useQuery({
+  const { data: tasks, error, refetch, isLoading } = useQuery({
     queryKey: ['tasks', projectId],
     queryFn: async () => {
-      setLoading(true);
-      try {
-        let query = supabase
-          .from('tasks')
-          .select(`
-            *,
-            app_users (
-              id,
-              name,
-              email
-            ),
-            projects (
-              id,
-              title,
-              status
-            )
-          `)
-          .order('due_date', { ascending: true });
-        
-        // Filter by project_id if provided
-        if (projectId) {
-          query = query.eq('project_id', projectId);
-        }
+      let query = supabase
+        .from('tasks')
+        .select(`
+          *,
+          app_users (
+            id,
+            name,
+            email
+          ),
+          projects (
+            id,
+            title,
+            status
+          )
+        `)
+        .order('due_date', { ascending: true });
 
-        const { data, error } = await query;
-
-        if (error) throw error;
-        return data as Task[];
-      } finally {
-        setLoading(false);
+      // Filter by project_id if provided
+      if (projectId) {
+        query = query.eq('project_id', projectId);
       }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      return data as Task[];
     },
     enabled: true, // Always fetch tasks, even if projectId is undefined
   });
@@ -165,7 +158,7 @@ export const useTasks = (projectId?: string) => {
 
   return {
     tasks,
-    loading,
+    loading: isLoading,
     error,
     refetch,
     createTask,

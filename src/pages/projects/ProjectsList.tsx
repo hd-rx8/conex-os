@@ -12,7 +12,6 @@ import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import CreateProjectModal from '@/components/projects/CreateProjectModal';
-import FloatingActionButton from '@/components/FloatingActionButton';
 import useProjects, { CreateProjectData } from '@/hooks/useProjects';
 import useTasks from '@/hooks/useTasks';
 import { useNavigate } from 'react-router-dom';
@@ -146,17 +145,6 @@ const ProjectsList: React.FC = () => {
   return (
     <MainLayout module="work">
       <div className="relative pb-20">
-        <FloatingActionButton
-          onClick={() => setIsCreateModalOpen(true)}
-          tooltip="Criar Novo Projeto"
-          icon={Plus}
-        />
-
-        <CreateProjectModal
-          isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
-          onCreateProject={handleCreateProject}
-        />
 
         <div className="space-y-4 mb-6">
           <h1 className="text-3xl font-bold tracking-tight">Projetos</h1>

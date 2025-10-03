@@ -13,10 +13,9 @@ import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
 import ResetPassword from "./pages/ResetPassword";
 // Importar as páginas do módulo CRM
-import Proposals from "./pages/crm/Proposals";
+import Opportunities from "./pages/crm/Opportunities";
 import ProposalPrint from "./pages/crm/ProposalPrint";
 import Clients from "./pages/crm/Clients";
-import Pipeline from "./pages/crm/Pipeline";
 import QuoteGeneratorPage from "./pages/crm/QuoteGeneratorPage";
 import PublicProposalView from "./pages/crm/PublicProposalView";
 // Importar as páginas do módulo de projetos
@@ -32,6 +31,7 @@ import { ThemeProvider } from "next-themes";
 import { GradientThemeProvider } from "./context/GradientThemeContext";
 import { CurrencyProvider } from "./context/CurrencyContext";
 import { QuoteWizardProvider } from "./context/QuoteWizardContext";
+import { ActiveProjectProvider } from "./context/ActiveProjectContext";
 
 const queryClient = new QueryClient();
 
@@ -78,36 +78,29 @@ const AppContent = () => {
             ) : <Navigate to="/login" replace />
           } 
         />
-        <Route 
-          path="/proposals" 
+        <Route
+          path="/opportunities"
           element={
             user ? (
               <ModuleProtectedRoute requiredModule="crm" redirectTo="/projects">
-                <Proposals />
+                <Opportunities />
               </ModuleProtectedRoute>
             ) : <Navigate to="/login" replace />
-          } 
+          }
         />
-        <Route 
-          path="/proposals/:id/print" 
+        <Route
+          path="/proposals/:id/print"
           element={
             user ? (
               <ModuleProtectedRoute requiredModule="crm" redirectTo="/projects">
                 <ProposalPrint />
               </ModuleProtectedRoute>
             ) : <Navigate to="/login" replace />
-          } 
+          }
         />
-        <Route 
-          path="/pipeline"
-          element={
-            user ? (
-              <ModuleProtectedRoute requiredModule="crm" redirectTo="/projects">
-                <Pipeline />
-              </ModuleProtectedRoute>
-            ) : <Navigate to="/login" replace />
-          } 
-        />
+        {/* Redirect old routes to new unified page */}
+        <Route path="/proposals" element={<Navigate to="/opportunities" replace />} />
+        <Route path="/pipeline" element={<Navigate to="/opportunities" replace />} />
         <Route 
           path="/settings"
           element={user ? <Settings /> : <Navigate to="/login" replace />} 
@@ -198,7 +191,9 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <AppModuleProvider>
-                <AppContent />
+                <ActiveProjectProvider>
+                  <AppContent />
+                </ActiveProjectProvider>
               </AppModuleProvider>
             </BrowserRouter>
           </TooltipProvider>

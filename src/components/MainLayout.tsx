@@ -9,6 +9,7 @@ import { ThemeToggle } from './ThemeToggle';
 import AppSwitcher from './AppSwitcher';
 import UserNav from './UserNav';
 import { useSession } from '@/hooks/useSession';
+import GlobalFAB from './GlobalFAB';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -103,9 +104,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, module }) => {
             <AppSwitcher />
             <ThemeToggle />
             {isMobile && (
-              <UserNav 
-                userName={user?.user_metadata?.full_name} 
-                userEmail={user?.email} 
+              <UserNav
+                userName={user?.user_metadata?.full_name}
+                userEmail={user?.email}
                 avatarUrl={user?.user_metadata?.avatar_url}
               />
             )}
@@ -121,6 +122,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, module }) => {
           </div>
         </main>
       </div>
+
+      {/* Global Contextual FAB */}
+      <GlobalFAB />
     </div>
   );
 };

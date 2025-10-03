@@ -20,6 +20,7 @@ interface FunnelStage {
 interface FunnelData {
   name: string;
   value: number;
+  actualValue: number; // Real count for tooltip
   valueSum: number;
   color: string;
 }
@@ -44,9 +45,28 @@ const DashboardFunnelChart: React.FC<DashboardFunnelChartProps> = ({
     }
   };
 
-  const funnelData: FunnelData[] = data.map(stage => ({
+  // Normalize values to maintain funnel shape even with similar numbers
+  const normalizeValue = (value: number, index: number, total: number): number => {
+    if (total === 0) return 0;
+
+    // Calculate actual percentage
+    const percentage = (value / total) * 100;
+
+    // Apply minimum width based on funnel position to maintain shape
+    // Top stage: 100%, Middle: minimum 60%, Bottom: minimum 40%
+    const minPercentages = [100, 60, 40];
+    const minPercentage = minPercentages[index] || 40;
+
+    // Ensure visual distinction but maintain funnel shape
+    return Math.max(percentage, minPercentage);
+  };
+
+  const maxCount = Math.max(...data.map(d => d.count), 1);
+
+  const funnelData: FunnelData[] = data.map((stage, index) => ({
     name: `${stage.stage} (${stage.count})`,
-    value: stage.count,
+    value: normalizeValue(stage.count, index, maxCount),
+    actualValue: stage.count, // Keep actual value for tooltip
     valueSum: stage.valueSum,
     color: getStageColor(stage.stage)
   }));
@@ -55,21 +75,21 @@ const DashboardFunnelChart: React.FC<DashboardFunnelChartProps> = ({
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       const stageName = data.name.split(' (')[0]; // Extrair apenas o nome do estágio sem o contador
-      
+
       return (
         <div className="bg-background border rounded-md shadow-md p-3">
           <p className="font-medium text-sm mb-1">{stageName}</p>
           <div className="flex items-center gap-2 text-sm mb-1">
-            <div 
-              className="w-3 h-3 rounded-full" 
+            <div
+              className="w-3 h-3 rounded-full"
               style={{ backgroundColor: data.color }}
             />
             <span className="text-muted-foreground">Propostas:</span>
-            <span className="font-medium">{data.value}</span>
+            <span className="font-medium">{data.actualValue}</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <div 
-              className="w-3 h-3 rounded-full opacity-0" 
+            <div
+              className="w-3 h-3 rounded-full opacity-0"
             />
             <span className="text-muted-foreground">Valor Total:</span>
             <span className="font-medium">{formatCurrency(data.valueSum)}</span>

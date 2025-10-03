@@ -13,7 +13,6 @@ import { cn } from '@/lib/utils';
 import useProjects from '@/hooks/useProjects';
 import useTasks, { Task } from '@/hooks/useTasks';
 import CreateTaskFromProjectModal from '@/components/projects/CreateTaskFromProjectModal';
-import FloatingActionButton from '@/components/FloatingActionButton';
 
 const TasksBoard: React.FC = () => {
   const { projects } = useProjects();
@@ -121,17 +120,6 @@ const TasksBoard: React.FC = () => {
   return (
     <MainLayout module="work">
       <div className="relative pb-20">
-        {/* Floating Action Button */}
-        <CreateTaskFromProjectModal 
-          projects={projects || []}
-          onCreateTask={handleCreateTask}
-        >
-          <FloatingActionButton
-            onClick={() => {}}
-            tooltip="Criar Nova Tarefa"
-            icon={Plus}
-          />
-        </CreateTaskFromProjectModal>
 
         {/* Filtros */}
         <div className="mt-6 flex gap-4">

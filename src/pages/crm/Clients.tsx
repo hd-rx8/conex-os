@@ -22,7 +22,6 @@ import { ptBR } from 'date-fns/locale'; // Import ptBR locale
 import { useCurrency } from '@/context/CurrencyContext';
 import EditableField from '@/components/EditableField';
 import { useNavigate } from 'react-router-dom';
-import FloatingActionButton from '@/components/FloatingActionButton';
 
 // Zod schema for client form validation
 const clientSchema = z.object({
@@ -271,25 +270,6 @@ export default function Clients() {
   return (
     <MainLayout module="crm">
       <div className="space-y-6 relative pb-20">
-        {/* Floating Action Button */}
-        <FloatingActionButton
-          onClick={() => setIsCreateDialogOpen(true)}
-          tooltip="Criar Novo Cliente"
-          icon={UserPlus}
-        />
-        
-        {/* Dialog moved outside FAB */}
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Criar Novo Cliente</DialogTitle>
-            </DialogHeader>
-            <ClientForm 
-              onSubmit={handleCreateClient}
-              onCancel={() => setIsCreateDialogOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
 
         <Card>
           <CardHeader>

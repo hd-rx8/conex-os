@@ -55,7 +55,7 @@ const Layout = ({ children, module = 'crm' }: LayoutProps) => {
         className="flex items-center gap-2 w-full justify-start"
       >
         <Calculator className="w-4 h-4" />
-        Gerador
+        Gerador de Propostas
       </Button>
       <Button
         variant={isActive('/proposals') ? 'default' : 'ghost'}

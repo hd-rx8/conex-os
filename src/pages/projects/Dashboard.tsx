@@ -13,7 +13,6 @@ import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import CreateProjectModal from '@/components/projects/CreateProjectModal';
 import ProjectsChart from '@/components/projects/ProjectsChart';
-import FloatingActionButton from '@/components/FloatingActionButton';
 import useProjects, { CreateProjectData, Project } from '@/hooks/useProjects';
 import useTasks from '@/hooks/useTasks';
 import { useNavigate } from 'react-router-dom';
@@ -31,9 +30,9 @@ const ProjectSkeleton = () => (
 
 const Dashboard: React.FC = () => {
   const { projects, loading, error, createProject, updateProject, deleteProject, refetch } = useProjects();
-  const { tasks, loading: tasksLoading } = useTasks(); // Para contar tarefas
+  const { tasks, loading: tasksLoading } = useTasks();
   const navigate = useNavigate();
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState<'created_at' | 'updated_at' | 'title'>('updated_at');
@@ -163,19 +162,6 @@ const Dashboard: React.FC = () => {
   return (
     <MainLayout module="work">
       <div className="relative pb-20">
-        {/* Floating Action Button */}
-        <FloatingActionButton
-          onClick={() => setIsCreateModalOpen(true)}
-          tooltip="Criar Novo Projeto"
-          icon={Plus}
-        />
-        
-        {/* Create Project Modal */}
-        <CreateProjectModal 
-          isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
-          onCreateProject={handleCreateProject}
-        />
 
         {/* Título da Página */}
         <div className="space-y-4">
@@ -260,10 +246,10 @@ const Dashboard: React.FC = () => {
 
         {/* Gráficos */}
         <div className="mt-8">
-          <ProjectsChart 
-            projects={projects} 
-            tasks={tasks} 
-            loading={loading || tasksLoading} 
+          <ProjectsChart
+            projects={projects}
+            tasks={tasks}
+            loading={loading || tasksLoading}
           />
         </div>
 

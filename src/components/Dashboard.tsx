@@ -73,24 +73,26 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
 
   const handleFilterChange = (key: keyof ProposalFilters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value, currentPage: 1 }));
-    
-    // Update chart filters when period changes
+
+    // Automatically sync chart period with main filter
     if (key === 'period') {
       let chartPeriod: DashboardChartFilters['period'] = 'last6months';
-      
+
       switch (value) {
         case 'today':
         case '7days':
           chartPeriod = 'last3months';
           break;
         case '30days':
+        case 'currentMonth':
           chartPeriod = 'last6months';
           break;
+        case 'custom':
         case 'all':
           chartPeriod = 'last12months';
           break;
       }
-      
+
       setChartFilters(prev => ({ ...prev, period: chartPeriod }));
     }
   };
@@ -157,27 +159,46 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Período (Propostas)</label>
-              <Select 
-                value={filters.period} 
-                onValueChange={(value) => handleFilterChange('period', value as 'today' | '7days' | '30days' | 'all')}
+              <label className="text-sm font-medium mb-2 block">Período</label>
+              <Select
+                value={filters.period}
+                onValueChange={(value) => handleFilterChange('period', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecionar período" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="today">Hoje</SelectItem>
-                  <SelectItem value="7days">Últimos 7 dias</SelectItem>
-                  <SelectItem value="30days">Últimos 30 dias</SelectItem>
+                  <SelectItem value="7days">Semana (7 dias)</SelectItem>
+                  <SelectItem value="30days">Mês (30 dias)</SelectItem>
+                  <SelectItem value="currentMonth">Mês atual</SelectItem>
+                  <SelectItem value="custom">Personalizado</SelectItem>
                   <SelectItem value="all">Todos</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Tipo de Data</label>
+              <Select
+                value={filters.dateField || 'created_at'}
+                onValueChange={(value) => handleFilterChange('dateField', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Tipo de data" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="created_at">Data de Criação</SelectItem>
+                  <SelectItem value="approved_at">Data de Aprovação</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div>
               <label className="text-sm font-medium mb-2 block">Status</label>
-              <Select 
-                value={filters.status} 
-                onValueChange={(value) => handleFilterChange('status', value as 'Criada' | 'Enviada' | 'Aprovada' | 'Rejeitada' | 'Rascunho' | 'all')}
+              <Select
+                value={filters.status}
+                onValueChange={(value) => handleFilterChange('status', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecionar status" />
@@ -192,24 +213,29 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Período (Gráfico)</label>
-              <Select 
-                value={chartFilters.period} 
-                onValueChange={handleChartPeriodChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecionar período" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="last3months">Últimos 3 meses</SelectItem>
-                  <SelectItem value="last6months">Últimos 6 meses</SelectItem>
-                  <SelectItem value="last12months">Últimos 12 meses</SelectItem>
-                  <SelectItem value="thisyear">Este ano</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
+
+          {/* Custom Date Range - shown only when "custom" period is selected */}
+          {filters.period === 'custom' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Data Inicial</label>
+                <Input
+                  type="date"
+                  value={filters.customStartDate || ''}
+                  onChange={(e) => handleFilterChange('customStartDate', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Data Final</label>
+                <Input
+                  type="date"
+                  value={filters.customEndDate || ''}
+                  onChange={(e) => handleFilterChange('customEndDate', e.target.value)}
+                />
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -245,7 +271,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
                 {formatCurrency(metrics.totalValue)}
               </div>
             )}
-            <p className="text-xs text-muted-foreground">em propostas</p>
+            <p className="text-xs text-muted-foreground">no período filtrado</p>
           </CardContent>
         </Card>
 
@@ -279,7 +305,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
                 {formatCurrency(metrics.thisMonth)}
               </div>
             )}
-            <p className="text-xs text-conexhub-teal-100">valor aprovado no mês</p>
+            <p className="text-xs text-conexhub-teal-100">aprovado no mês atual</p>
           </CardContent>
         </Card>
       </div>
