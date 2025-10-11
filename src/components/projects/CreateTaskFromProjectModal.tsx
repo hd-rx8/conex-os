@@ -33,41 +33,50 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import { CalendarIcon } from 'lucide-react';
 import { CreateTaskData } from '@/hooks/useTasks';
-import { Project } from '@/hooks/useProjects';
+import { useSpaces } from '@/hooks/useSpaces';
+import { useLists } from '@/hooks/useLists';
 
 const formSchema = z.object({
   title: z.string().min(3, {
     message: 'O título da tarefa deve ter pelo menos 3 caracteres.',
   }),
   description: z.string().optional(),
-  project_id: z.string().min(1, {
-    message: 'Selecione um projeto para a tarefa.',
+  space_id: z.string().min(1, {
+    message: 'Selecione um projeto.',
   }),
+  list_id: z.string().min(1, {
+    message: 'Selecione uma lista.',
+  }),
+  priority: z.enum(['Baixa', 'Média', 'Alta', 'Urgente']).default('Média'),
   due_date: z.date().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 interface CreateTaskFromProjectModalProps {
-  projects: Project[];
   onCreateTask: (data: CreateTaskData) => Promise<void>;
   children?: React.ReactNode;
-  preselectedProjectId?: string;
+  preselectedSpaceId?: string;
+  preselectedListId?: string;
   isOpen?: boolean;
   onClose?: () => void;
 }
 
 const CreateTaskFromProjectModal: React.FC<CreateTaskFromProjectModalProps> = ({
-  projects,
   onCreateTask,
   children,
-  preselectedProjectId,
+  preselectedSpaceId,
+  preselectedListId,
   isOpen: externalIsOpen,
   onClose: externalOnClose
 }) => {
   const { user } = useSession();
+  const { spaces } = useSpaces();
   const [internalOpen, setInternalOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [selectedSpaceId, setSelectedSpaceId] = React.useState(preselectedSpaceId || '');
+
+  const { lists } = useLists(selectedSpaceId);
 
   // Use external control if provided, otherwise use internal state
   const open = externalIsOpen !== undefined ? externalIsOpen : internalOpen;
@@ -77,17 +86,23 @@ const CreateTaskFromProjectModal: React.FC<CreateTaskFromProjectModalProps> = ({
     defaultValues: {
       title: '',
       description: '',
-      project_id: preselectedProjectId || '',
+      space_id: preselectedSpaceId || '',
+      list_id: preselectedListId || '',
+      priority: 'Média',
       due_date: undefined,
     },
   });
 
-  // Update form when preselected project changes
+  // Update form when preselected values change
   React.useEffect(() => {
-    if (preselectedProjectId) {
-      form.setValue('project_id', preselectedProjectId);
+    if (preselectedSpaceId) {
+      form.setValue('space_id', preselectedSpaceId);
+      setSelectedSpaceId(preselectedSpaceId);
     }
-  }, [preselectedProjectId, form]);
+    if (preselectedListId) {
+      form.setValue('list_id', preselectedListId);
+    }
+  }, [preselectedSpaceId, preselectedListId, form]);
 
   const handleSubmit = async (data: FormData) => {
     if (!user) {
@@ -98,15 +113,17 @@ const CreateTaskFromProjectModal: React.FC<CreateTaskFromProjectModalProps> = ({
     setIsSubmitting(true);
     try {
       await onCreateTask({
-        project_id: data.project_id,
+        list_id: data.list_id,
         title: data.title,
         description: data.description || null,
+        priority: data.priority,
         due_date: data.due_date ? format(data.due_date, 'yyyy-MM-dd') : null,
-        owner: user.id,
+        creator_id: user.id,
+        assignee_id: user.id, // Por padrão, atribui ao criador
         status: 'Pendente',
       });
 
-      toast.success('Tarefa criada com sucesso!');
+      // Toast movido para o handleCreateTask
       form.reset();
       // Close modal using appropriate method
       if (externalOnClose) {
@@ -150,24 +167,62 @@ const CreateTaskFromProjectModal: React.FC<CreateTaskFromProjectModalProps> = ({
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="project_id"
+              name="space_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Projeto*</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      setSelectedSpaceId(value);
+                      form.setValue('list_id', ''); // Reset list when space changes
+                    }}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um projeto" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {projects
-                        .filter(project => project.status === 'Ativo')
-                        .map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.title}
+                      {spaces?.map((space) => (
+                        <SelectItem key={space.id} value={space.id}>
+                          <div className="flex items-center gap-2">
+                            <span>{space.icon || '📁'}</span>
+                            <span>{space.name}</span>
+                          </div>
                         </SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="list_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Lista*</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedSpaceId}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={selectedSpaceId ? "Selecione uma lista" : "Selecione um projeto primeiro"} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {lists?.map((list) => (
+                        <SelectItem key={list.id} value={list.id}>
+                          {list.name}
+                        </SelectItem>
+                      ))}
+                      {lists && lists.length === 0 && (
+                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                          Nenhuma lista encontrada
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -202,6 +257,30 @@ const CreateTaskFromProjectModal: React.FC<CreateTaskFromProjectModalProps> = ({
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="priority"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Prioridade*</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a prioridade" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Baixa">Baixa</SelectItem>
+                      <SelectItem value="Média">Média</SelectItem>
+                      <SelectItem value="Alta">Alta</SelectItem>
+                      <SelectItem value="Urgente">Urgente</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

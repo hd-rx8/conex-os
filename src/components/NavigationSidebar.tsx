@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Calculator, 
-  FileText, 
-  Users, 
-  Kanban, 
+import {
+  LayoutDashboard,
+  Calculator,
+  FileText,
+  Users,
+  Kanban,
   Settings,
   ChevronRight,
   ChevronDown,
@@ -20,11 +20,19 @@ import {
 import { useSession } from '@/hooks/useSession';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAppModule, AppModuleType } from '@/context/AppModuleContext';
+import { useWorkspaces } from '@/hooks/useWorkspaces';
+import { useSpaces } from '@/hooks/useSpaces';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import UserNav from './UserNav';
 import SettingsButton from './SettingsButton';
+import WorkspaceSelector from './WorkspaceSelector';
+import SpacesTreeNav from './SpacesTreeNav';
+import CreateProjectModal from './modals/CreateProjectModal';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { toast } from 'sonner';
+import type { WorkspaceTree } from '@/types/hierarchy';
 
 interface NavigationItem {
   id: string;
@@ -82,14 +90,14 @@ const NAV_WORK: NavigationItem[] = [
     path: '/projects'
   },
   {
-    id: 'projects-list',
-    label: 'Projetos',
+    id: 'workspaces',
+    label: 'Gerenciar Workspaces',
     icon: FolderOpen,
-    path: '/projects/list'
+    path: '/work/workspaces'
   },
   {
     id: 'my-tasks',
-    label: 'Tarefas',
+    label: 'Minhas Tarefas',
     icon: ClipboardList,
     path: '/projects/tasks'
   },
@@ -116,7 +124,14 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
   const location = useLocation();
   const isMobile = useIsMobile();
   const { activeModule } = useAppModule();
-  
+  const { workspaces, getWorkspaceTree } = useWorkspaces();
+
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
+  const [workspaceTree, setWorkspaceTree] = useState<WorkspaceTree | null>(null);
+  const [selectedListId, setSelectedListId] = useState<string | null>(null);
+  const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const { createSpace } = useSpaces(selectedWorkspaceId || undefined);
+
   // Seleciona os itens de navegação com base no módulo ativo
   const navigationItems = useMemo(() => {
     if (activeModule === 'crm') {
@@ -124,10 +139,65 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
     }
     return NAV_WORK;
   }, [activeModule]);
-  
+
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set([])
   );
+
+  // Carregar primeiro workspace por padrão
+  useEffect(() => {
+    if (activeModule === 'work' && workspaces.length > 0 && !selectedWorkspaceId) {
+      setSelectedWorkspaceId(workspaces[0].id);
+    }
+  }, [workspaces, selectedWorkspaceId, activeModule]);
+
+  // Carregar árvore do workspace selecionado
+  useEffect(() => {
+    const loadTree = async () => {
+      if (selectedWorkspaceId && activeModule === 'work') {
+        const tree = await getWorkspaceTree(selectedWorkspaceId);
+        setWorkspaceTree(tree);
+      }
+    };
+    loadTree();
+  }, [selectedWorkspaceId, activeModule, getWorkspaceTree]);
+
+  const handleWorkspaceChange = (workspaceId: string) => {
+    setSelectedWorkspaceId(workspaceId);
+    setSelectedListId(null);
+  };
+
+  const handleSpaceSelect = (spaceId: string) => {
+    navigate(`/work/project/${spaceId}`);
+  };
+
+  const handleListSelect = (listId: string) => {
+    setSelectedListId(listId);
+    navigate(`/work/list/${listId}`);
+  };
+
+  const handleCreateProject = async (data: {
+    workspace_id: string;
+    name: string;
+    description: string | null;
+    icon: string | null;
+    color: string | null;
+  }) => {
+    const { error } = await createSpace(data);
+
+    if (error) {
+      toast.error('Erro ao criar projeto: ' + error.message);
+      throw error;
+    }
+
+    toast.success('Projeto criado com sucesso!');
+
+    // Recarregar workspace tree
+    if (selectedWorkspaceId) {
+      const tree = await getWorkspaceTree(selectedWorkspaceId);
+      setWorkspaceTree(tree);
+    }
+  };
 
   const isActive = (path?: string, children?: NavigationItem[]) => {
     if (!path && children) {
@@ -273,14 +343,48 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
           <div className="space-y-1">
             {navigationItems.map(item => renderNavigationItem(item))}
           </div>
+
+          {/* Workspace Selector + Spaces Tree (Work Module Only) */}
+          {activeModule === 'work' && workspaces.length > 0 && (
+            <>
+              <Separator className="my-4" />
+
+              <div className="space-y-3">
+                <WorkspaceSelector
+                  workspaces={workspaces}
+                  selectedWorkspaceId={selectedWorkspaceId || undefined}
+                  onSelect={handleWorkspaceChange}
+                  onCreateProject={() => setIsCreateProjectOpen(true)}
+                  isCollapsed={false}
+                />
+
+                {workspaceTree && (
+                  <div className="space-y-1">
+                    <div className="px-3 py-2">
+                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Projetos
+                      </h3>
+                    </div>
+                    <SpacesTreeNav
+                      spaces={workspaceTree.spaces}
+                      onSelectSpace={handleSpaceSelect}
+                      selectedListId={selectedListId || undefined}
+                      onSelectList={handleListSelect}
+                      isCollapsed={false}
+                    />
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </nav>
 
         {/* Mobile Footer */}
         <div className="border-t p-4">
           <div className="flex items-center gap-2">
-            <UserNav 
-              userName={user?.user_metadata?.full_name} 
-              userEmail={user?.email} 
+            <UserNav
+              userName={user?.user_metadata?.full_name}
+              userEmail={user?.email}
               avatarUrl={user?.user_metadata?.avatar_url}
             />
             <SettingsButton />
@@ -329,6 +433,42 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
         <div className="space-y-1">
           {navigationItems.map(item => renderNavigationItem(item))}
         </div>
+
+        {/* Workspace Selector + Spaces Tree (Work Module Only) */}
+        {activeModule === 'work' && workspaces.length > 0 && (
+          <>
+            <Separator className="my-4" />
+
+            {!isCollapsed && (
+              <div className="space-y-3">
+                <WorkspaceSelector
+                  workspaces={workspaces}
+                  selectedWorkspaceId={selectedWorkspaceId || undefined}
+                  onSelect={handleWorkspaceChange}
+                  onCreateProject={() => setIsCreateProjectOpen(true)}
+                  isCollapsed={isCollapsed}
+                />
+
+                {workspaceTree && (
+                  <div className="space-y-1">
+                    <div className="px-3 py-2">
+                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Projetos
+                      </h3>
+                    </div>
+                    <SpacesTreeNav
+                      spaces={workspaceTree.spaces}
+                      onSelectSpace={handleSpaceSelect}
+                      selectedListId={selectedListId || undefined}
+                      onSelectList={handleListSelect}
+                      isCollapsed={isCollapsed}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </nav>
 
       {/* Desktop Footer */}
@@ -346,6 +486,16 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
           {!isCollapsed && <SettingsButton />}
         </div>
       </div>
+
+      {/* Create Project Modal */}
+      {selectedWorkspaceId && (
+        <CreateProjectModal
+          isOpen={isCreateProjectOpen}
+          onClose={() => setIsCreateProjectOpen(false)}
+          workspaceId={selectedWorkspaceId}
+          onCreateProject={handleCreateProject}
+        />
+      )}
     </div>
   );
 };

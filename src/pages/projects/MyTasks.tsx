@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import MainLayout from '@/components/MainLayout';
+import PageHeader from '@/components/PageHeader';
 import { ClipboardList, Plus, Calendar, Clock, Search, Loader2, Edit, Trash2, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,27 +11,44 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format, parseISO, isToday, isPast, isFuture } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
-import useProjects from '@/hooks/useProjects';
+import { useSpaces } from '@/hooks/useSpaces';
 import useTasks, { Task } from '@/hooks/useTasks';
 import { useSession } from '@/hooks/useSession';
 import CreateTaskFromProjectModal from '@/components/projects/CreateTaskFromProjectModal';
 import FloatingActionButton from '@/components/FloatingActionButton';
+import TaskDetailModal from '@/components/tasks/TaskDetailModal';
 
 const MyTasks: React.FC = () => {
   const { user } = useSession();
-  const { projects } = useProjects();
-  const { tasks, loading, createTask, updateTaskStatus, deleteTask, refetch } = useTasks();
-  
+  const { spaces } = useSpaces();
+  // Chamando com userId para buscar apenas as tarefas do usuário logado
+  const { tasks, loading, error: tasksError, createTask, updateTaskStatus, deleteTask, refetch } = useTasks(undefined, undefined, user?.id);
+
+  // Debug logs
+  React.useEffect(() => {
+    console.log('[MyTasks] Component state:', {
+      userId: user?.id,
+      loading,
+      tasksError,
+      tasksCount: tasks?.length || 0,
+      tasks
+    });
+  }, [user?.id, loading, tasksError, tasks]);
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterProject, setFilterProject] = useState<string>('all');
+  const [filterSpace, setFilterSpace] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'due_date' | 'created_at' | 'title'>('due_date');
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
   const handleCreateTask = async (taskData: any) => {
     try {
       const { error } = await createTask(taskData);
       if (error) throw error;
+      // Forçar refetch para atualizar a lista
       await refetch();
+      toast.success('Tarefa criada com sucesso!');
     } catch (error: any) {
       console.error('Erro ao criar tarefa:', error);
       toast.error(`Erro ao criar tarefa: ${error.message || 'Erro desconhecido'}`);
@@ -52,7 +70,7 @@ const MyTasks: React.FC = () => {
 
   const handleDeleteTask = async (taskId: string) => {
     if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
-    
+
     try {
       const { error } = await deleteTask(taskId);
       if (error) throw error;
@@ -62,6 +80,16 @@ const MyTasks: React.FC = () => {
       console.error('Erro ao excluir tarefa:', error);
       toast.error('Erro ao excluir tarefa.');
     }
+  };
+
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleCloseTaskModal = () => {
+    setIsTaskModalOpen(false);
+    setSelectedTask(null);
   };
 
   // Filtrar e ordenar tarefas
@@ -74,8 +102,8 @@ const MyTasks: React.FC = () => {
         return false;
       }
 
-      // Filtro por projeto
-      if (filterProject !== 'all' && task.project_id !== filterProject) {
+      // Filtro por espaço/projeto
+      if (filterSpace !== 'all' && task.lists?.space_id !== filterSpace) {
         return false;
       }
 
@@ -105,7 +133,7 @@ const MyTasks: React.FC = () => {
     });
 
     return filtered;
-  }, [tasks, searchTerm, filterProject, filterStatus, sortBy]);
+  }, [tasks, searchTerm, filterSpace, filterStatus, sortBy]);
 
   const getTasksByStatus = (status: string) => {
     return filteredTasks.filter(task => task.status === status);
@@ -124,6 +152,20 @@ const MyTasks: React.FC = () => {
 
   const counts = getTaskCounts();
 
+  // Calcular quantidade de projetos únicos
+  const uniqueProjects = useMemo(() => {
+    if (!tasks) return 0;
+    const projectIds = new Set(tasks.map(task => task.lists?.space_id).filter(Boolean));
+    return projectIds.size;
+  }, [tasks]);
+
+  // Criar subtítulo dinâmico baseado nos projetos
+  const subtitle = useMemo(() => {
+    if (uniqueProjects === 0) return "Nenhum projeto com tarefas";
+    if (uniqueProjects === 1) return "1 projeto ativo";
+    return `${uniqueProjects} projetos ativos`;
+  }, [uniqueProjects]);
+
   if (!user) {
     return (
       <MainLayout module="work">
@@ -137,9 +179,15 @@ const MyTasks: React.FC = () => {
   return (
     <MainLayout module="work">
       <div className="relative pb-20">
+        {/* Page Header */}
+        <PageHeader
+          title="Minhas Tarefas"
+          subtitle={subtitle}
+          icon={ClipboardList}
+        />
+
         {/* Floating Action Button */}
-        <CreateTaskFromProjectModal 
-          projects={projects || []}
+        <CreateTaskFromProjectModal
           onCreateTask={handleCreateTask}
         >
           <FloatingActionButton
@@ -192,7 +240,7 @@ const MyTasks: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <div className="h-4 w-4 rounded-full bg-red-500"></div>
                 <div>
-                  <p className="text-2xl font-bold text-red-600">{counts.overdue}</p>
+                  <p className="text-2xl font-bold text-red-600 dark:text-red-300">{counts.overdue}</p>
                   <p className="text-xs text-muted-foreground">Atrasadas</p>
                 </div>
               </div>
@@ -216,15 +264,18 @@ const MyTasks: React.FC = () => {
                 </div>
                 
                 <div className="flex flex-wrap gap-2">
-                  <Select value={filterProject} onValueChange={setFilterProject}>
+                  <Select value={filterSpace} onValueChange={setFilterSpace}>
                     <SelectTrigger className="w-full sm:w-40">
                       <SelectValue placeholder="Projeto" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos os projetos</SelectItem>
-                      {projects?.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.title}
+                      {spaces?.map((space) => (
+                        <SelectItem key={space.id} value={space.id}>
+                          <div className="flex items-center gap-2">
+                            <span>{space.icon || '📁'}</span>
+                            <span>{space.name}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -266,46 +317,53 @@ const MyTasks: React.FC = () => {
             </TabsList>
             
             <TabsContent value="all">
-              <TasksList 
+              <TasksList
                 tasks={filteredTasks}
                 loading={loading}
                 onStatusChange={handleUpdateTaskStatus}
                 onDelete={handleDeleteTask}
-                projects={projects || []}
+                onTaskClick={handleTaskClick}
               />
             </TabsContent>
-            
+
             <TabsContent value="pending">
-              <TasksList 
+              <TasksList
                 tasks={getTasksByStatus('Pendente')}
                 loading={loading}
                 onStatusChange={handleUpdateTaskStatus}
                 onDelete={handleDeleteTask}
-                projects={projects || []}
+                onTaskClick={handleTaskClick}
               />
             </TabsContent>
-            
+
             <TabsContent value="in-progress">
-              <TasksList 
+              <TasksList
                 tasks={getTasksByStatus('Em Progresso')}
                 loading={loading}
                 onStatusChange={handleUpdateTaskStatus}
                 onDelete={handleDeleteTask}
-                projects={projects || []}
+                onTaskClick={handleTaskClick}
               />
             </TabsContent>
-            
+
             <TabsContent value="completed">
-              <TasksList 
+              <TasksList
                 tasks={getTasksByStatus('Concluída')}
                 loading={loading}
                 onStatusChange={handleUpdateTaskStatus}
                 onDelete={handleDeleteTask}
-                projects={projects || []}
+                onTaskClick={handleTaskClick}
               />
             </TabsContent>
           </Tabs>
         </div>
+
+        {/* Task Detail Modal */}
+        <TaskDetailModal
+          task={selectedTask}
+          open={isTaskModalOpen}
+          onClose={handleCloseTaskModal}
+        />
       </div>
     </MainLayout>
   );
@@ -316,10 +374,10 @@ interface TasksListProps {
   loading: boolean;
   onStatusChange: (taskId: string, newStatus: string) => Promise<void>;
   onDelete: (taskId: string) => Promise<void>;
-  projects: any[];
+  onTaskClick: (task: Task) => void;
 }
 
-const TasksList: React.FC<TasksListProps> = ({ tasks, loading, onStatusChange, onDelete, projects }) => {
+const TasksList: React.FC<TasksListProps> = ({ tasks, loading, onStatusChange, onDelete, onTaskClick }) => {
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case 'Pendente': return 'bg-yellow-100 text-yellow-800';
@@ -338,9 +396,11 @@ const TasksList: React.FC<TasksListProps> = ({ tasks, loading, onStatusChange, o
     }
   };
 
-  const getProjectName = (projectId: string) => {
-    const project = projects.find(p => p.id === projectId);
-    return project?.title || 'Projeto não encontrado';
+  const getProjectInfo = (task: Task) => {
+    const spaceName = task.lists?.spaces?.name || 'Projeto desconhecido';
+    const spaceIcon = task.lists?.spaces?.icon || '📁';
+    const listName = task.lists?.name || '';
+    return { spaceName, spaceIcon, listName };
   };
 
   const isOverdue = (task: Task) => {
@@ -371,7 +431,11 @@ const TasksList: React.FC<TasksListProps> = ({ tasks, loading, onStatusChange, o
   return (
     <div className="space-y-3">
       {tasks.map((task) => (
-        <Card key={task.id} className={`hover:shadow-md transition-shadow ${isOverdue(task) ? 'border-red-200 bg-red-50/30' : ''}`}>
+        <Card
+          key={task.id}
+          className={`hover:shadow-md transition-shadow cursor-pointer ${isOverdue(task) ? 'border-red-200 bg-red-50/30' : ''}`}
+          onClick={() => onTaskClick(task)}
+        >
           <CardContent className="p-4">
             <div className="flex justify-between items-start mb-3">
               <div className="flex-1">
@@ -379,7 +443,13 @@ const TasksList: React.FC<TasksListProps> = ({ tasks, loading, onStatusChange, o
                   <div className="flex-1">
                     <h3 className="font-medium text-lg">{task.title}</h3>
                     <p className="text-sm text-muted-foreground mb-2">
-                      Projeto: {getProjectName(task.project_id)}
+                      <span className="inline-flex items-center gap-1">
+                        <span>{getProjectInfo(task).spaceIcon}</span>
+                        <span>{getProjectInfo(task).spaceName}</span>
+                        {getProjectInfo(task).listName && (
+                          <span className="text-xs"> › {getProjectInfo(task).listName}</span>
+                        )}
+                      </span>
                     </p>
                     {task.description && (
                       <p className="text-sm text-muted-foreground mb-3">{task.description}</p>
@@ -393,7 +463,7 @@ const TasksList: React.FC<TasksListProps> = ({ tasks, loading, onStatusChange, o
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 {task.due_date && (
-                  <div className={`flex items-center ${isOverdue(task) ? 'text-red-600 font-medium' : ''}`}>
+                  <div className={`flex items-center ${isOverdue(task) ? 'text-red-600 dark:text-red-300 font-medium' : ''}`}>
                     <Calendar className="h-3 w-3 mr-1" />
                     <span>
                       {isOverdue(task) && '⚠️ '}
@@ -408,17 +478,23 @@ const TasksList: React.FC<TasksListProps> = ({ tasks, loading, onStatusChange, o
               </div>
               
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
-                  onClick={() => onStatusChange(task.id, getNextStatus(task.status))}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStatusChange(task.id, getNextStatus(task.status));
+                  }}
                 >
                   {task.status === 'Concluída' ? 'Reabrir' : task.status === 'Pendente' ? 'Iniciar' : 'Concluir'}
                 </Button>
-                <Button 
-                  variant="destructive" 
+                <Button
+                  variant="destructive"
                   size="sm"
-                  onClick={() => onDelete(task.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(task.id);
+                  }}
                 >
                   <Trash2 className="h-3 w-3" />
                 </Button>

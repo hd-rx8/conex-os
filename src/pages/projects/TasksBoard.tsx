@@ -13,14 +13,17 @@ import { cn } from '@/lib/utils';
 import useProjects from '@/hooks/useProjects';
 import useTasks, { Task } from '@/hooks/useTasks';
 import CreateTaskFromProjectModal from '@/components/projects/CreateTaskFromProjectModal';
+import TaskDetailModal from '@/components/tasks/TaskDetailModal';
 
 const TasksBoard: React.FC = () => {
   const { projects } = useProjects();
   const { tasks, loading, createTask, updateTaskStatus, deleteTask, refetch } = useTasks();
-  
+
   const [filterProject, setFilterProject] = useState<string>('all');
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
   // Status das tarefas mapeados corretamente
   const statuses = [
@@ -71,9 +74,10 @@ const TasksBoard: React.FC = () => {
   // Filtrar tarefas
   const filteredTasks = useMemo(() => {
     if (!tasks) return [];
-    
+
     return tasks.filter(task => {
-      if (filterProject !== 'all' && task.project_id !== filterProject) {
+      // Filtro por projeto (usando space_id)
+      if (filterProject !== 'all' && task.lists?.space_id !== filterProject) {
         return false;
       }
       return true;
@@ -84,8 +88,13 @@ const TasksBoard: React.FC = () => {
     return filteredTasks.filter(task => task.status === status);
   };
 
-  const getProjectName = (projectId: string) => {
-    const project = projects?.find(p => p.id === projectId);
+  const getProjectName = (task: Task) => {
+    // Primeiro tenta pegar do relacionamento já carregado
+    if (task.lists?.spaces?.name) {
+      return task.lists.spaces.name;
+    }
+    // Fallback: busca nos projetos carregados
+    const project = projects?.find(p => p.id === task.lists?.space_id);
     return project?.title || 'Projeto não encontrado';
   };
 
@@ -117,6 +126,16 @@ const TasksBoard: React.FC = () => {
     setIsDragging(false);
   };
 
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleCloseTaskModal = () => {
+    setIsTaskModalOpen(false);
+    setSelectedTask(null);
+  };
+
   return (
     <MainLayout module="work">
       <div className="relative pb-20">
@@ -129,11 +148,17 @@ const TasksBoard: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os projetos</SelectItem>
-              {projects?.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
-                  {project.title}
-                </SelectItem>
-              ))}
+              {projects
+                ?.filter((project) =>
+                  project.status !== 'Concluído' &&
+                  project.status !== 'deleted' &&
+                  project.status !== 'Arquivado'
+                )
+                ?.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.title}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </div>
@@ -171,9 +196,10 @@ const TasksBoard: React.FC = () => {
                         <TaskCard
                           key={task.id}
                           task={task}
-                          projectName={getProjectName(task.project_id)}
+                          projectName={getProjectName(task)}
                           onDragStart={handleDragStart}
                           onDelete={handleDeleteTask}
+                          onClick={handleTaskClick}
                         />
                       ))
                     ) : (
@@ -192,6 +218,13 @@ const TasksBoard: React.FC = () => {
             </div>
           </ScrollArea>
         </div>
+
+        {/* Task Detail Modal */}
+        <TaskDetailModal
+          task={selectedTask}
+          open={isTaskModalOpen}
+          onClose={handleCloseTaskModal}
+        />
       </div>
     </MainLayout>
   );
@@ -202,9 +235,24 @@ interface TaskCardProps {
   projectName: string;
   onDragStart: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void;
   onDelete: (taskId: string) => Promise<void>;
+  onClick?: (task: Task) => void;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, projectName, onDragStart, onDelete }) => {
+const TaskCard: React.FC<TaskCardProps> = ({ task, projectName, onDragStart, onDelete, onClick }) => {
+  const [dragStartTime, setDragStartTime] = React.useState<number>(0);
+
+  const handleMouseDown = () => {
+    setDragStartTime(Date.now());
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    // Se o tempo entre mousedown e mouseup for curto, é um click
+    const clickDuration = Date.now() - dragStartTime;
+    if (clickDuration < 200 && onClick) {
+      e.preventDefault();
+      onClick(task);
+    }
+  };
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Pendente': return 'bg-yellow-100 text-yellow-800';
@@ -215,9 +263,11 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, projectName, onDragStart, onD
   };
 
   return (
-    <Card 
+    <Card
       draggable
       onDragStart={(e) => onDragStart(e, task.id)}
+      onMouseDown={handleMouseDown}
+      onClick={handleClick}
       className="cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow group"
     >
       <CardContent className="p-3">

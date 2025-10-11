@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/MainLayout';
-import { Clipboard, Plus, Loader2, Calendar, Clock, ArrowLeft, Edit, Trash2, User, Building, TrendingUp, BarChart3 } from 'lucide-react';
+import { Clipboard, Plus, Loader2, Calendar, Clock, ArrowLeft, Edit, Trash2, User, Building, TrendingUp, BarChart3, ChevronRight, Folder } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,7 @@ import useProjects, { Project } from '@/hooks/useProjects';
 import useTasks, { Task, CreateTaskData } from '@/hooks/useTasks';
 import { useSession } from '@/hooks/useSession';
 import CreateTaskModal from '@/components/projects/CreateTaskModal';
+import TaskDetailModal from '@/components/tasks/TaskDetailModal';
 
 const ProjectDetail: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -21,9 +22,11 @@ const ProjectDetail: React.FC = () => {
   const { user } = useSession();
   const { getProjectById, updateProject, deleteProject } = useProjects();
   const { tasks, loading: tasksLoading, createTask, updateTaskStatus, deleteTask, refetch: refetchTasks } = useTasks(projectId);
-  
+
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
   // Use useCallback to memoize the function and prevent unnecessary re-renders
   const fetchProject = useCallback(async () => {
@@ -165,19 +168,49 @@ const ProjectDetail: React.FC = () => {
 
   const stats = getProjectStats();
 
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleCloseTaskModal = () => {
+    setIsTaskModalOpen(false);
+    setSelectedTask(null);
+  };
+
   return (
     <MainLayout module="work">
       <div className="space-y-6">
-        {/* Header com navegação */}
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
+        {/* Header com navegação e breadcrumb */}
+        <div className="space-y-3">
+          <Button
+            variant="ghost"
             onClick={() => navigate('/projects')}
             className="flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
             Voltar para Projetos
           </Button>
+
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Folder className="h-4 w-4" />
+            <span className="font-medium">Projetos</span>
+            <ChevronRight className="h-4 w-4" />
+            <span className="flex items-center gap-2">
+              {project.icon && <span className="text-base">{project.icon}</span>}
+              <span className="font-medium text-foreground">{project.title}</span>
+            </span>
+            <Badge
+              className={
+                project.status === 'Ativo' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                project.status === 'Concluído' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+              }
+            >
+              {project.status}
+            </Badge>
+          </div>
         </div>
 
         {/* Cabeçalho do Projeto */}
@@ -185,19 +218,7 @@ const ProjectDetail: React.FC = () => {
           <CardHeader>
             <div className="flex items-start justify-between">
               <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <Clipboard className="w-6 h-6 text-primary" />
-                  <h1 className="text-2xl font-bold">{project.title}</h1>
-                  <Badge 
-                    className={
-                      project.status === 'Ativo' ? 'bg-blue-100 text-blue-800' :
-                      project.status === 'Concluído' ? 'bg-green-100 text-green-800' :
-                      'bg-gray-100 text-gray-800'
-                    }
-                  >
-                    {project.status}
-                  </Badge>
-                </div>
+                <h1 className="text-2xl font-bold">{project.title}</h1>
                 {project.description && (
                   <p className="text-muted-foreground">{project.description}</p>
                 )}
@@ -371,11 +392,12 @@ const ProjectDetail: React.FC = () => {
                     ) : getTasksByStatus('Pendente').length > 0 ? (
                       <div className="space-y-3">
                         {getTasksByStatus('Pendente').map(task => (
-                          <TaskCard 
-                            key={task.id} 
-                            task={task} 
+                          <TaskCard
+                            key={task.id}
+                            task={task}
                             onStatusChange={handleUpdateTaskStatus}
                             onDelete={handleDeleteTask}
+                            onClick={handleTaskClick}
                           />
                         ))}
                       </div>
@@ -394,11 +416,12 @@ const ProjectDetail: React.FC = () => {
                     ) : getTasksByStatus('Em Progresso').length > 0 ? (
                       <div className="space-y-3">
                         {getTasksByStatus('Em Progresso').map(task => (
-                          <TaskCard 
-                            key={task.id} 
-                            task={task} 
+                          <TaskCard
+                            key={task.id}
+                            task={task}
                             onStatusChange={handleUpdateTaskStatus}
                             onDelete={handleDeleteTask}
+                            onClick={handleTaskClick}
                           />
                         ))}
                       </div>
@@ -417,11 +440,12 @@ const ProjectDetail: React.FC = () => {
                     ) : getTasksByStatus('Concluída').length > 0 ? (
                       <div className="space-y-3">
                         {getTasksByStatus('Concluída').map(task => (
-                          <TaskCard 
-                            key={task.id} 
-                            task={task} 
+                          <TaskCard
+                            key={task.id}
+                            task={task}
                             onStatusChange={handleUpdateTaskStatus}
                             onDelete={handleDeleteTask}
+                            onClick={handleTaskClick}
                           />
                         ))}
                       </div>
@@ -452,11 +476,12 @@ const ProjectDetail: React.FC = () => {
                     </div>
                     <div className="space-y-2 min-h-[200px]">
                       {getTasksByStatus('Pendente').map(task => (
-                        <TaskCard 
-                          key={task.id} 
-                          task={task} 
+                        <TaskCard
+                          key={task.id}
+                          task={task}
                           onStatusChange={handleUpdateTaskStatus}
                           onDelete={handleDeleteTask}
+                          onClick={handleTaskClick}
                         />
                       ))}
                     </div>
@@ -470,16 +495,17 @@ const ProjectDetail: React.FC = () => {
                     </div>
                     <div className="space-y-2 min-h-[200px]">
                       {getTasksByStatus('Em Progresso').map(task => (
-                        <TaskCard 
-                          key={task.id} 
-                          task={task} 
+                        <TaskCard
+                          key={task.id}
+                          task={task}
                           onStatusChange={handleUpdateTaskStatus}
                           onDelete={handleDeleteTask}
+                          onClick={handleTaskClick}
                         />
                       ))}
                     </div>
                   </div>
-                  
+
                   {/* Coluna Concluída */}
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
@@ -488,11 +514,12 @@ const ProjectDetail: React.FC = () => {
                     </div>
                     <div className="space-y-2 min-h-[200px]">
                       {getTasksByStatus('Concluída').map(task => (
-                        <TaskCard 
-                          key={task.id} 
-                          task={task} 
+                        <TaskCard
+                          key={task.id}
+                          task={task}
                           onStatusChange={handleUpdateTaskStatus}
                           onDelete={handleDeleteTask}
+                          onClick={handleTaskClick}
                         />
                       ))}
                     </div>
@@ -502,6 +529,13 @@ const ProjectDetail: React.FC = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Task Detail Modal */}
+        <TaskDetailModal
+          task={selectedTask}
+          open={isTaskModalOpen}
+          onClose={handleCloseTaskModal}
+        />
       </div>
     </MainLayout>
   );
@@ -511,9 +545,10 @@ interface TaskCardProps {
   task: Task;
   onStatusChange: (taskId: string, newStatus: string) => Promise<void>;
   onDelete: (taskId: string) => Promise<void>;
+  onClick?: (task: Task) => void;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onStatusChange, onDelete }) => {
+const TaskCard: React.FC<TaskCardProps> = ({ task, onStatusChange, onDelete, onClick }) => {
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case 'Pendente': return 'bg-yellow-100 text-yellow-800';
@@ -533,7 +568,10 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onStatusChange, onDelete }) =
   };
 
   return (
-    <div className="border rounded-lg p-4 hover:bg-muted/30 transition-colors">
+    <div
+      className="border rounded-lg p-4 hover:bg-muted/30 transition-colors cursor-pointer"
+      onClick={() => onClick?.(task)}
+    >
       <div className="flex justify-between items-start mb-2">
         <h3 className="font-medium">{task.title}</h3>
         <div className="flex gap-2">
@@ -560,17 +598,23 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onStatusChange, onDelete }) =
         </div>
         
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
-            onClick={() => onStatusChange(task.id, getNextStatus(task.status))}
+            onClick={(e) => {
+              e.stopPropagation();
+              onStatusChange(task.id, getNextStatus(task.status));
+            }}
           >
             {task.status === 'Concluída' ? 'Reabrir' : task.status === 'Pendente' ? 'Iniciar' : 'Concluir'}
           </Button>
-          <Button 
-            variant="destructive" 
+          <Button
+            variant="destructive"
             size="sm"
-            onClick={() => onDelete(task.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(task.id);
+            }}
           >
             <Trash2 className="h-3 w-3" />
           </Button>

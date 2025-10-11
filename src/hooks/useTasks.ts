@@ -3,17 +3,28 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tables } from '@/integrations/supabase/types';
 
 export type Task = Tables<'tasks'> & {
-  app_users?: Tables<'app_users'> | null;
-  projects?: Tables<'projects'> | null;
+  lists?: {
+    id: string;
+    name: string;
+    space_id: string;
+    spaces?: {
+      id: string;
+      name: string;
+      icon?: string;
+      color?: string;
+    } | null;
+  } | null;
 };
 
 export type CreateTaskData = {
-  project_id: string;
+  list_id: string;
   title: string;
   description?: string | null;
   status?: string;
+  priority?: string;
   due_date?: string | null;
-  owner: string;
+  creator_id: string;
+  assignee_id?: string | null;
 };
 
 export type UpdateTaskData = Partial<{
@@ -23,41 +34,88 @@ export type UpdateTaskData = Partial<{
   due_date: string | null;
 }>;
 
-export const useTasks = (projectId?: string) => {
+export const useTasks = (listId?: string, spaceId?: string, userId?: string) => {
   const queryClient = useQueryClient();
 
-  // Fetch tasks, optionally filtered by projectId
+  // Fetch tasks, optionally filtered by listId, spaceId, or userId
   const { data: tasks, error, refetch, isLoading } = useQuery({
-    queryKey: ['tasks', projectId],
+    queryKey: ['tasks', listId, spaceId, userId],
     queryFn: async () => {
+      console.log('[useTasks] ============ START FETCH ============');
+      console.log('[useTasks] Fetching tasks with filters:', { listId, spaceId, userId });
+      const startTime = Date.now();
+
       let query = supabase
         .from('tasks')
         .select(`
           *,
-          app_users (
+          lists (
             id,
             name,
-            email
-          ),
-          projects (
-            id,
-            title,
-            status
+            space_id,
+            spaces (
+              id,
+              name,
+              icon,
+              color
+            )
           )
         `)
-        .order('due_date', { ascending: true });
+        .order('due_date', { ascending: true })
+        .order('created_at', { ascending: false });
 
-      // Filter by project_id if provided
-      if (projectId) {
-        query = query.eq('project_id', projectId);
+      // Filter by userId (assignee or creator) if provided
+      if (userId) {
+        query = query.or(`assignee_id.eq.${userId},creator_id.eq.${userId}`);
+      }
+
+      // Filter by list_id if provided
+      if (listId) {
+        query = query.eq('list_id', listId);
+      }
+
+      // Filter by space_id if provided (via lists)
+      if (spaceId && !listId) {
+        const { data: listsInSpace } = await supabase
+          .from('lists')
+          .select('id')
+          .eq('space_id', spaceId);
+
+        if (listsInSpace && listsInSpace.length > 0) {
+          const listIds = listsInSpace.map(l => l.id);
+          query = query.in('list_id', listIds);
+        } else {
+          // No lists in this space, return empty
+          console.log('[useTasks] No lists found in space:', spaceId);
+          return [];
+        }
       }
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      const elapsedTime = Date.now() - startTime;
+      console.log(`[useTasks] Query completed in ${elapsedTime}ms`);
+
+      if (error) {
+        console.error('[useTasks] ❌ ERROR fetching tasks:', error);
+        console.error('[useTasks] Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        console.log('[useTasks] ============ END FETCH (ERROR) ============');
+        throw error;
+      }
+
+      console.log('[useTasks] ✅ Tasks fetched successfully:', data?.length || 0, 'tasks');
+      console.log('[useTasks] Tasks data:', data);
+      console.log('[useTasks] ============ END FETCH (SUCCESS) ============');
       return data as Task[];
     },
-    enabled: true, // Always fetch tasks, even if projectId is undefined
+    enabled: true,
+    retry: 1,
+    staleTime: 0,
   });
 
   // Create a new task
@@ -128,22 +186,33 @@ export const useTasks = (projectId?: string) => {
         .from('tasks')
         .select(`
           *,
-          app_users (
+          lists (
+            id,
+            name,
+            space_id,
+            spaces (
+              id,
+              name,
+              icon,
+              color
+            )
+          ),
+          creator:app_users!tasks_creator_id_fkey (
             id,
             name,
             email
           ),
-          projects (
+          assignee:app_users!tasks_assignee_id_fkey (
             id,
-            title,
-            status
+            name,
+            email
           )
         `)
         .eq('id', taskId)
         .single();
 
       if (error) throw error;
-      
+
       return { data: data as Task, error: null };
     } catch (error: any) {
       console.error('Error fetching task:', error);

@@ -24,6 +24,11 @@ import ProjectsList from "./pages/projects/ProjectsList";
 import ProjectDetail from "./pages/projects/ProjectDetail";
 import TasksBoard from "./pages/projects/TasksBoard";
 import MyTasks from "./pages/projects/MyTasks";
+// Importar Work Management (hierarquia)
+import WorkManagement from "./pages/work/WorkManagement";
+import ProjectDetails from "./pages/work/ProjectDetails";
+import WorkspaceSettings from "./pages/work/WorkspaceSettings";
+import ListDetails from "./pages/work/ListDetails";
 import { useSession } from "./hooks/useSession";
 import { useUsers } from "./hooks/useUsers";
 import ModuleProtectedRoute from "./components/ModuleProtectedRoute";
@@ -107,6 +112,46 @@ const AppContent = () => {
         />
 
         {/* Rotas do módulo de Projetos */}
+        <Route
+          path="/work"
+          element={
+            user ? (
+              <ModuleProtectedRoute requiredModule="work" redirectTo="/">
+                <WorkManagement />
+              </ModuleProtectedRoute>
+            ) : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/work/project/:projectId"
+          element={
+            user ? (
+              <ModuleProtectedRoute requiredModule="work" redirectTo="/">
+                <ProjectDetails />
+              </ModuleProtectedRoute>
+            ) : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/work/workspaces"
+          element={
+            user ? (
+              <ModuleProtectedRoute requiredModule="work" redirectTo="/">
+                <WorkspaceSettings />
+              </ModuleProtectedRoute>
+            ) : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/work/list/:listId"
+          element={
+            user ? (
+              <ModuleProtectedRoute requiredModule="work" redirectTo="/">
+                <ListDetails />
+              </ModuleProtectedRoute>
+            ) : <Navigate to="/login" replace />
+          }
+        />
         <Route
           path="/projects"
           element={
