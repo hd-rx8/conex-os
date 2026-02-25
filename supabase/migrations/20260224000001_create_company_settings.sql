@@ -1,4 +1,4 @@
--- Migration: create company_settings table
+-- Migration: create company_settings table (idempotent)
 -- Each user has one company profile (1:1 with auth.users)
 
 CREATE TABLE IF NOT EXISTS public.company_settings (
@@ -22,7 +22,13 @@ CREATE TABLE IF NOT EXISTS public.company_settings (
 -- Enable RLS
 ALTER TABLE public.company_settings ENABLE ROW LEVEL SECURITY;
 
--- Users can only see and manage their own company settings
+-- Drop existing policies if they exist (safe re-run)
+DROP POLICY IF EXISTS "Users can view their own company settings"   ON public.company_settings;
+DROP POLICY IF EXISTS "Users can insert their own company settings" ON public.company_settings;
+DROP POLICY IF EXISTS "Users can update their own company settings" ON public.company_settings;
+DROP POLICY IF EXISTS "Users can delete their own company settings" ON public.company_settings;
+
+-- Recreate policies
 CREATE POLICY "Users can view their own company settings"
   ON public.company_settings
   FOR SELECT
@@ -52,6 +58,8 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_company_settings_updated_at ON public.company_settings;
 
 CREATE TRIGGER trg_company_settings_updated_at
   BEFORE UPDATE ON public.company_settings
