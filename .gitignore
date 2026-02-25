@@ -19,6 +19,8 @@ dist-ssr
 .env.development.local
 .env.test.local
 .env.production.local
+# Exception: .env.example is safe to commit (contains no real credentials)
+!.env.example
 
 # Editor directories and files
 .vscode/*
