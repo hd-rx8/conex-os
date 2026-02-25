@@ -29,6 +29,7 @@ const clientSchema = z.object({
   email: z.string().email('E-mail inválido').optional().or(z.literal('')),
   company: z.string().optional(),
   phone: z.string().optional(),
+  document: z.string().optional(),
 });
 
 type ClientFormData = z.infer<typeof clientSchema>;
@@ -48,7 +49,8 @@ const ClientForm = ({
       name: client?.name || '',
       email: client?.email || '',
       company: client?.company || '',
-      phone: client?.phone || ''
+      phone: client?.phone || '',
+      document: client?.document || '',
     }
   });
 
@@ -58,6 +60,26 @@ const ClientForm = ({
     if (numbers.length <= 3) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
     if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 3)} ${numbers.slice(3)}`;
     return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 3)} ${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+  };
+
+  const formatDocument = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 11) {
+      // CPF: 000.000.000-00
+      if (numbers.length <= 3) return numbers;
+      if (numbers.length <= 6) return `${numbers.slice(0, 3)}.${numbers.slice(3)}`;
+      if (numbers.length <= 9) return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`;
+      return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9, 11)}`;
+    } else {
+      // CNPJ: 00.000.000/0000-00
+      if (numbers.length <= 12) return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8)}`;
+      return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8, 12)}-${numbers.slice(12, 14)}`;
+    }
+  };
+
+  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatDocument(e.target.value);
+    setValue('document', formatted, { shouldValidate: true });
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,6 +93,7 @@ const ClientForm = ({
       email: data.email || null,
       company: data.company || null,
       phone: data.phone || null,
+      document: data.document || null,
     });
   };
 
@@ -120,6 +143,19 @@ const ClientForm = ({
         />
         {errors.phone && (
           <p className="text-sm text-destructive mt-1">{errors.phone.message}</p>
+        )}
+      </div>
+
+      <div>
+        <label className="text-sm font-medium">CPF / CNPJ</label>
+        <Input
+          {...register('document')}
+          onChange={handleDocumentChange}
+          placeholder="000.000.000-00 ou 00.000.000/0000-00"
+          maxLength={18}
+        />
+        {errors.document && (
+          <p className="text-sm text-destructive mt-1">{errors.document.message}</p>
         )}
       </div>
 
@@ -297,6 +333,7 @@ export default function Clients() {
                     <TableHead className="border-r">Nome</TableHead>
                     <TableHead className="border-r">E-mail</TableHead>
                     <TableHead className="border-r">Empresa</TableHead>
+                    <TableHead className="border-r">CPF / CNPJ</TableHead>
                     <TableHead className="border-r">Telefone</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -308,7 +345,7 @@ export default function Clients() {
                     ))
                   ) : filteredClients.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
                       </TableCell>
                     </TableRow>
@@ -322,6 +359,7 @@ export default function Clients() {
                         <TableCell className="font-medium border-r align-middle h-[40px]">{client.name}</TableCell>
                         <TableCell className="border-r align-middle h-[40px]">{client.email || '-'}</TableCell>
                         <TableCell className="border-r align-middle h-[40px]">{client.company || '-'}</TableCell>
+                        <TableCell className="border-r align-middle h-[40px] font-mono text-sm">{client.document || '-'}</TableCell>
                         <TableCell className="border-r align-middle h-[40px]">{client.phone || '-'}</TableCell>
                         <TableCell className="text-right align-middle h-[40px]">
                           <div className="flex justify-end space-x-2">
@@ -557,6 +595,25 @@ export default function Clients() {
                             </div>
                           )}
                           label="Empresa do Cliente"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-muted-foreground">CPF / CNPJ:</p>
+                        <EditableField
+                          value={selectedClient.document || ''}
+                          onSave={(newValue) => handleUpdateClientField('document', newValue as string)}
+                          type="text"
+                          placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                          isLoading={isSaving['document']}
+                          displayClassName="flex items-center gap-2"
+                          formatDisplayValue={(value) => (
+                            <div className="flex items-center gap-2">
+                              <UserIcon className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-mono text-sm">{value || 'Não informado'}</span>
+                            </div>
+                          )}
+                          label="CPF / CNPJ do Cliente"
                         />
                       </div>
                     </div>

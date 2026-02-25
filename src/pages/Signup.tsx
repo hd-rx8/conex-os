@@ -80,6 +80,9 @@ const Signup = () => {
     <div className="min-h-screen bg-gradient-to-br from-primary/5 to-accent/5 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
+          <div className="flex justify-center mb-2">
+            <img src="/logo.png" alt="CONEX.HUB" className="h-16 w-auto" />
+          </div>
           <CardTitle className="text-2xl gradient-text">CONEX.HUB</CardTitle>
           <CardDescription>
             Crie sua conta para começar

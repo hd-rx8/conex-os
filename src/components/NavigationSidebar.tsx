@@ -37,7 +37,7 @@ import type { WorkspaceTree } from '@/types/hierarchy';
 interface NavigationItem {
   id: string;
   label: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   path?: string;
   children?: NavigationItem[];
 }
@@ -325,7 +325,7 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
         {/* Mobile Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold gradient-text">CONEX.HUB</h2>
+            <img src="/logo.png" alt="CONEX.HUB" className="h-8 w-auto" />
           </div>
           <Button
             variant="ghost"
@@ -402,12 +402,23 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
       )}
     >
       {/* Desktop Header */}
-      <div className="flex items-center justify-between p-4 border-b">
-        {!isCollapsed && (
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold gradient-text">CONEX.HUB</h2>
-          </div>
-        )}
+      <div className={cn(
+        "flex border-b p-3",
+        isCollapsed ? "flex-col items-center gap-2" : "flex-row items-center justify-between px-4 py-3"
+      )}>
+        {/* Logo */}
+        <div className="flex items-center justify-center">
+          <img
+            src="/logo.png"
+            alt="CONEX.HUB"
+            className={cn(
+              "object-contain transition-all duration-300",
+              isCollapsed ? "h-7 w-7" : "h-8 w-auto"
+            )}
+          />
+        </div>
+
+        {/* Toggle Button */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -415,7 +426,7 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
                 variant="ghost"
                 size="icon"
                 onClick={onToggleCollapse}
-                className="h-8 w-8 ml-auto"
+                className={cn("h-8 w-8 shrink-0", !isCollapsed && "ml-auto")}
                 aria-label="Colapsar menu"
               >
                 {isCollapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
@@ -427,6 +438,7 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
           </Tooltip>
         </TooltipProvider>
       </div>
+
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-4" aria-label="Navegação principal">

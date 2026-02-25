@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useProposals, Proposal } from '@/hooks/useProposals';
+import { useProposals, Proposal, ProposalFilters } from '@/hooks/useProposals';
 import { useSession } from '@/hooks/useSession';
 import { useClients, Client, UpdateClientData } from '@/hooks/useClients';
 import { useUsers } from '@/hooks/useUsers';
@@ -265,9 +265,12 @@ const Opportunities: React.FC = () => {
         status: filterStatus !== 'all' ? (filterStatus as Proposal['status']) : undefined,
         ownerId: filterOwner !== 'all' ? filterOwner : undefined,
         clientId: filterClient !== 'all' ? filterClient : undefined,
+        period: filterPeriod !== 'all' ? (filterPeriod as ProposalFilters['period']) : 'all',
+        sortBy: sortBy as ProposalFilters['sortBy'],
+        sortOrder: sortOrder,
       });
     }
-  }, [searchTerm, filterStatus, filterOwner, filterClient, currentView, setFilters]);
+  }, [searchTerm, filterStatus, filterOwner, filterClient, filterPeriod, sortBy, sortOrder, currentView, setFilters]);
 
   // Kanban handlers
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, proposalId: string) => {

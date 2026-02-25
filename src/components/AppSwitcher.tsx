@@ -77,7 +77,10 @@ const AppSwitcher = () => {
       
       <DialogContent className="sm:max-w-md p-0">
         <DialogHeader className="p-4 border-b">
-          <DialogTitle>Produtos do Work OS</DialogTitle>
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="CONEX.HUB" className="h-7 w-auto" />
+            <DialogTitle>Produtos do Work OS</DialogTitle>
+          </div>
         </DialogHeader>
         <div className="grid grid-cols-3 gap-4 p-6">
           {apps.map((app) => (

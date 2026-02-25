@@ -94,10 +94,11 @@ export interface UpdateProposalData {
 export interface ProposalFilters {
   status?: Proposal['status'] | 'all';
   ownerId?: string | 'all';
+  clientId?: string | 'all';
   search?: string;
-  sortBy?: 'created_at' | 'amount';
+  sortBy?: 'created_at' | 'amount' | 'updated_at';
   sortOrder?: 'asc' | 'desc';
-  period?: 'today' | '7days' | '30days' | 'currentMonth' | 'all' | 'custom';
+  period?: 'today' | '7days' | '30days' | '90days' | 'currentMonth' | 'all' | 'custom';
   dateField?: 'created_at' | 'approved_at'; // NEW: choose which date to filter
   customStartDate?: string; // NEW: custom date range start
   customEndDate?: string; // NEW: custom date range end
@@ -158,6 +159,10 @@ export const useProposals = () => {
           query = query.eq('owner', filters.ownerId);
         }
 
+        if (filters.clientId && filters.clientId !== 'all') {
+          query = query.eq('client_id', filters.clientId);
+        }
+
         if (filters.search) {
           query = query.or(`title.ilike.%${filters.search}%,clients.name.ilike.%${filters.search}%`);
         }
@@ -186,6 +191,11 @@ export const useProposals = () => {
               filterStartDate.setDate(now.getDate() - 30);
               filterStartDate.setHours(0, 0, 0, 0);
               break;
+            case '90days':
+              filterStartDate = new Date();
+              filterStartDate.setDate(now.getDate() - 90);
+              filterStartDate.setHours(0, 0, 0, 0);
+              break;
             case 'currentMonth':
               filterStartDate = startOfMonth(now);
               filterEndDate = endOfMonth(now);
@@ -211,9 +221,8 @@ export const useProposals = () => {
           }
         }
 
-        if (filters.sortBy) {
-          query = query.order(filters.sortBy, { ascending: filters.sortOrder === 'asc' });
-        }
+        const sortField = filters.sortBy || 'created_at';
+        query = query.order(sortField, { ascending: filters.sortOrder === 'asc' });
 
         const { data, error } = await query;
 

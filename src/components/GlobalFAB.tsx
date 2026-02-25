@@ -19,6 +19,7 @@ const clientSchema = z.object({
   email: z.string().email('E-mail inválido').optional().or(z.literal('')),
   company: z.string().optional(),
   phone: z.string().optional(),
+  document: z.string().optional(),
 });
 
 type ClientFormData = z.infer<typeof clientSchema>;
@@ -60,12 +61,31 @@ const ClientForm = ({
     setValue('phone', formatted, { shouldValidate: true });
   };
 
+  const formatDocument = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 11) {
+      if (numbers.length <= 3) return numbers;
+      if (numbers.length <= 6) return `${numbers.slice(0, 3)}.${numbers.slice(3)}`;
+      if (numbers.length <= 9) return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`;
+      return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9, 11)}`;
+    } else {
+      if (numbers.length <= 12) return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8)}`;
+      return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8, 12)}-${numbers.slice(12, 14)}`;
+    }
+  };
+
+  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatDocument(e.target.value);
+    setValue('document', formatted, { shouldValidate: true });
+  };
+
   const onFormSubmit = async (data: ClientFormData) => {
     await onSubmit({
       name: data.name,
       email: data.email || null,
       company: data.company || null,
       phone: data.phone || null,
+      document: data.document || null,
     });
   };
 
@@ -91,6 +111,16 @@ const ClientForm = ({
       <div>
         <label className="text-sm font-medium">Telefone</label>
         <Input {...register('phone')} onChange={handlePhoneChange} placeholder="(XX) X XXXX-XXXX" maxLength={16} />
+      </div>
+
+      <div>
+        <label className="text-sm font-medium">CPF / CNPJ</label>
+        <Input
+          {...register('document')}
+          onChange={handleDocumentChange}
+          placeholder="000.000.000-00 ou 00.000.000/0000-00"
+          maxLength={18}
+        />
       </div>
 
       <div className="flex justify-end space-x-2 pt-4">

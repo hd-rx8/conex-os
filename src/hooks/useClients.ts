@@ -9,9 +9,10 @@ export interface Client {
   email: string | null;
   company: string | null;
   phone: string | null;
-  created_at?: string; // Tornar opcional
-  updated_at?: string; // Tornar opcional
-  created_by?: string | null; // Tornar opcional
+  document?: string | null; // CPF ou CNPJ (opcional para compatibilidade antes da migration)
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string | null;
 }
 
 export interface CreateClientData {
@@ -19,6 +20,7 @@ export interface CreateClientData {
   email?: string | null;
   company?: string | null;
   phone?: string | null;
+  document?: string | null; // CPF ou CNPJ
   created_by?: string;
 }
 
@@ -27,6 +29,7 @@ export interface UpdateClientData {
   email?: string | null;
   company?: string | null;
   phone?: string | null;
+  document?: string | null; // CPF ou CNPJ
 }
 
 export const useClients = () => {
