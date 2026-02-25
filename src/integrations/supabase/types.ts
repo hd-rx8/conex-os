@@ -35,6 +35,66 @@ export type Database = {
         }
         Relationships: []
       }
+      company_settings: {
+        Row: {
+          id: string
+          user_id: string
+          company_name: string | null
+          cnpj: string | null
+          phone: string | null
+          email: string | null
+          website: string | null
+          address: string | null
+          city: string | null
+          state: string | null
+          zip_code: string | null
+          logo_url: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          company_name?: string | null
+          cnpj?: string | null
+          phone?: string | null
+          email?: string | null
+          website?: string | null
+          address?: string | null
+          city?: string | null
+          state?: string | null
+          zip_code?: string | null
+          logo_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          company_name?: string | null
+          cnpj?: string | null
+          phone?: string | null
+          email?: string | null
+          website?: string | null
+          address?: string | null
+          city?: string | null
+          state?: string | null
+          zip_code?: string | null
+          logo_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+
       clients: {
         Row: {
           id: string
