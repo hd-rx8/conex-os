@@ -172,6 +172,7 @@ const StepServices: React.FC = () => {
   const allCategories = [...new Set(allAvailableServices.map(s => s.category))];
   const desiredOrder = [
     'Web Design',
+    'Desenvolvimento',
     'Tráfego Pago',
     'Inteligência Comercial',
     'IA & Automação',
