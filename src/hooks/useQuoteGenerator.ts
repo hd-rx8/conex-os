@@ -344,11 +344,65 @@ export const staticServices: Service[] = [ // Renamed to staticServices
     id: 'shipping-system-install',
     name: 'Instalação de Novo Sistema de Frete',
     description: 'Implementação e configuração de sistemas de cálculo e gestão de frete para otimizar suas entregas.',
-    base_price: 500, // Corrigido de basePrice para base_price
+    base_price: 500,
     category: 'Outros Serviços',
     icon: '🚚',
     features: ['Integração com transportadoras', 'Configuração de tabelas de frete', 'Otimização de custos de envio'],
-    billing_type: 'one_time' // Default to one_time
+    billing_type: 'one_time'
+  },
+  // Categoria: Desenvolvimento
+  {
+    id: 'system-development',
+    name: 'Desenvolvimento de Sistema',
+    description: 'Desenvolvimento de sistema web sob medida com painel administrativo, banco de dados e funcionalidades personalizadas conforme a necessidade do cliente.',
+    base_price: 5000,
+    category: 'Desenvolvimento',
+    icon: '💻',
+    features: [
+      'Levantamento de requisitos e escopo',
+      'Desenvolvimento frontend e backend',
+      'Banco de dados estruturado',
+      'Painel administrativo personalizado',
+      'Autenticação e controle de acesso',
+      'Deploy e configuração de servidor',
+      'Documentação técnica básica',
+    ],
+    popular: true,
+    billing_type: 'one_time'
+  },
+  {
+    id: 'app-development',
+    name: 'Desenvolvimento de Aplicativo',
+    description: 'Aplicativo mobile multiplataforma (Android e iOS) com design responsivo, integração com APIs e publicação nas lojas.',
+    base_price: 8000,
+    category: 'Desenvolvimento',
+    icon: '📱',
+    features: [
+      'Design UI/UX para mobile',
+      'Desenvolvimento multiplataforma (iOS + Android)',
+      'Integração com APIs e serviços externos',
+      'Notificações push',
+      'Publicação na App Store e Google Play',
+      'Suporte pós-lançamento (30 dias)',
+    ],
+    billing_type: 'one_time'
+  },
+  {
+    id: 'api-integration',
+    name: 'Integração de Sistemas / API',
+    description: 'Desenvolvimento e integração de APIs entre sistemas distintos, automatizando fluxos de dados e eliminando processos manuais.',
+    base_price: 2500,
+    category: 'Desenvolvimento',
+    icon: '🔗',
+    features: [
+      'Mapeamento de fluxos de integração',
+      'Desenvolvimento de API REST/Webhook',
+      'Integração com sistemas legados',
+      'Automação de transferência de dados',
+      'Testes e validação de integrações',
+      'Documentação da API (Swagger/Postman)',
+    ],
+    billing_type: 'one_time'
   }
 ];
 
