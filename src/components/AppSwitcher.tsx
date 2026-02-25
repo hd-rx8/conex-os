@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { AppWindow, Grid, LayoutDashboard, FolderOpen } from 'lucide-react';
+import { AppWindow, ArrowLeftRight, LayoutDashboard, FolderOpen } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -65,7 +65,7 @@ const AppSwitcher = () => {
                 className="relative"
                 aria-label="Trocar módulo"
               >
-                <Grid className="h-5 w-5" />
+                <ArrowLeftRight className="h-5 w-5" />
               </Button>
             </DialogTrigger>
           </TooltipTrigger>
