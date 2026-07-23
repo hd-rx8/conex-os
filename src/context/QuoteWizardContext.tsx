@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useQuoteGenerator, SelectedService, ClientInfo, Service, PaymentOption } from '@/hooks/useQuoteGenerator';
 import { useCustomServices, CustomService, CreateCustomServiceData, UpdateCustomServiceData } from '@/hooks/useCustomServices'; // Importar tipos aqui
 import { useProposals, CreateProposalData, ProposalService } from '@/hooks/useProposals'; // Import ProposalService
@@ -6,10 +7,47 @@ import { useClients, Client, CreateClientData } from '@/hooks/useClients'; // Im
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client'; // For client management
 import { Database } from '@/integrations/supabase/types'; // Import Database types
+import {
+  getProposalEditorSnapshot,
+  mapProposalEditorError,
+  ProposalEditorDomainError,
+  proposalQueryKeys,
+  saveProposalEdit,
+} from '@/features/crm/proposals/proposalEditorApi';
+import {
+  fingerprintProposalDraft,
+  mapSnapshotToDraft,
+} from '@/features/crm/proposals/proposalEditorMapper';
+import type {
+  ProposalEditorDraft,
+  ProposalEditorErrorCode,
+  ProposalEditorSnapshot,
+} from '@/features/crm/proposals/proposalEditorTypes';
+import { isLockedProposal } from '@/features/crm/proposals/proposalStatus';
 
 type BillingType = Database['public']['Enums']['billing_type'];
 
+export type QuoteWizardMode = 'create' | 'edit';
+
+export interface ProposalMeta {
+  id: string;
+  title: string;
+  status: string;
+  updatedAt: string;
+  shareToken: string | null;
+}
+
 interface QuoteWizardContextType {
+  mode: QuoteWizardMode;
+  proposalMeta: ProposalMeta | null;
+  isHydrating: boolean;
+  loadError: ProposalEditorErrorCode | null;
+  isLocked: boolean;
+  isDirty: boolean;
+  isSaving: boolean;
+  saveError: ProposalEditorErrorCode | null;
+  saveProposalChanges?: () => Promise<boolean>;
+  reloadProposal: () => Promise<void>;
   // Stepper state
   currentStep: number;
   goToNextStep: () => void;
@@ -96,7 +134,17 @@ interface QuoteWizardContextType {
 
 const QuoteWizardContext = createContext<QuoteWizardContextType | undefined>(undefined);
 
-export const QuoteWizardProvider = ({ children, userId }: { children: ReactNode; userId: string }) => {
+export const QuoteWizardProvider = ({
+  children,
+  userId,
+  mode,
+  proposalId,
+}: {
+  children: ReactNode;
+  userId: string;
+  mode: QuoteWizardMode;
+  proposalId?: string;
+}) => {
   const {
     selectedServices, clientInfo, selectedPayment, paymentType, installmentNumber, installmentValue, manualInstallmentTotal,
     cashDiscountPercentage, notes, isValidityEnabled, validityDays,
@@ -107,26 +155,192 @@ export const QuoteWizardProvider = ({ children, userId }: { children: ReactNode;
     calculateFinalTotal, calculateInstallmentInterestRate, getTotalInstallmentValue, getSelectedPayment, clearQuote,
     services: allAvailableServicesFromHook, paymentOptions,
     proposalTitle, setProposalTitle, proposalLogoUrl, setProposalLogoUrl, proposalGradientTheme, setProposalGradientTheme,
-    showInterestRate, setShowInterestRate,
+    showInterestRate, setShowInterestRate, hydrateQuote,
   } = useQuoteGenerator(userId, []);
 
   const { customServices, fetchCustomServices, createCustomService, updateCustomService, deleteCustomService } = useCustomServices();
   const { createProposal, createDraftProposal } = useProposals();
   const { clients: existingClients, fetchClients: fetchExistingClients, createClient } = useClients(); // This is where createClient comes from
-
-  console.log('DEBUG: createClient from useClients in QuoteWizardProvider:', createClient); // ADDED LOG HERE
+  const queryClient = useQueryClient();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [isNewClient, setIsNewClient] = useState(false); // Default to false (select existing)
   const [generatedShareLink, setGeneratedShareLink] = useState<string | null>(null);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
-  const steps = [
+  const [proposalMeta, setProposalMeta] = useState<ProposalMeta | null>(null);
+  const [isHydrating, setIsHydrating] = useState(mode === 'edit');
+  const [loadError, setLoadError] = useState<ProposalEditorErrorCode | null>(null);
+  const [baselineFingerprint, setBaselineFingerprint] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<ProposalEditorErrorCode | null>(null);
+  const hydratedVersionRef = useRef<string | null>(null);
+  const steps = useMemo(() => [
     { id: 'services', name: 'Serviços' },
     { id: 'settings', name: 'Configurações' },
     { id: 'client', name: 'Cliente' },
     { id: 'review', name: 'Revisar' },
-  ];
+  ], []);
+
+  const currentDraft = useMemo<ProposalEditorDraft>(() => ({
+    selectedServices,
+    clientInfo,
+    selectedClientId,
+    isNewClient,
+    paymentType,
+    installmentNumber,
+    installmentValue,
+    manualInstallmentTotal,
+    cashDiscountPercentage,
+    notes,
+    isValidityEnabled,
+    validityDays,
+    proposalTitle,
+    proposalLogoUrl,
+    proposalGradientTheme,
+    showInterestRate,
+  }), [
+    cashDiscountPercentage,
+    clientInfo,
+    installmentNumber,
+    installmentValue,
+    isNewClient,
+    isValidityEnabled,
+    manualInstallmentTotal,
+    notes,
+    paymentType,
+    proposalGradientTheme,
+    proposalLogoUrl,
+    proposalTitle,
+    selectedClientId,
+    selectedServices,
+    showInterestRate,
+    validityDays,
+  ]);
+  const currentDraftRef = useRef(currentDraft);
+  currentDraftRef.current = currentDraft;
+  const isDirty = mode === 'edit'
+    && baselineFingerprint !== null
+    && fingerprintProposalDraft(currentDraft) !== baselineFingerprint;
+  const isDirtyRef = useRef(isDirty);
+  isDirtyRef.current = isDirty;
+  const isLocked = mode === 'edit'
+    && proposalMeta !== null
+    && isLockedProposal(proposalMeta.status);
+
+  const applySnapshot = useCallback((snapshot: ProposalEditorSnapshot) => {
+    const draft = mapSnapshotToDraft(snapshot);
+    const version = `${snapshot.id}:${snapshot.updated_at}`;
+    setProposalMeta({
+      id: snapshot.id,
+      title: snapshot.title,
+      status: snapshot.status,
+      updatedAt: snapshot.updated_at,
+      shareToken: snapshot.share_token,
+    });
+
+    if (hydratedVersionRef.current === version || isDirtyRef.current) return;
+
+    hydratedVersionRef.current = version;
+    hydrateQuote(draft);
+    setSelectedClientId(draft.selectedClientId);
+    setIsNewClient(draft.isNewClient);
+    setCurrentStep(0);
+    setGeneratedShareLink(snapshot.share_token ? `${window.location.origin}/p/${snapshot.share_token}` : null);
+    setBaselineFingerprint(fingerprintProposalDraft(draft));
+  }, [hydrateQuote]);
+
+  const reloadProposal = useCallback(async () => {
+    if (mode !== 'edit' || !proposalId) return;
+
+    setIsHydrating(true);
+    setLoadError(null);
+    try {
+      applySnapshot(await getProposalEditorSnapshot(proposalId));
+    } catch (error) {
+      setLoadError(error instanceof ProposalEditorDomainError ? error.code : mapProposalEditorError(error));
+    } finally {
+      setIsHydrating(false);
+    }
+  }, [applySnapshot, mode, proposalId]);
+
+  useEffect(() => {
+    if (mode !== 'edit') return;
+    void reloadProposal();
+  }, [mode, reloadProposal]);
+
+  const saveProposalChanges = useCallback(async (): Promise<boolean> => {
+    if (mode !== 'edit' || !proposalId || !proposalMeta || isLocked) return false;
+
+    const draft = currentDraftRef.current;
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      const result = await saveProposalEdit({
+        proposalId,
+        expectedUpdatedAt: proposalMeta.updatedAt,
+        proposal: {
+          title: draft.proposalTitle,
+          client_id: draft.selectedClientId,
+          notes: draft.notes || null,
+          payment_type: draft.paymentType,
+          cash_discount_percentage: draft.cashDiscountPercentage,
+          installment_number: draft.installmentNumber,
+          installment_value: draft.installmentValue,
+          manual_installment_total: draft.manualInstallmentTotal,
+          is_validity_enabled: draft.isValidityEnabled,
+          validity_days: draft.validityDays,
+          proposal_logo_url: draft.proposalLogoUrl,
+          proposal_gradient_theme: draft.proposalGradientTheme,
+          show_interest_rate: draft.showInterestRate,
+        },
+        services: draft.selectedServices.map((service) => ({
+          service_id: service.id,
+          name: service.name,
+          description: service.description || null,
+          base_price: service.base_price,
+          quantity: service.quantity,
+          custom_price: service.customPrice ?? null,
+          discount: service.discount ?? 0,
+          discount_percentage: service.discountPercentage ?? 0,
+          discount_type: service.discountType ?? 'percentage',
+          features: service.customFeatures ?? service.features,
+          category: service.category || null,
+          icon: service.icon || null,
+          is_custom: service.isCustom ?? false,
+          billing_type: service.billing_type,
+        })),
+        newClient: draft.isNewClient ? {
+          name: draft.clientInfo.name,
+          email: draft.clientInfo.email || null,
+          company: draft.clientInfo.company || null,
+          phone: draft.clientInfo.phone || null,
+        } : null,
+      });
+
+      if (!result.success) {
+        setSaveError(result.errorCode ?? 'unknown');
+        return false;
+      }
+
+      const savedFingerprint = fingerprintProposalDraft(draft);
+      isDirtyRef.current = false;
+      setBaselineFingerprint(savedFingerprint);
+      queryClient.invalidateQueries({ queryKey: proposalQueryKeys.ownerLists(userId) });
+      queryClient.invalidateQueries({ queryKey: proposalQueryKeys.editor(proposalId) });
+      queryClient.invalidateQueries({ queryKey: proposalQueryKeys.snapshot(proposalId) });
+      if (proposalMeta.shareToken) {
+        queryClient.invalidateQueries({ queryKey: proposalQueryKeys.public(proposalMeta.shareToken) });
+      }
+      await reloadProposal();
+      return true;
+    } catch {
+      setSaveError('unknown');
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  }, [isLocked, mode, proposalId, proposalMeta, queryClient, reloadProposal, userId]);
 
   const validateCurrentStep = useCallback(() => {
     switch (steps[currentStep].id) {
@@ -299,6 +513,7 @@ export const QuoteWizardProvider = ({ children, userId }: { children: ReactNode;
       // Theme settings
       proposal_logo_url: proposalLogoUrl,
       proposal_gradient_theme: proposalGradientTheme,
+      show_interest_rate: showInterestRate,
     };
   };
 
@@ -344,6 +559,7 @@ export const QuoteWizardProvider = ({ children, userId }: { children: ReactNode;
       const { data, error } = await createProposal(proposalData);
 
       if (error) {
+        return false;
       } else {
         toast.success('Proposta registrada com sucesso!');
         clearQuote(); // Clear form after successful save
@@ -367,6 +583,16 @@ export const QuoteWizardProvider = ({ children, userId }: { children: ReactNode;
   return (
     <QuoteWizardContext.Provider
       value={{
+        mode,
+        proposalMeta,
+        isHydrating,
+        loadError,
+        isLocked,
+        isDirty,
+        isSaving,
+        saveError,
+        saveProposalChanges: isLocked ? undefined : saveProposalChanges,
+        reloadProposal,
         currentStep,
         goToNextStep,
         goToPreviousStep,

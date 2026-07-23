@@ -16,7 +16,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Opportunities from "./pages/crm/Opportunities";
 import ProposalPrint from "./pages/crm/ProposalPrint";
 import Clients from "./pages/crm/Clients";
-import QuoteGeneratorPage from "./pages/crm/QuoteGeneratorPage";
+import QuoteGeneratorRoute from "./pages/crm/QuoteGeneratorRoute";
 import PublicProposalView from "./pages/crm/PublicProposalView";
 import { useSession } from "./hooks/useSession";
 import { useUsers } from "./hooks/useUsers";
@@ -24,7 +24,6 @@ import ModuleProtectedRoute from "./components/ModuleProtectedRoute";
 import { ThemeProvider } from "next-themes";
 import { GradientThemeProvider } from "./context/GradientThemeContext";
 import { CurrencyProvider } from "./context/CurrencyContext";
-import { QuoteWizardProvider } from "./context/QuoteWizardContext";
 import { ActiveProjectProvider } from "./context/ActiveProjectContext";
 import {
   WORK_BOARD,
@@ -60,8 +59,7 @@ const AppContent = () => {
   }
 
   return (
-    <QuoteWizardProvider userId={user?.id || ''}>
-      <Suspense
+    <Suspense
         fallback={
           <div className="flex min-h-[50vh] items-center justify-center text-sm text-muted-foreground">
             Carregando módulo…
@@ -93,10 +91,20 @@ const AppContent = () => {
           element={
             user ? (
               <ModuleProtectedRoute requiredModule="crm" redirectTo={WORK_HOME}>
-                <QuoteGeneratorPage userId={user.id} />
+                <QuoteGeneratorRoute userId={user.id} mode="create" />
               </ModuleProtectedRoute>
             ) : <Navigate to="/login" replace />
           } 
+        />
+        <Route
+          path="/generator/:proposalId/edit"
+          element={
+            user ? (
+              <ModuleProtectedRoute requiredModule="crm" redirectTo={WORK_HOME}>
+                <QuoteGeneratorRoute userId={user.id} mode="edit" />
+              </ModuleProtectedRoute>
+            ) : <Navigate to="/login" replace />
+          }
         />
         <Route
           path="/opportunities"
@@ -212,8 +220,7 @@ const AppContent = () => {
         />
         <Route path="*" element={<NotFound />} />
         </Routes>
-      </Suspense>
-    </QuoteWizardProvider>
+    </Suspense>
   );
 };
 

@@ -76,6 +76,7 @@ export interface CreateProposalData {
   // Theme settings
   proposal_logo_url?: string | null;
   proposal_gradient_theme?: string | null;
+  show_interest_rate?: boolean | null;
 }
 
 export interface UpdateProposalData {
@@ -496,6 +497,7 @@ export const useProposals = () => {
         validity_days: safeNumber(originalProposal.validity_days),
         proposal_logo_url: originalProposal.proposal_logo_url || null,
         proposal_gradient_theme: originalProposal.proposal_gradient_theme || null,
+        show_interest_rate: (originalProposal as { show_interest_rate?: boolean | null }).show_interest_rate ?? true,
         services: originalServices?.map(s => ({
           service_id: s.service_id || '',
           name: s.name || '',

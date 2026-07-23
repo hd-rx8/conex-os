@@ -1,114 +1,200 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { CurrencyProvider } from '@/context/CurrencyContext';
+import type { ProposalEditorSnapshot } from '@/features/crm/proposals/proposalEditorTypes';
 
-const hookSetShowInterestRate = vi.hoisted(() => vi.fn());
-
-vi.mock('@/hooks/useQuoteGenerator', () => ({
-  useQuoteGenerator: () => ({
-    selectedServices: [],
-    clientInfo: { name: '', email: '', company: '', phone: '' },
-    selectedPayment: 'cash',
-    paymentType: 'cash',
-    installmentNumber: 2,
-    installmentValue: 0,
-    manualInstallmentTotal: null,
-    cashDiscountPercentage: 5,
-    notes: '',
-    isValidityEnabled: true,
-    validityDays: 30,
-    proposalTitle: '',
-    proposalLogoUrl: '',
-    proposalGradientTheme: 'conexhub',
-    showInterestRate: false,
-    addService: vi.fn(),
-    removeService: vi.fn(),
-    updateServiceQuantity: vi.fn(),
-    updateServicePrice: vi.fn(),
-    updateServiceDiscount: vi.fn(),
-    updateServiceDiscountType: vi.fn(),
-    updateServiceFeatures: vi.fn(),
-    setClientInfo: vi.fn(),
-    setSelectedPayment: vi.fn(),
-    setPaymentType: vi.fn(),
-    setInstallmentNumber: vi.fn(),
-    setInstallmentValue: vi.fn(),
-    setManualInstallmentTotal: vi.fn(),
-    setCashDiscountPercentage: vi.fn(),
-    setNotes: vi.fn(),
-    setIsValidityEnabled: vi.fn(),
-    setValidityDays: vi.fn(),
-    setProposalTitle: vi.fn(),
-    setProposalLogoUrl: vi.fn(),
-    setProposalGradientTheme: vi.fn(),
-    setShowInterestRate: hookSetShowInterestRate,
-    calculateSubtotal: () => 0,
-    calculateOriginalSubtotal: () => 0,
-    calculateTotal: () => 0,
-    calculateOneTimeTotal: () => 0,
-    calculateMonthlyTotal: () => 0,
-    calculateCashDiscount: () => 0,
-    calculateCashTotal: () => 0,
-    calculateFinalTotal: () => 0,
-    calculateInstallmentInterestRate: () => 0,
-    getTotalInstallmentValue: () => 0,
-    getSelectedPayment: () => ({
-      name: 'À vista',
-      fee: 0,
-      installments: 1,
-      type: 'cash' as const,
-    }),
-    clearQuote: vi.fn(),
-    services: [],
-    paymentOptions: [],
-  }),
+const editorApi = vi.hoisted(() => ({
+  getProposalEditorSnapshot: vi.fn(),
+  saveProposalEdit: vi.fn(),
+}));
+const customServicesApi = vi.hoisted(() => ({
+  customServices: [],
+  fetchCustomServices: vi.fn(),
+  createCustomService: vi.fn(),
+  updateCustomService: vi.fn(),
+  deleteCustomService: vi.fn(),
+}));
+const clientsApi = vi.hoisted(() => ({
+  clients: [],
+  fetchClients: vi.fn(),
+  createClient: vi.fn(),
+}));
+const proposalsApi = vi.hoisted(() => ({
+  createProposal: vi.fn(),
+  createDraftProposal: vi.fn(),
 }));
 
+vi.mock('@/features/crm/proposals/proposalEditorApi', () => editorApi);
 vi.mock('@/hooks/useCustomServices', () => ({
-  useCustomServices: () => ({
-    customServices: [],
-    fetchCustomServices: vi.fn(),
-    createCustomService: vi.fn(),
-    updateCustomService: vi.fn(),
-    deleteCustomService: vi.fn(),
-  }),
+  useCustomServices: () => customServicesApi,
 }));
-
-vi.mock('@/hooks/useProposals', () => ({
-  useProposals: () => ({ createProposal: vi.fn(), createDraftProposal: vi.fn() }),
-}));
-
 vi.mock('@/hooks/useClients', () => ({
-  useClients: () => ({ clients: [], fetchClients: vi.fn(), createClient: vi.fn() }),
+  useClients: () => clientsApi,
+}));
+vi.mock('@/hooks/useProposals', () => ({
+  useProposals: () => proposalsApi,
 }));
 
 import { QuoteWizardProvider, useQuoteWizard } from './QuoteWizardContext';
 
-const InterestRateControl = () => {
-  const { showInterestRate, setShowInterestRate } = useQuoteWizard();
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: false } },
+});
 
+const snapshot: ProposalEditorSnapshot = {
+  id: 'proposal-1',
+  owner: 'user-1',
+  title: 'Proposta existente',
+  amount: 1500,
+  status: 'Rascunho',
+  created_at: '2026-07-20T10:00:00.000Z',
+  updated_at: '2026-07-20T10:00:00.000Z',
+  share_token: 'share-token',
+  notes: 'Notas do servidor',
+  payment_type: 'cash',
+  cash_discount_percentage: 5,
+  installment_number: 2,
+  installment_value: 0,
+  manual_installment_total: null,
+  is_validity_enabled: true,
+  validity_days: 30,
+  proposal_logo_url: '/logo.png',
+  proposal_gradient_theme: 'conexhub',
+  show_interest_rate: true,
+  client: {
+    id: 'client-1', name: 'Cliente', email: 'cliente@example.com', company: 'ACME', phone: '11999999999',
+  },
+  services: [{
+    id: 'proposal-service-1', service_id: 'service-1', name: 'Serviço', description: 'Descrição',
+    base_price: 1500, quantity: 1, custom_price: null, discount: 0, discount_percentage: 0,
+    discount_type: 'percentage', features: ['Item'], category: 'Web', icon: '✨', is_custom: false,
+    billing_type: 'one_time',
+  }],
+};
+
+const Probe = () => {
+  const wizard = useQuoteWizard();
   return (
-    <button onClick={() => setShowInterestRate(true)}>
-      {String(showInterestRate)}
-    </button>
+    <>
+      <output data-testid="step">{wizard.currentStep}</output>
+      <output data-testid="services">{wizard.selectedServices.length}</output>
+      <output data-testid="notes">{wizard.notes}</output>
+      <output data-testid="title">{wizard.proposalTitle}</output>
+      <output data-testid="loading">{String(wizard.isHydrating)}</output>
+      <output data-testid="dirty">{String(wizard.isDirty)}</output>
+      <output data-testid="link">{wizard.generatedShareLink}</output>
+      <output data-testid="status">{wizard.proposalMeta?.status}</output>
+      <button onClick={() => wizard.setNotes('Notas locais')}>editar notas</button>
+      {wizard.saveProposalChanges && <button onClick={() => void wizard.saveProposalChanges?.()}>salvar</button>}
+    </>
   );
 };
 
+const renderWizard = (props: { mode: 'create' | 'edit'; proposalId?: string }) => render(
+  <QueryClientProvider client={queryClient}>
+    <CurrencyProvider>
+      <QuoteWizardProvider userId="user-1" {...props}>
+        <Probe />
+      </QuoteWizardProvider>
+    </CurrencyProvider>
+  </QueryClientProvider>,
+);
+
 describe('QuoteWizardProvider', () => {
   beforeEach(() => {
-    hookSetShowInterestRate.mockClear();
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    editorApi.getProposalEditorSnapshot.mockReset();
+    editorApi.saveProposalEdit.mockReset();
   });
 
-  it('uses the hook interest-rate state and setter as the UI source', () => {
-    render(
-      <QuoteWizardProvider userId="user-1">
-        <InterestRateControl />
-      </QuoteWizardProvider>,
+  it('starts a create session at step zero with an empty draft', () => {
+    renderWizard({ mode: 'create' });
+
+    expect(screen.getByTestId('step')).toHaveTextContent('0');
+    expect(screen.getByTestId('services')).toHaveTextContent('0');
+    expect(screen.getByTestId('notes')).toHaveTextContent('');
+    expect(screen.getByTestId('dirty')).toHaveTextContent('false');
+  });
+
+  it('shows loading until an edit snapshot resolves', async () => {
+    let resolveSnapshot!: (value: ProposalEditorSnapshot) => void;
+    editorApi.getProposalEditorSnapshot.mockReturnValue(new Promise((resolve) => { resolveSnapshot = resolve; }));
+
+    renderWizard({ mode: 'edit', proposalId: snapshot.id });
+
+    expect(screen.getByTestId('loading')).toHaveTextContent('true');
+    resolveSnapshot(snapshot);
+
+    await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('false'));
+  });
+
+  it('hydrates an edit snapshot once at step zero without overwriting local edits on rerender', async () => {
+    editorApi.getProposalEditorSnapshot.mockResolvedValue(snapshot);
+    const view = renderWizard({ mode: 'edit', proposalId: snapshot.id });
+
+    await waitFor(() => expect(screen.getByTestId('title')).toHaveTextContent(snapshot.title));
+    expect(screen.getByTestId('step')).toHaveTextContent('0');
+    expect(screen.getByTestId('services')).toHaveTextContent('1');
+    expect(screen.getByTestId('link')).toHaveTextContent(`/p/${snapshot.share_token}`);
+    fireEvent.click(screen.getByRole('button', { name: 'editar notas' }));
+
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <CurrencyProvider>
+          <QuoteWizardProvider userId="user-1" mode="edit" proposalId={snapshot.id}>
+            <Probe />
+          </QuoteWizardProvider>
+        </CurrencyProvider>
+      </QueryClientProvider>,
     );
 
-    const control = screen.getByRole('button', { name: 'false' });
-    fireEvent.click(control);
+    expect(screen.getByTestId('notes')).toHaveTextContent('Notas locais');
+    expect(editorApi.getProposalEditorSnapshot).toHaveBeenCalledTimes(1);
+  });
 
-    expect(hookSetShowInterestRate).toHaveBeenCalledWith(true);
+  it('does not retain an edit draft after mounting a create session', async () => {
+    editorApi.getProposalEditorSnapshot.mockResolvedValue(snapshot);
+    const view = renderWizard({ mode: 'edit', proposalId: snapshot.id });
+    await waitFor(() => expect(screen.getByTestId('title')).toHaveTextContent(snapshot.title));
+
+    view.unmount();
+    renderWizard({ mode: 'create' });
+
+    expect(screen.getByTestId('title')).toHaveTextContent('');
+    expect(screen.getByTestId('notes')).toHaveTextContent('');
+  });
+
+  it('marks an edit session dirty when notes change', async () => {
+    editorApi.getProposalEditorSnapshot.mockResolvedValue(snapshot);
+    renderWizard({ mode: 'edit', proposalId: snapshot.id });
+    await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('false'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'editar notas' }));
+
+    expect(screen.getByTestId('dirty')).toHaveTextContent('true');
+  });
+
+  it('updates the baseline and clears dirty state after a successful edit save', async () => {
+    editorApi.getProposalEditorSnapshot.mockResolvedValue(snapshot);
+    editorApi.saveProposalEdit.mockResolvedValue({ success: true });
+    renderWizard({ mode: 'edit', proposalId: snapshot.id });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'salvar' })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'editar notas' }));
+    fireEvent.click(screen.getByRole('button', { name: 'salvar' }));
+
+    await waitFor(() => expect(screen.getByTestId('dirty')).toHaveTextContent('false'));
+    expect(editorApi.saveProposalEdit).toHaveBeenCalledWith(expect.objectContaining({
+      proposalId: snapshot.id,
+      expectedUpdatedAt: snapshot.updated_at,
+      proposal: expect.objectContaining({ notes: 'Notas locais' }),
+    }));
+  });
+
+  it('never exposes saveProposalChanges for a locked snapshot', async () => {
+    editorApi.getProposalEditorSnapshot.mockResolvedValue({ ...snapshot, status: 'Aprovada' });
+    renderWizard({ mode: 'edit', proposalId: snapshot.id });
+
+    await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('Aprovada'));
+    expect(screen.queryByRole('button', { name: 'salvar' })).not.toBeInTheDocument();
   });
 });
