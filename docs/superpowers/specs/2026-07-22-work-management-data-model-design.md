@@ -73,7 +73,7 @@ Tenant boundary and top-level container. Stores name, description, icon, color, 
 
 ### `workspace_members`
 
-Maps authenticated users to workspaces with `owner`, `admin`, or `member` roles. The pair `(workspace_id, user_id)` is unique.
+Maps authenticated users to workspaces with `owner`, `admin`, `member`, or read-only `viewer` roles. The pair `(workspace_id, user_id)` is unique.
 
 ### `spaces`
 
@@ -107,7 +107,7 @@ Policies follow these rules:
 - An authenticated user can create a workspace only with themselves as owner.
 - Owners and admins can update workspace metadata and membership.
 - Only owners can delete a workspace.
-- Members can read and modify spaces, folders, lists, tasks, and subtasks inside their workspace.
+- Owners, admins, and members can read and modify spaces, folders, lists, tasks, and subtasks inside their workspace. Viewers can only read them.
 - Moving an entity cannot change it into a workspace the user cannot access; update policies include both `USING` and `WITH CHECK`.
 - Initial owner membership is allowed only when the workspace owner and inserted member both equal the current authenticated user.
 
