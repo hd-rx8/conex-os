@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,6 +14,17 @@ import StepReview from '@/components/quote-wizard/StepReview';
 import MainLayout from '@/components/MainLayout';
 import { ContentCard } from '@/components/layout/ContentCard';
 import { PageHeader } from '@/components/layout/PageHeader';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useUnsavedProposalGuard } from '@/features/crm/proposals/useUnsavedProposalGuard';
 
 interface QuoteGeneratorPageProps {
   userId: string;
@@ -31,6 +42,7 @@ const QuoteGeneratorPage: React.FC<QuoteGeneratorPageProps> = ({ userId }) => {
     loadError,
     isLocked,
     isDirty,
+    isSaving,
     currentStep,
     goToNextStep,
     goToPreviousStep,
@@ -41,6 +53,35 @@ const QuoteGeneratorPage: React.FC<QuoteGeneratorPageProps> = ({ userId }) => {
     proposalTitle,
   } = useQuoteWizard();
   const isEditing = mode === 'edit';
+  const {
+    blocker,
+    confirmDiscard,
+    continueEditing,
+  } = useUnsavedProposalGuard(isEditing && isDirty && !isLocked && !isSaving);
+
+  const unsavedChangesDialog = (
+    <AlertDialog open={blocker.state === 'blocked'}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Descartar alterações?</AlertDialogTitle>
+          <AlertDialogDescription>
+            As alterações feitas nesta proposta ainda não foram salvas.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={continueEditing}>
+            Continuar editando
+          </AlertDialogCancel>
+          <AlertDialogAction
+            className={buttonVariants({ variant: 'destructive' })}
+            onClick={confirmDiscard}
+          >
+            Descartar alterações
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 
   const renderStepContent = () => {
     switch (steps[currentStep].id) {
@@ -222,6 +263,7 @@ const QuoteGeneratorPage: React.FC<QuoteGeneratorPageProps> = ({ userId }) => {
           </ContentCard>
         </div>
       </div>
+      {unsavedChangesDialog}
     </MainLayout>
   );
 };

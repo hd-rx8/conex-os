@@ -2,9 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
-import { lazy, Suspense, useEffect } from "react";
-import { AppModuleProvider, useAppModule } from "./context/AppModuleContext";
+import { createBrowserRouter, Routes, Route, Navigate, RouterProvider, useParams } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { AppModuleProvider } from "./context/AppModuleContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -224,6 +224,21 @@ const AppContent = () => {
   );
 };
 
+const router = createBrowserRouter([
+  {
+    path: "*",
+    element: (
+      <AppModuleProvider>
+        <WorkContextProvider>
+          <ActiveProjectProvider>
+            <AppContent />
+          </ActiveProjectProvider>
+        </WorkContextProvider>
+      </AppModuleProvider>
+    ),
+  },
+]);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider defaultTheme="system" attribute="class">
@@ -232,15 +247,7 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
-              <AppModuleProvider>
-                <WorkContextProvider>
-                  <ActiveProjectProvider>
-                    <AppContent />
-                  </ActiveProjectProvider>
-                </WorkContextProvider>
-              </AppModuleProvider>
-            </BrowserRouter>
+            <RouterProvider router={router} />
           </TooltipProvider>
         </CurrencyProvider>
       </GradientThemeProvider>

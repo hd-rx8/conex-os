@@ -1,7 +1,28 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import {
+  createMemoryRouter,
+  Link,
+  RouterProvider,
+  useLocation,
+} from 'react-router-dom';
+
+const NativeRequest = globalThis.Request;
+
+class JsdomCompatibleRequest extends NativeRequest {
+  constructor(input: RequestInfo | URL, init?: RequestInit) {
+    super(input, init ? { ...init, signal: undefined } : init);
+  }
+}
+
+beforeAll(() => {
+  globalThis.Request = JsdomCompatibleRequest;
+});
+
+afterAll(() => {
+  globalThis.Request = NativeRequest;
+});
 
 const wizard = vi.hoisted(() => ({
   state: {
@@ -11,6 +32,7 @@ const wizard = vi.hoisted(() => ({
     loadError: null as string | null,
     isLocked: false,
     isDirty: false,
+    isSaving: false,
     currentStep: 0,
     goToNextStep: vi.fn(),
     goToPreviousStep: vi.fn(),
@@ -58,14 +80,33 @@ vi.mock('@/hooks/useProposals', () => ({
 import QuoteGeneratorPage from './QuoteGeneratorPage';
 
 describe('QuoteGeneratorPage', () => {
-  const CurrentLocation = () => <output data-testid="current-location">{useLocation().pathname}</output>;
-
-  const renderPage = () => render(
-    <MemoryRouter>
-      <QuoteGeneratorPage userId="user-1" />
-      <CurrentLocation />
-    </MemoryRouter>,
+  const CurrentLocation = () => (
+    <>
+      <output data-testid="current-location">{useLocation().pathname}</output>
+      <Link to="/opportunities">Sair do editor</Link>
+    </>
   );
+
+  const renderPage = () => {
+    const router = createMemoryRouter([
+      {
+        path: '*',
+        element: (
+          <>
+            <QuoteGeneratorPage userId="user-1" />
+            <CurrentLocation />
+          </>
+        ),
+      },
+    ], {
+      initialEntries: ['/generator/proposal-1/edit'],
+    });
+
+    return {
+      router,
+      ...render(<RouterProvider router={router} />),
+    };
+  };
 
   afterEach(() => vi.restoreAllMocks());
 
@@ -77,6 +118,7 @@ describe('QuoteGeneratorPage', () => {
       loadError: null,
       isLocked: false,
       isDirty: false,
+      isSaving: false,
       currentStep: 0,
       selectedServices: [],
       clientInfo: { name: '', email: '' },
@@ -161,6 +203,65 @@ describe('QuoteGeneratorPage', () => {
     expect(screen.getByText('Proposta existente')).toBeInTheDocument();
     expect(screen.getByText('Rascunho')).toBeInTheDocument();
     expect(screen.getByText('Alterações não salvas')).toBeInTheDocument();
+  });
+
+  it('asks before leaving a dirty editable proposal and keeps the draft when cancelled', async () => {
+    resetWizard();
+    wizard.state.mode = 'edit';
+    wizard.state.isDirty = true;
+    wizard.state.proposalMeta = { id: 'proposal-1', title: 'Proposta existente', status: 'Rascunho' };
+
+    const { router } = renderPage();
+    fireEvent.click(screen.getByRole('link', { name: 'Sair do editor' }));
+
+    expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Descartar alterações?' })).toBeInTheDocument();
+    expect(screen.getByText('As alterações feitas nesta proposta ainda não foram salvas.')).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/generator/proposal-1/edit');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar editando' }));
+
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    expect(router.state.location.pathname).toBe('/generator/proposal-1/edit');
+    expect(wizard.state.isDirty).toBe(true);
+  });
+
+  it('discards the draft and performs the pending navigation once confirmed', async () => {
+    resetWizard();
+    wizard.state.mode = 'edit';
+    wizard.state.isDirty = true;
+    wizard.state.proposalMeta = { id: 'proposal-1', title: 'Proposta existente', status: 'Rascunho' };
+
+    const { router } = renderPage();
+    fireEvent.click(screen.getByRole('link', { name: 'Sair do editor' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Descartar alterações' }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/opportunities'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    { label: 'create', mode: 'create' as const, isDirty: true, isLocked: false, isSaving: false },
+    { label: 'clean', mode: 'edit' as const, isDirty: false, isLocked: false, isSaving: false },
+    { label: 'locked', mode: 'edit' as const, isDirty: true, isLocked: true, isSaving: false },
+    { label: 'saving', mode: 'edit' as const, isDirty: true, isLocked: false, isSaving: true },
+  ])('does not block navigation in a $label session', async ({ mode, isDirty, isLocked, isSaving }) => {
+    resetWizard();
+    Object.assign(wizard.state, {
+      mode,
+      isDirty,
+      isLocked,
+      isSaving,
+      proposalMeta: mode === 'edit'
+        ? { id: 'proposal-1', title: 'Proposta existente', status: isLocked ? 'Aprovada' : 'Rascunho' }
+        : null,
+    });
+
+    const { router } = renderPage();
+    fireEvent.click(screen.getByRole('link', { name: 'Sair do editor' }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/opportunities'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('keeps wizard validation inside the standardized page shell', () => {
