@@ -886,12 +886,6 @@ export type Database = {
     }
     Enums: {
       billing_type: "one_time" | "monthly"
-      proposal_status:
-        | "Criada"
-        | "Enviada"
-        | "Aprovada"
-        | "Rejeitada"
-        | "Rascunho"
       task_priority: "Baixa" | "Media" | "Alta" | "Urgente"
     }
     CompositeTypes: {
@@ -1021,13 +1015,6 @@ export const Constants = {
   public: {
     Enums: {
       billing_type: ["one_time", "monthly"],
-      proposal_status: [
-        "Criada",
-        "Enviada",
-        "Aprovada",
-        "Rejeitada",
-        "Rascunho",
-      ],
       task_priority: ["Baixa", "Media", "Alta", "Urgente"],
     },
   },

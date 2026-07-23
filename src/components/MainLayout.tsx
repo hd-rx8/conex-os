@@ -114,7 +114,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         {/* Content area */}
         <main className="min-w-0 flex-1 overflow-auto">
           <div className="w-full px-4 py-6 sm:px-6 lg:px-8">
-            <div className="mx-auto w-full max-w-[1600px]">
+            <div className="mx-auto w-full">
               {children}
             </div>
           </div>

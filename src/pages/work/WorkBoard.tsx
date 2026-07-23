@@ -53,7 +53,7 @@ export default function WorkBoard() {
 
   if (!selectedWorkspaceId) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <WorkEmptyState
           title="Selecione um workspace"
           description="Escolha um workspace na barra lateral para abrir o quadro."
@@ -64,7 +64,7 @@ export default function WorkBoard() {
 
   if (treeQuery.isLoading || tasksQuery.isLoading) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <WorkLoadingState label="Montando o quadro…" />
       </MainLayout>
     );
@@ -72,7 +72,7 @@ export default function WorkBoard() {
 
   if (treeQuery.error || tasksQuery.error) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <WorkErrorState
           onRetry={() => {
             void treeQuery.refetch();
@@ -84,7 +84,7 @@ export default function WorkBoard() {
   }
 
   return (
-    <MainLayout module="work" showGlobalFab={false}>
+    <MainLayout module="work" >
       <div className="app-page">
         <WorkPageHeader
           eyebrow={treeQuery.data?.name ?? 'Work Management'}

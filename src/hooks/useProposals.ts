@@ -5,7 +5,10 @@ import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { Database } from '@/integrations/supabase/types';
 import { useSession } from './useSession';
-import type { ProposalStatus } from '@/features/crm/proposals/proposalStatus';
+import {
+  getProposalStatusFilterValues,
+  type ProposalStatus,
+} from '@/features/crm/proposals/proposalStatus';
 import { proposalQueryKeys } from '@/features/crm/proposals/proposalEditorApi';
 
 type BillingType = Database['public']['Enums']['billing_type'];
@@ -105,6 +108,8 @@ export interface ProposalFilters {
   customEndDate?: string; // NEW: custom date range end
 }
 
+const EMPTY_PROPOSALS: Proposal[] = [];
+
 export const useProposals = () => {
   const queryClient = useQueryClient();
   const { user } = useSession();
@@ -123,8 +128,8 @@ export const useProposals = () => {
   const itemsPerPage = 10;
 
   // Use React Query to fetch and cache proposals
-  const { 
-    data: proposals = [], 
+  const {
+    data: proposals = EMPTY_PROPOSALS,
     isLoading: loading,
     refetch: refetchProposals
   } = useQuery({
@@ -143,7 +148,10 @@ export const useProposals = () => {
           .eq('owner', user.id);
 
         if (filters.status && filters.status !== 'all') {
-          query = query.eq('status', filters.status);
+          query = query.in(
+            'status',
+            getProposalStatusFilterValues(filters.status),
+          );
         }
 
         if (filters.ownerId && filters.ownerId !== 'all') {
@@ -233,7 +241,7 @@ export const useProposals = () => {
     staleTime: 30000, // 30 seconds before refetching
     enabled: !!user?.id,
   });
-  
+
   const fetchProposals = useCallback(() => {
     return refetchProposals();
   }, [refetchProposals]);
@@ -241,15 +249,15 @@ export const useProposals = () => {
   const createProposal = async (proposalData: CreateProposalData) => {
     try {
       const { services, ...proposalHeaderData } = proposalData;
-      
+
       // Definir created_at e updated_at para a data atual
       const currentTimestamp = new Date().toISOString();
-      
+
       const { data: newProposal, error: proposalError } = await supabase
         .from('proposals')
-        .insert({ 
-          ...proposalHeaderData, 
-          status: proposalHeaderData.status || 'Enviada',
+        .insert({
+          ...proposalHeaderData,
+          status: proposalHeaderData.status || 'ENVIADA',
           created_at: currentTimestamp,
           updated_at: currentTimestamp
         })
@@ -273,10 +281,10 @@ export const useProposals = () => {
         const { error: servicesError } = await supabase
           .from('proposal_services')
           .insert(servicesToInsert);
-        
+
         if (servicesError) throw servicesError;
       }
-      
+
       // Refetch the newly created proposal with its services
       const { data: fetchedProposal, error: fetchError } = await supabase
         .from('proposals')
@@ -305,15 +313,15 @@ export const useProposals = () => {
   const createDraftProposal = async (proposalData: CreateProposalData) => {
     try {
       const { services, ...proposalHeaderData } = proposalData;
-      
+
       // Definir created_at e updated_at para a data atual
       const currentTimestamp = new Date().toISOString();
 
       const { data: newProposal, error: proposalError } = await supabase
         .from('proposals')
-        .insert({ 
-          ...proposalHeaderData, 
-          status: 'Rascunho',
+        .insert({
+          ...proposalHeaderData,
+          status: 'EM_ELABORACAO',
           created_at: currentTimestamp,
           updated_at: currentTimestamp
         })
@@ -334,10 +342,10 @@ export const useProposals = () => {
         const { error: servicesError } = await supabase
           .from('proposal_services')
           .insert(servicesToInsert);
-        
+
         if (servicesError) throw servicesError;
       }
-      
+
       toast.success('Rascunho da proposta salvo com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['proposals', proposalData.owner] });
       return { data: newProposal, error: null };
@@ -392,7 +400,7 @@ export const useProposals = () => {
           .from('proposal_services')
           .delete()
           .eq('proposal_id', id);
-        
+
         if (deleteError) throw deleteError;
 
         const servicesToInsert = services.map(service => ({
@@ -402,10 +410,10 @@ export const useProposals = () => {
         const { error: insertError } = await supabase
           .from('proposal_services')
           .insert(servicesToInsert);
-        
+
         if (insertError) throw insertError;
       }
-      
+
       // Refetch the updated proposal with its services
       const { data: fetchedProposal, error: fetchError } = await supabase
         .from('proposals')
@@ -455,7 +463,7 @@ export const useProposals = () => {
         .select('*')
         .eq('id', id)
         .single();
-        
+
       if (fetchError || !originalProposal) {
         toast.error('Proposta não encontrada');
         return { data: null, error: fetchError || 'Proposal not found' };
@@ -484,7 +492,7 @@ export const useProposals = () => {
         amount: safeNumber(originalProposal.amount),
         client_id: options?.newClientId !== undefined ? options.newClientId : originalProposal.client_id,
         owner: currentUserId,
-        status: 'Criada', // Sempre define o status como 'Criada' para evitar o constraint error
+        status: 'EM_ELABORACAO',
         notes: originalProposal.notes || null,
         expected_close_date: originalProposal.expected_close_date || null,
         // Copy all payment and theme settings
@@ -524,7 +532,7 @@ export const useProposals = () => {
         manual_installment_total: duplicateData.manual_installment_total,
         services_with_discount: duplicateData.services?.filter(s => s.discount > 0 || s.discount_percentage > 0)
       });
-      
+
       return createProposal(duplicateData);
     } catch (error: unknown) {
       console.error('Error duplicating proposal:', error);
@@ -554,11 +562,11 @@ export const useProposals = () => {
         .eq('id', id);
 
       if (error) throw error;
-      
+
       // Invalidate ALL queries that might contain proposals
       // This will force all components using proposals to refetch
       queryClient.invalidateQueries();
-      
+
       toast.success('Proposta e todos os dados relacionados foram excluídos com sucesso');
       return { error: null };
     } catch (error: unknown) {

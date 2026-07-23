@@ -24,39 +24,49 @@ import { ptBR } from 'date-fns/locale';
 import { Separator } from '@/components/ui/separator';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import DuplicateProposalModal from '@/components/DuplicateProposalModal';
+import { getStatusClasses } from '@/utils/statusColors';
+import {
+  CANONICAL_PROPOSAL_STATUSES,
+  EDITABLE_PROPOSAL_STATUSES,
+  LOCKED_PROPOSAL_STATUSES,
+  canEditProposal,
+  getProposalStatusLabel,
+  normalizeProposalStatus,
+  type CanonicalProposalStatus,
+} from '@/features/crm/proposals/proposalStatus';
 
 // Define os status possíveis para as propostas
-const PROPOSAL_STATUSES = ['Rascunho', 'Criada', 'Enviada', 'Negociando', 'Aprovada', 'Rejeitada'] as const;
-type ProposalStatus = typeof PROPOSAL_STATUSES[number];
+const PROPOSAL_STATUSES = CANONICAL_PROPOSAL_STATUSES;
 
 // Status ativos (que aparecem no board)
-const ACTIVE_STATUSES: ProposalStatus[] = ['Rascunho', 'Criada', 'Enviada', 'Negociando'];
+const ACTIVE_STATUSES = EDITABLE_PROPOSAL_STATUSES;
 
 // Status fechados (que aparecem na aba Closed)
-const CLOSED_STATUSES: ProposalStatus[] = ['Aprovada', 'Rejeitada'];
+const CLOSED_STATUSES = LOCKED_PROPOSAL_STATUSES;
 
-const getStatusColor = (status: ProposalStatus) => {
-  switch (status) {
-    case 'Rascunho': return 'bg-purple-100 text-purple-800 border-purple-200';
-    case 'Criada': return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'Enviada': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    case 'Negociando': return 'bg-orange-100 text-orange-800 border-orange-200';
-    case 'Aprovada': return 'bg-green-100 text-green-800 border-green-200';
-    case 'Rejeitada': return 'bg-red-100 text-red-800 border-red-200';
-    default: return 'bg-gray-100 text-gray-800 border-gray-200';
+const getStatusIcon = (status: string) => {
+  const normalized = normalizeProposalStatus(status);
+  switch (normalized) {
+    case 'QUALIFICACAO': return '🔍';
+    case 'EM_ELABORACAO': return '📝';
+    case 'EM_REVISAO': return '🔎';
+    case 'ENVIADA': return '📤';
+    case 'NEGOCIACAO': return '🤝';
+    case 'FECHADO_GANHO': return '✅';
+    case 'FECHADO_PERDIDO': return '❌';
+    default: return '📄';
   }
 };
 
-const getStatusIcon = (status: ProposalStatus) => {
-  switch (status) {
-    case 'Rascunho': return '📝';
-    case 'Criada': return '📋';
-    case 'Enviada': return '📤';
-    case 'Negociando': return '🤝';
-    case 'Aprovada': return '✅';
-    case 'Rejeitada': return '❌';
-    default: return '📄';
-  }
+const getCompatibleStatusClasses = (status: string) => {
+  const normalized = normalizeProposalStatus(status);
+  const colorStatus =
+    normalized === 'EM_REVISAO'
+      ? 'EM_ELABORACAO'
+      : normalized === 'NEGOCIACAO'
+        ? 'EM_NEGOCIACAO'
+        : normalized ?? status;
+  return getStatusClasses(colorStatus);
 };
 
 const Pipeline: React.FC = () => {
@@ -68,8 +78,8 @@ const Pipeline: React.FC = () => {
   const navigate = useNavigate();
   
   // Estados para o board Kanban
-  const [groupedProposals, setGroupedProposals] = useState<Record<ProposalStatus, Proposal[]>>(() => {
-    const initialGroups: Record<ProposalStatus, Proposal[]> = {} as Record<ProposalStatus, Proposal[]>;
+  const [groupedProposals, setGroupedProposals] = useState<Record<CanonicalProposalStatus, Proposal[]>>(() => {
+    const initialGroups = {} as Record<CanonicalProposalStatus, Proposal[]>;
     PROPOSAL_STATUSES.forEach(status => {
       initialGroups[status] = [];
     });
@@ -179,16 +189,17 @@ const Pipeline: React.FC = () => {
       const filteredProposals = filterProposals(allProposals);
       const sortedProposals = sortProposals(filteredProposals);
       
-      const newGroupedProposals: Record<ProposalStatus, Proposal[]> = {} as Record<ProposalStatus, Proposal[]>;
+      const newGroupedProposals = {} as Record<CanonicalProposalStatus, Proposal[]>;
       PROPOSAL_STATUSES.forEach(status => {
         newGroupedProposals[status] = [];
       });
 
       sortedProposals.forEach(proposal => {
-        if (PROPOSAL_STATUSES.includes(proposal.status as ProposalStatus)) {
-          newGroupedProposals[proposal.status as ProposalStatus].push(proposal);
+        const normalizedStatus = normalizeProposalStatus(proposal.status);
+        if (normalizedStatus) {
+          newGroupedProposals[normalizedStatus].push(proposal);
         } else {
-          newGroupedProposals['Criada'].push(proposal);
+          newGroupedProposals['EM_ELABORACAO'].push(proposal);
         }
       });
       setGroupedProposals(newGroupedProposals);
@@ -196,6 +207,12 @@ const Pipeline: React.FC = () => {
   }, [allProposals, filterProposals, sortProposals]);
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, proposalId: string) => {
+    const proposal = allProposals.find((item) => item.id === proposalId);
+    if (!proposal || !canEditProposal(proposal.status)) {
+      e.preventDefault();
+      return;
+    }
+
     setDraggingProposalId(proposalId);
     setIsDragging(true);
     e.dataTransfer.effectAllowed = 'move';
@@ -207,14 +224,18 @@ const Pipeline: React.FC = () => {
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = async (e: React.DragEvent<HTMLDivElement>, newStatus: ProposalStatus) => {
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>, newStatus: CanonicalProposalStatus) => {
     e.preventDefault();
     if (!draggingProposalId) return;
 
     const proposalId = e.dataTransfer.getData('text/plain');
     const proposalToMove = allProposals.find(p => p.id === proposalId);
 
-    if (proposalToMove && proposalToMove.status !== newStatus) {
+    if (
+      proposalToMove &&
+      canEditProposal(proposalToMove.status) &&
+      normalizeProposalStatus(proposalToMove.status) !== newStatus
+    ) {
       // Optimistic UI update
       setGroupedProposals(prev => {
         const newGroups = { ...prev };
@@ -278,7 +299,11 @@ const Pipeline: React.FC = () => {
   };
 
   const handleUpdateProposalField = useCallback(async (field: keyof Proposal, newValue: string | number | Date | null) => {
-    if (!selectedProposal || !currentUser) return;
+    if (
+      !selectedProposal ||
+      !currentUser ||
+      !canEditProposal(selectedProposal.status)
+    ) return;
 
     setIsSaving(prev => ({ ...prev, [field]: true }));
     try {
@@ -308,7 +333,11 @@ const Pipeline: React.FC = () => {
   }, [selectedProposal, currentUser, updateProposal, refetch]);
 
   const handleUpdateClientField = useCallback(async (field: keyof Client, newValue: string | null) => {
-    if (!selectedProposal?.client_id || !currentUser) return;
+    if (
+      !selectedProposal?.client_id ||
+      !currentUser ||
+      !canEditProposal(selectedProposal.status)
+    ) return;
 
     setIsSaving(prev => ({ ...prev, [`client_${field}`]: true }));
     try {
@@ -335,7 +364,11 @@ const Pipeline: React.FC = () => {
   }, [selectedProposal, currentUser, updateClient, refetch]);
 
   const handleSelectClient = useCallback(async (newClientId: string | null) => {
-    if (!selectedProposal || !currentUser) return;
+    if (
+      !selectedProposal ||
+      !currentUser ||
+      !canEditProposal(selectedProposal.status)
+    ) return;
 
     setIsSaving(prev => ({ ...prev, 'client_id': true }));
     try {
@@ -378,10 +411,13 @@ const Pipeline: React.FC = () => {
   // Componente para card da proposta
   const ProposalCard: React.FC<{ proposal: Proposal }> = ({ proposal }) => (
     <Card
-      draggable
+      draggable={canEditProposal(proposal.status)}
       onDragStart={(e) => handleDragStart(e, proposal.id)}
       onClick={() => handleCardClick(proposal)}
-      className="cursor-grab active:cursor-grabbing hover:shadow-lg transition-shadow duration-200 group border"
+      className={cn(
+        "hover:shadow-lg transition-shadow duration-200 group border",
+        canEditProposal(proposal.status) && "cursor-grab active:cursor-grabbing",
+      )}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
@@ -436,8 +472,8 @@ const Pipeline: React.FC = () => {
               <DollarSign className="h-3 w-3" />
               {formatCurrency(Number(proposal.amount))}
             </span>
-            <Badge variant="outline" className={cn("text-xs", getStatusColor(proposal.status as ProposalStatus))}>
-              {getStatusIcon(proposal.status as ProposalStatus)} {proposal.status}
+            <Badge variant="outline" className={cn("text-xs", getCompatibleStatusClasses(proposal.status))}>
+              {getStatusIcon(proposal.status)} {getProposalStatusLabel(proposal.status)}
             </Badge>
           </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -585,9 +621,9 @@ const Pipeline: React.FC = () => {
                       <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center justify-between">
                         <span className="flex items-center gap-2">
                           <span className="text-base sm:text-lg">{getStatusIcon(status)}</span>
-                          <span className="truncate">{status}</span>
+                          <span className="truncate">{getProposalStatusLabel(status)}</span>
                         </span>
-                        <Badge variant="secondary" className={cn("text-xs", getStatusColor(status))}>
+                        <Badge variant="secondary" className={cn("text-xs", getCompatibleStatusClasses(status))}>
                           {groupedProposals[status]?.length || 0}
                         </Badge>
                       </h3>
@@ -606,14 +642,14 @@ const Pipeline: React.FC = () => {
                   <div className="flex justify-center gap-2 p-2">
                     <div
                       onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, 'Aprovada')}
+                      onDrop={(e) => handleDrop(e, 'FECHADO_GANHO')}
                       className="flex-1 py-2 px-4 rounded-md bg-green-600 text-white text-sm font-semibold flex items-center justify-center transition-colors duration-300 hover:bg-green-700 cursor-pointer border-2 border-transparent hover:border-white"
                     >
                       ✅ APROVADA
                     </div>
                     <div
                       onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, 'Rejeitada')}
+                      onDrop={(e) => handleDrop(e, 'FECHADO_PERDIDO')}
                       className="flex-1 py-2 px-4 rounded-md bg-red-600 text-white text-sm font-semibold flex items-center justify-center transition-colors duration-300 hover:bg-red-700 cursor-pointer border-2 border-transparent hover:border-white"
                     >
                       ❌ REJEITADA
@@ -636,8 +672,8 @@ const Pipeline: React.FC = () => {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <span className="text-lg">{getStatusIcon(status)}</span>
-                        {status}
-                        <Badge variant="secondary" className={getStatusColor(status)}>
+                        {getProposalStatusLabel(status)}
+                        <Badge variant="secondary" className={getCompatibleStatusClasses(status)}>
                           {proposals.length}
                         </Badge>
                       </CardTitle>
@@ -686,7 +722,7 @@ const Pipeline: React.FC = () => {
                         type="text"
                         placeholder="Título da Proposta"
                         isLoading={isSaving.title}
-                        disabled={selectedProposal.owner !== currentUser?.id}
+                        disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                         displayClassName="text-2xl font-bold gradient-text"
                         label="Título da Proposta"
                         required={true}
@@ -707,15 +743,18 @@ const Pipeline: React.FC = () => {
                       <div className="space-y-1">
                         <p className="text-sm font-medium text-muted-foreground">Status:</p>
                         <EditableField
-                          value={selectedProposal.status}
+                          value={normalizeProposalStatus(selectedProposal.status) ?? selectedProposal.status}
                           onSave={(newValue) => handleUpdateProposalField('status', newValue)}
                           type="select"
-                          selectOptions={PROPOSAL_STATUSES.map(s => ({ value: s, label: s }))}
+                          selectOptions={PROPOSAL_STATUSES.map(s => ({ value: s, label: getProposalStatusLabel(s) }))}
                           isLoading={isSaving.status}
-                          disabled={selectedProposal.owner !== currentUser?.id}
+                          disabled={
+                            selectedProposal.owner !== currentUser?.id ||
+                            !canEditProposal(selectedProposal.status)
+                          }
                           formatDisplayValue={(value) => (
-                            <Badge className={getStatusColor(value as ProposalStatus)}>
-                              {value}
+                            <Badge className={getCompatibleStatusClasses(String(value))}>
+                              {getProposalStatusLabel(String(value))}
                             </Badge>
                           )}
                           label="Status"
@@ -730,7 +769,7 @@ const Pipeline: React.FC = () => {
                           type="number"
                           placeholder="0.00"
                           isLoading={isSaving.amount}
-                          disabled={selectedProposal.owner !== currentUser?.id}
+                          disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                           formatDisplayValue={(value) => (
                             <span className="font-semibold text-conexhub-green-600">
                               {formatCurrency(Number(value))}
@@ -750,7 +789,7 @@ const Pipeline: React.FC = () => {
                           type="date"
                           placeholder="Selecione a data"
                           isLoading={isSaving.created_at}
-                          disabled={selectedProposal.owner !== currentUser?.id}
+                          disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                           label="Data de Criação"
                         />
                       </div>
@@ -763,7 +802,7 @@ const Pipeline: React.FC = () => {
                           type="date"
                           placeholder="Selecione a data"
                           isLoading={isSaving.expected_close_date}
-                          disabled={selectedProposal.owner !== currentUser?.id}
+                          disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                           label="Previsão de Fechamento"
                         />
                       </div>
@@ -809,7 +848,7 @@ const Pipeline: React.FC = () => {
                             type="text"
                             placeholder="Nome do Cliente"
                             isLoading={isSaving.client_name}
-                            disabled={selectedProposal.owner !== currentUser?.id}
+                            disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                             displayClassName="font-medium"
                             label="Nome do Cliente"
                             required={true}
@@ -824,7 +863,7 @@ const Pipeline: React.FC = () => {
                             type="text"
                             placeholder="Nome da Empresa"
                             isLoading={isSaving.client_company}
-                            disabled={selectedProposal.owner !== currentUser?.id}
+                            disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                             label="Empresa do Cliente"
                           />
                         </div>
@@ -837,7 +876,7 @@ const Pipeline: React.FC = () => {
                             type="text"
                             placeholder="email@exemplo.com"
                             isLoading={isSaving.client_email}
-                            disabled={selectedProposal.owner !== currentUser?.id}
+                            disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                             label="E-mail do Cliente"
                           />
                         </div>
@@ -850,7 +889,7 @@ const Pipeline: React.FC = () => {
                             type="text"
                             placeholder="(00) 00000-0000"
                             isLoading={isSaving.client_phone}
-                            disabled={selectedProposal.owner !== currentUser?.id}
+                            disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                             label="Telefone do Cliente"
                           />
                         </div>
@@ -860,7 +899,7 @@ const Pipeline: React.FC = () => {
                           size="sm"
                           onClick={() => handleSelectClient(null)}
                           className="mt-2 w-full"
-                          disabled={selectedProposal.owner !== currentUser?.id}
+                          disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                         >
                           Desvincular Cliente
                         </Button>
@@ -871,7 +910,7 @@ const Pipeline: React.FC = () => {
                         <Select
                           value=""
                           onValueChange={handleSelectClient}
-                          disabled={selectedProposal.owner !== currentUser?.id || isSaving.client_id}
+                          disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status) || isSaving.client_id}
                         >
                           <SelectTrigger className="w-full placeholder:text-muted-foreground dark:placeholder:text-muted-foreground placeholder:opacity-80">
                             <SelectValue placeholder="Vincular cliente existente..." />
@@ -905,7 +944,7 @@ const Pipeline: React.FC = () => {
                         type="textarea"
                         placeholder="Adicione observações sobre a proposta..."
                         isLoading={isSaving.notes}
-                        disabled={selectedProposal.owner !== currentUser?.id}
+                        disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                         displayClassName="whitespace-pre-wrap"
                         label="Observações"
                       />

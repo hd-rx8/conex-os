@@ -87,7 +87,7 @@ export default function WorkOverview() {
 
   if (workspacesQuery.isLoading) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <WorkLoadingState label="Carregando seu workspace…" />
       </MainLayout>
     );
@@ -95,7 +95,7 @@ export default function WorkOverview() {
 
   if (workspacesQuery.error || treeQuery.error || tasksQuery.error) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <WorkErrorState
           onRetry={() => {
             void workspacesQuery.refetch();
@@ -109,7 +109,7 @@ export default function WorkOverview() {
 
   if (workspaces.length === 0) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <WorkEmptyState
           title="Crie seu primeiro workspace"
           description="Workspaces organizam seus projetos, listas e tarefas."
@@ -120,7 +120,7 @@ export default function WorkOverview() {
 
   if (treeQuery.isLoading || tasksQuery.isLoading || !treeQuery.data) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <WorkLoadingState label="Preparando sua visão geral…" />
       </MainLayout>
     );
@@ -150,7 +150,7 @@ export default function WorkOverview() {
   ];
 
   return (
-    <MainLayout module="work" showGlobalFab={false}>
+    <MainLayout module="work" >
       <div className="app-page">
         <WorkPageHeader
           eyebrow={treeQuery.data.name}

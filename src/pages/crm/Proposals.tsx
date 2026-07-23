@@ -12,12 +12,32 @@ import { useUsers } from '@/hooks/useUsers';
 import { useClients, Client } from '@/hooks/useClients'; // Import useClients and Client
 import { useSession } from '@/hooks/useSession';
 import { FileText as FileTextIcon, Search, Edit, Copy, Trash2, Plus, Filter, Printer } from 'lucide-react';
- 
+
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import MainLayout from '@/components/MainLayout';
 import { useCurrency } from '@/context/CurrencyContext'; // Import useCurrency
 import DuplicateProposalModal from '@/components/DuplicateProposalModal';
+import { getStatusClasses } from '@/utils/statusColors';
+import {
+  CANONICAL_PROPOSAL_STATUSES,
+  canEditProposal,
+  getProposalStatusLabel,
+  normalizeProposalStatus,
+} from '@/features/crm/proposals/proposalStatus';
+
+const PROPOSAL_STATUSES = CANONICAL_PROPOSAL_STATUSES;
+
+const getCompatibleStatusClasses = (status: string) => {
+  const normalized = normalizeProposalStatus(status);
+  const colorStatus =
+    normalized === 'EM_REVISAO'
+      ? 'EM_ELABORACAO'
+      : normalized === 'NEGOCIACAO'
+        ? 'EM_NEGOCIACAO'
+        : normalized ?? status;
+  return getStatusClasses(colorStatus);
+};
 
 interface ProposalFormData {
   title: string;
@@ -26,19 +46,19 @@ interface ProposalFormData {
   owner: string;
 }
 
-const ProposalForm = ({ 
-  proposal, 
+const ProposalForm = ({
+  proposal,
   allUsers,
   allClients, // Pass allClients to the form
   currentUserId,
-  onSubmit, 
-  onCancel 
-}: { 
-  proposal?: Proposal; 
+  onSubmit,
+  onCancel
+}: {
+  proposal?: Proposal;
   allUsers: { id: string; name: string }[];
   allClients: Client[]; // Type for allClients
   currentUserId: string;
-  onSubmit: (data: CreateProposalData | UpdateProposalData) => void; 
+  onSubmit: (data: CreateProposalData | UpdateProposalData) => void;
   onCancel: () => void;
 }) => {
   const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, watch } = useForm<ProposalFormData>({
@@ -71,11 +91,11 @@ const ProposalForm = ({
           <p className="text-sm text-destructive mt-1">{errors.title.message}</p>
         )}
       </div>
-      
+
       <div>
         <label className="text-sm font-medium">Valor *</label>
         <Input
-          {...register('amount', { 
+          {...register('amount', {
             required: 'Valor é obrigatório',
             min: { value: 0, message: 'Valor deve ser positivo' }
           })}
@@ -90,8 +110,8 @@ const ProposalForm = ({
 
       <div>
         <label className="text-sm font-medium">Cliente</label>
-        <Select 
-          value={watch('client_id') || ''} 
+        <Select
+          value={watch('client_id') || ''}
           onValueChange={(value) => setValue('client_id', value)}
         >
           <SelectTrigger>
@@ -110,8 +130,8 @@ const ProposalForm = ({
 
       <div>
         <label className="text-sm font-medium">Responsável *</label>
-        <Select 
-          value={watch('owner')} 
+        <Select
+          value={watch('owner')}
           onValueChange={(value) => setValue('owner', value)}
         >
           <SelectTrigger>
@@ -151,18 +171,6 @@ const ProposalSkeleton = () => (
   </TableRow>
 );
 
-const getStatusClasses = (status: Proposal['status']) => {
-  switch (status) {
-    case 'Rascunho': return 'bg-purple-200/50 text-purple-700 hover:bg-purple-200/80 dark:bg-purple-900/50 dark:text-purple-300 dark:hover:bg-purple-800/70';
-    case 'Criada': return 'bg-gray-200/50 text-gray-700 hover:bg-gray-200/80 dark:bg-gray-700/50 dark:text-gray-300 dark:hover:bg-gray-600/70';
-    case 'Enviada': return 'bg-yellow-200/50 text-yellow-700 hover:bg-yellow-200/80 dark:bg-yellow-900/50 dark:text-yellow-300 dark:hover:bg-yellow-800/70';
-    case 'Negociando': return 'bg-orange-200/50 text-orange-700 hover:bg-orange-200/80 dark:bg-orange-900/50 dark:text-orange-300 dark:hover:bg-orange-800/70';
-    case 'Aprovada': return 'bg-green-200/50 text-green-700 hover:bg-green-200/80 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-800/70';
-    case 'Rejeitada': return 'bg-red-200/50 text-red-700 hover:bg-red-200/80 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-800/70';
-    default: return 'bg-gray-200/50 text-gray-700 hover:bg-gray-200/80 dark:bg-gray-700/50 dark:text-gray-300 dark:hover:bg-gray-600/70';
-  }
-};
-
 export default function Proposals() {
   const { user: currentUser } = useSession();
   const { allUsers } = useUsers();
@@ -197,7 +205,7 @@ export default function Proposals() {
 
   const handleUpdateProposal = async (data: UpdateProposalData) => {
     if (!editingProposal) return;
-    
+
     const result = await updateProposal(editingProposal.id, data);
     if (result.data) {
       setEditingProposal(null);
@@ -214,12 +222,12 @@ export default function Proposals() {
 
   const handleDuplicateWithOptions = async (proposalId: string, newClientId: string | null, newTitle: string) => {
     if (!currentUser) return;
-    
+
     const result = await duplicateProposal(proposalId, currentUser.id, {
       newClientId,
       newTitle
     });
-    
+
     if (result.data) {
       toast.success('Proposta duplicada com sucesso!');
     } else if (result.error) {
@@ -259,10 +267,10 @@ export default function Proposals() {
                   className="pl-8"
                 />
               </div>
-              
+
               <div className="flex flex-wrap items-center gap-3">
-                <Select 
-                  value={filters.status || 'all'} 
+                <Select
+                  value={filters.status || 'all'}
                   onValueChange={(value) => setFilters(prev => ({ ...prev, status: value as Proposal['status'] }))}
                 >
                   <SelectTrigger className="w-36">
@@ -271,17 +279,16 @@ export default function Proposals() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="Criada">Criada</SelectItem>
-                    <SelectItem value="Enviada">Enviada</SelectItem>
-                    <SelectItem value="Negociando">Negociando</SelectItem>
-                    <SelectItem value="Aprovada">Aprovada</SelectItem>
-                    <SelectItem value="Rejeitada">Rejeitada</SelectItem>
-                    <SelectItem value="Rascunho">Rascunho</SelectItem>
+                    {PROPOSAL_STATUSES.map(status => (
+                      <SelectItem key={status} value={status}>
+                        {getProposalStatusLabel(status)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
 
-                <Select 
-                  value={filters.ownerId || 'all'} 
+                <Select
+                  value={filters.ownerId || 'all'}
                   onValueChange={(value) => setFilters(prev => ({ ...prev, ownerId: value }))}
                 >
                   <SelectTrigger className="w-44">
@@ -325,8 +332,8 @@ export default function Proposals() {
                   ) : proposals.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                        {filters.search || filters.status !== 'all' || filters.ownerId !== 'all' 
-                          ? 'Nenhuma proposta encontrada' 
+                        {filters.search || filters.status !== 'all' || filters.ownerId !== 'all'
+                          ? 'Nenhuma proposta encontrada'
                           : 'Nenhuma proposta cadastrada'}
                       </TableCell>
                     </TableRow>
@@ -350,23 +357,23 @@ export default function Proposals() {
                         </TableCell>
                         <TableCell className="border-r p-0 align-middle h-[40px]">
                           <Select
-                            value={proposal.status}
-                            onValueChange={(value) => handleStatusChange(proposal, value as Proposal['status'])}
+                            value={normalizeProposalStatus(proposal.status) ?? proposal.status}
+                            onValueChange={(value) => updateProposalStatus(proposal.id, value as Proposal['status'])}
+                            disabled={!canEditProposal(proposal.status)}
                           >
                             <SelectTrigger
-                              className={`w-full h-full justify-center rounded-none border-none bg-transparent py-1 px-2 text-xs font-semibold uppercase tracking-wider transition-colors focus:ring-0 focus:ring-offset-0 ${getStatusClasses(
+                              className={`h-8 w-[130px] border-none text-xs font-medium uppercase tracking-wider ${getCompatibleStatusClasses(
                                 proposal.status
                               )}`}
                             >
-                              <span className="flex items-center">{proposal.status}</span>
+                              <span className="flex items-center">{getProposalStatusLabel(proposal.status)}</span>
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Criada">Criada</SelectItem>
-                              <SelectItem value="Enviada">Enviada</SelectItem>
-                              <SelectItem value="Negociando">Negociando</SelectItem>
-                              <SelectItem value="Aprovada">Aprovada</SelectItem>
-                              <SelectItem value="Rejeitada">Rejeitada</SelectItem>
-                              <SelectItem value="Rascunho">Rascunho</SelectItem>
+                              {PROPOSAL_STATUSES.map(status => (
+                                <SelectItem key={status} value={status}>
+                                  {getProposalStatusLabel(status)}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </TableCell>
@@ -383,7 +390,13 @@ export default function Proposals() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setEditingProposal(proposal)}
+                              onClick={() => {
+                                if (canEditProposal(proposal.status)) {
+                                  setEditingProposal(proposal);
+                                }
+                              }}
+                              disabled={!canEditProposal(proposal.status)}
+                              title={!canEditProposal(proposal.status) ? 'Proposta finalizada: duplique para editar' : 'Editar proposta'}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -445,7 +458,7 @@ export default function Proposals() {
               <DialogTitle>Editar Proposta</DialogTitle>
             </DialogHeader>
             {editingProposal && (
-              <ProposalForm 
+              <ProposalForm
                 proposal={editingProposal}
                 allUsers={allUsers}
                 allClients={allClients}

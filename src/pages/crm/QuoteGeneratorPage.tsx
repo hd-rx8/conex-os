@@ -227,7 +227,7 @@ const QuoteGeneratorPage: React.FC<QuoteGeneratorPageProps> = ({ userId }) => {
       <div className="app-page">
         {header}
 
-        <div className="mx-auto w-full max-w-6xl">
+        <div className="mx-auto w-full">
           <ContentCard
             className="overflow-visible"
             contentClassName="space-y-6 p-4 sm:p-6"

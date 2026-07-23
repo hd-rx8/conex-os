@@ -55,7 +55,7 @@ const Layout = ({ children, module = 'crm' }: LayoutProps) => {
         className="flex items-center gap-2 w-full justify-start"
       >
         <Calculator className="w-4 h-4" />
-        Gerador de Propostas
+        Nova Proposta
       </Button>
       <Button
         variant={isActive('/proposals') ? 'default' : 'ghost'}
@@ -71,7 +71,7 @@ const Layout = ({ children, module = 'crm' }: LayoutProps) => {
         className="flex items-center gap-2 w-full justify-start"
       >
         <Kanban className="w-4 h-4" />
-        Oportunidades
+        Pipeline
       </Button>
       <Button
         variant={isActive('/clients') ? 'default' : 'ghost'}
@@ -121,7 +121,7 @@ const Layout = ({ children, module = 'crm' }: LayoutProps) => {
     <div className="min-h-screen">
       {/* Navigation */}
       <div className="bg-background border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3">
+        <div className="w-full px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {isMobile && (
@@ -171,7 +171,7 @@ const Layout = ({ children, module = 'crm' }: LayoutProps) => {
       </div>
 
       {/* Content */}
-      <div className="container mx-auto px-4 pb-20">
+      <div className="w-full px-4 pb-20">
         {children}
       </div>
     </div>

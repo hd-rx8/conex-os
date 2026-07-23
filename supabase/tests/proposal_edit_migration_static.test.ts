@@ -15,6 +15,38 @@ const fixtureSql = readFileSync(
   'utf8',
 );
 
+const supabaseTypes = readFileSync(
+  resolve(process.cwd(), 'src/integrations/supabase/types.ts'),
+  'utf8',
+);
+
+const statusMigrationPath = resolve(
+  process.cwd(),
+  'supabase/migrations/20260723152000_add_proposal_status_values.sql',
+);
+const statusMigrationBytes = readFileSync(statusMigrationPath);
+const statusMigrationSql = new TextDecoder('utf-8', { fatal: true }).decode(
+  statusMigrationBytes,
+);
+const normalizedStatusMigrationSql = statusMigrationSql
+  .replace(/--.*$/gm, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+const statusEditFunctionStart = normalizedStatusMigrationSql.indexOf(
+  'create or replace function public.update_editable_proposal(',
+);
+const statusEditFunctionEnd = normalizedStatusMigrationSql.indexOf(
+  'revoke all on function public.update_editable_proposal(',
+  statusEditFunctionStart,
+);
+const statusEditFunctionSql = normalizedStatusMigrationSql.slice(
+  statusEditFunctionStart,
+  statusEditFunctionEnd,
+);
+const editableStatusGuard = statusEditFunctionSql.match(
+  /if v_proposal\.status not in \((.*?)\) then/,
+)?.[1];
+
 const normalizedSql = migrationSql
   .replace(/--.*$/gm, ' ')
   .replace(/\s+/g, ' ')
@@ -98,5 +130,126 @@ describe('proposal edit RLS fixture bootstrap', () => {
     expect(fixtureSql).toMatch(/^begin;/i);
     expect(fixtureSql).not.toMatch(/\bcommit\s*;/i);
     expect(fixtureSql.trim()).toMatch(/rollback;$/i);
+  });
+});
+
+describe('proposal status migration contract', () => {
+  it('is UTF-8 SQL for a text column instead of a fictitious enum', () => {
+    expect(statusMigrationBytes.subarray(0, 2)).not.toEqual(
+      Buffer.from([0xff, 0xfe]),
+    );
+    expect(normalizedStatusMigrationSql).not.toMatch(/\balter type\b/i);
+    expect(normalizedStatusMigrationSql).toMatch(
+      /alter table public\.proposals alter column status type text using status::text/i,
+    );
+  });
+
+  it('keeps legacy statuses while accepting every canonical status', () => {
+    for (const status of [
+      'Criada',
+      'Enviada',
+      'Aprovada',
+      'Rejeitada',
+      'Negociando',
+      'Rascunho',
+      'QUALIFICACAO',
+      'EM_ELABORACAO',
+      'EM_REVISAO',
+      'ENVIADA',
+      'NEGOCIACAO',
+      'EM_NEGOCIACAO',
+      'FECHADO_GANHO',
+      'FECHADO_PERDIDO',
+    ]) {
+      expect(normalizedStatusMigrationSql).toContain(`'${status}'`);
+    }
+    expect(normalizedStatusMigrationSql).toContain(
+      'constraint proposals_status_check check',
+    );
+    expect(normalizedStatusMigrationSql).toContain(
+      'validate constraint proposals_status_check',
+    );
+  });
+
+  it('backfills legacy values explicitly without deleting proposal rows', () => {
+    expect(normalizedStatusMigrationSql).toContain(
+      'update public.proposals set status = case status',
+    );
+    expect(normalizedStatusMigrationSql).toContain(
+      "when 'Criada' then 'EM_REVISAO'",
+    );
+    expect(normalizedStatusMigrationSql).toContain(
+      "when 'EM_NEGOCIACAO' then 'NEGOCIACAO'",
+    );
+    expect(normalizedStatusMigrationSql).toContain(
+      "when 'Aprovada' then 'FECHADO_GANHO'",
+    );
+    expect(normalizedStatusMigrationSql).toContain(
+      "when 'Rejeitada' then 'FECHADO_PERDIDO'",
+    );
+    expect(normalizedStatusMigrationSql).toContain('else status end');
+    expect(normalizedStatusMigrationSql).not.toMatch(
+      /\bdelete\s+from\s+public\.proposals\b/i,
+    );
+  });
+
+  it('preserves the edit RPC security and concurrency checks while recognizing active statuses', () => {
+    expect(statusEditFunctionSql).toContain(
+      'language plpgsql security invoker',
+    );
+    expect(statusEditFunctionSql).toContain("set search_path = ''");
+    expect(statusEditFunctionSql).toContain(
+      'where id = p_proposal_id for update',
+    );
+    expect(statusEditFunctionSql).toContain(
+      'v_proposal.updated_at is distinct from p_expected_updated_at',
+    );
+    expect(statusEditFunctionSql).toContain(
+      'where id = v_client_id and created_by = (select auth.uid())',
+    );
+    expect(normalizedStatusMigrationSql).toContain(
+      'from public, anon',
+    );
+    expect(normalizedStatusMigrationSql).toContain('to authenticated');
+
+    for (const status of [
+      'Rascunho',
+      'Criada',
+      'Enviada',
+      'Negociando',
+      'QUALIFICACAO',
+      'EM_ELABORACAO',
+      'EM_REVISAO',
+      'ENVIADA',
+      'NEGOCIACAO',
+      'EM_NEGOCIACAO',
+    ]) {
+      expect(editableStatusGuard).toContain(`'${status}'`);
+    }
+    for (const status of [
+      'Aprovada',
+      'Rejeitada',
+      'FECHADO_GANHO',
+      'FECHADO_PERDIDO',
+    ]) {
+      expect(editableStatusGuard).not.toContain(`'${status}'`);
+    }
+  });
+
+  it('maintains approved_at for both legacy and canonical won statuses', () => {
+    expect(normalizedStatusMigrationSql).toContain(
+      "new.status in ('Aprovada', 'FECHADO_GANHO')",
+    );
+    expect(normalizedStatusMigrationSql).toContain(
+      "status in ('Aprovada', 'FECHADO_GANHO') and approved_at is null",
+    );
+    expect(normalizedStatusMigrationSql).toContain(
+      'create trigger trigger_update_approved_at',
+    );
+  });
+
+  it('keeps workspace folder types without publishing a proposal enum for a text column', () => {
+    expect(supabaseTypes).toContain('workspace_folders: {');
+    expect(supabaseTypes).not.toMatch(/^\s+proposal_status:/m);
   });
 });

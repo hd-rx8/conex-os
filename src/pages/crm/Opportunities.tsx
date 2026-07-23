@@ -45,43 +45,38 @@ import DuplicateProposalModal from '@/components/DuplicateProposalModal';
 import { ContentCard } from '@/components/layout/ContentCard';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageToolbar } from '@/components/layout/PageToolbar';
-import { canEditProposal, PROPOSAL_STATUSES, type ProposalStatus } from '@/features/crm/proposals/proposalStatus';
+import { canEditProposal as canEditLegacyProposal } from '@/features/crm/proposals/proposalStatus';
+import { type ProposalStatus, getStatusLabel, getStatusClasses, normalizeStatus } from '@/utils/statusColors';
+
+// Define os status possíveis para as propostas
+const PROPOSAL_STATUSES: ProposalStatus[] = ['QUALIFICACAO', 'EM_ELABORACAO', 'ENVIADA', 'EM_NEGOCIACAO', 'FECHADO_GANHO', 'FECHADO_PERDIDO'];
 
 // Status do Kanban
-const KANBAN_STATUSES = PROPOSAL_STATUSES;
+const KANBAN_STATUSES: ProposalStatus[] = ['QUALIFICACAO', 'EM_ELABORACAO', 'ENVIADA', 'EM_NEGOCIACAO', 'FECHADO_GANHO', 'FECHADO_PERDIDO'];
 
-const getStatusColor = (status: ProposalStatus) => {
-  switch (status) {
-    case 'Rascunho': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/50 dark:text-purple-300';
-    case 'Criada': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-gray-700/50 dark:text-gray-300';
-    case 'Enviada': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/50 dark:text-yellow-300';
-    case 'Negociando': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/50 dark:text-orange-300';
-    case 'Aprovada': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/50 dark:text-green-300';
-    case 'Rejeitada': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/50 dark:text-red-300';
-    default: return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-700/50 dark:text-gray-300';
-  }
+const LEGACY_STATUS_BY_PIPELINE_STATUS: Record<string, string> = {
+  QUALIFICACAO: 'Criada',
+  EM_ELABORACAO: 'Rascunho',
+  ENVIADA: 'Enviada',
+  EM_NEGOCIACAO: 'Negociando',
+  FECHADO_GANHO: 'Aprovada',
+  FECHADO_PERDIDO: 'Rejeitada',
 };
 
-const getStatusClasses = (status: Proposal['status']) => {
-  switch (status) {
-    case 'Rascunho': return 'bg-purple-200/50 text-purple-700 hover:bg-purple-200/80 dark:bg-purple-900/50 dark:text-purple-300 dark:hover:bg-purple-800/70';
-    case 'Criada': return 'bg-gray-200/50 text-gray-700 hover:bg-gray-200/80 dark:bg-gray-700/50 dark:text-gray-300 dark:hover:bg-gray-600/70';
-    case 'Enviada': return 'bg-yellow-200/50 text-yellow-700 hover:bg-yellow-200/80 dark:bg-yellow-900/50 dark:text-yellow-300 dark:hover:bg-yellow-800/70';
-    case 'Negociando': return 'bg-orange-200/50 text-orange-700 hover:bg-orange-200/80 dark:bg-orange-900/50 dark:text-orange-300 dark:hover:bg-orange-800/70';
-    case 'Aprovada': return 'bg-green-200/50 text-green-700 hover:bg-green-200/80 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-800/70';
-    case 'Rejeitada': return 'bg-red-200/50 text-red-700 hover:bg-red-200/80 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-800/70';
-    default: return 'bg-gray-200/50 text-gray-700 hover:bg-gray-200/80 dark:bg-gray-700/50 dark:text-gray-300 dark:hover:bg-gray-600/70';
-  }
+const canEditProposal = (status: string) => {
+  const normalizedStatus = normalizeStatus(status);
+  return canEditLegacyProposal(LEGACY_STATUS_BY_PIPELINE_STATUS[normalizedStatus] ?? status);
 };
 
-const getStatusIcon = (status: ProposalStatus) => {
-  switch (status) {
-    case 'Rascunho': return '📝';
-    case 'Criada': return '📋';
-    case 'Enviada': return '📤';
-    case 'Negociando': return '🤝';
-    case 'Aprovada': return '✅';
-    case 'Rejeitada': return '❌';
+const getStatusIcon = (status: ProposalStatus | string) => {
+  const normalized = normalizeStatus(status);
+  switch (normalized) {
+    case 'QUALIFICACAO': return '🔍';
+    case 'EM_ELABORACAO': return '📝';
+    case 'ENVIADA': return '📤';
+    case 'EM_NEGOCIACAO': return '🤝';
+    case 'FECHADO_GANHO': return '✅';
+    case 'FECHADO_PERDIDO': return '❌';
     default: return '📄';
   }
 };
@@ -176,7 +171,7 @@ const Opportunities: React.FC = () => {
       }
 
       // Status filter
-      if (filterStatus !== 'all' && proposal.status !== filterStatus) {
+      if (filterStatus !== 'all' && normalizeStatus(proposal.status) !== filterStatus) {
         return false;
       }
 
@@ -249,10 +244,11 @@ const Opportunities: React.FC = () => {
       });
 
       sortedProposals.forEach(proposal => {
-        if (PROPOSAL_STATUSES.includes(proposal.status as ProposalStatus)) {
-          newGroupedProposals[proposal.status as ProposalStatus].push(proposal);
+        const normalizedStatus = normalizeStatus(proposal.status) as ProposalStatus;
+        if (PROPOSAL_STATUSES.includes(normalizedStatus)) {
+          newGroupedProposals[normalizedStatus].push(proposal);
         } else {
-          newGroupedProposals['Criada'].push(proposal);
+          newGroupedProposals['EM_ELABORACAO'].push(proposal);
         }
       });
       setGroupedProposals(newGroupedProposals);
@@ -564,8 +560,8 @@ const Opportunities: React.FC = () => {
               <DollarSign className="h-3 w-3" />
               {formatCurrency(Number(proposal.amount))}
             </span>
-            <Badge variant="outline" className={cn("text-xs", getStatusColor(proposal.status as ProposalStatus))}>
-              {getStatusIcon(proposal.status as ProposalStatus)} {proposal.status}
+            <Badge variant="outline" className={cn("text-xs", getStatusClasses(proposal.status as ProposalStatus))}>
+              {getStatusIcon(proposal.status as ProposalStatus)} {getStatusLabel(proposal.status)}
             </Badge>
           </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -612,8 +608,8 @@ const Opportunities: React.FC = () => {
               <span className="text-lg font-semibold text-conexhub-green-600">
                 {formatCurrency(Number(proposal.amount))}
               </span>
-              <Badge className={cn("text-xs", getStatusColor(proposal.status as ProposalStatus))}>
-                {proposal.status}
+              <Badge className={cn("text-xs", getStatusClasses(proposal.status as ProposalStatus))}>
+                {getStatusLabel(proposal.status)}
               </Badge>
             </div>
           </div>
@@ -782,12 +778,11 @@ const Opportunities: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="Rascunho">Rascunho</SelectItem>
-                    <SelectItem value="Criada">Criada</SelectItem>
-                    <SelectItem value="Enviada">Enviada</SelectItem>
-                    <SelectItem value="Negociando">Negociando</SelectItem>
-                    <SelectItem value="Aprovada">Aprovada</SelectItem>
-                    <SelectItem value="Rejeitada">Rejeitada</SelectItem>
+                    {PROPOSAL_STATUSES.map(status => (
+                      <SelectItem key={status} value={status}>
+                        {getStatusLabel(status)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <Select value={filterPeriod} onValueChange={setFilterPeriod}>
@@ -831,7 +826,7 @@ const Opportunities: React.FC = () => {
               <div className="flex min-h-[600px] items-start gap-4 p-4">
                 {KANBAN_STATUSES.map(status => (
                   <div
-                    key={status}
+                    key={getStatusLabel(status)}
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, status)}
                     className={cn(
@@ -842,9 +837,9 @@ const Opportunities: React.FC = () => {
                     <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center justify-between">
                       <span className="flex items-center gap-2">
                         <span className="text-base sm:text-lg">{getStatusIcon(status)}</span>
-                        <span className="truncate">{status}</span>
+                        <span className="truncate">{getStatusLabel(status)}</span>
                       </span>
-                      <Badge variant="secondary" className={cn("text-xs", getStatusColor(status))}>
+                      <Badge variant="secondary" className={cn("text-xs", getStatusClasses(status))}>
                         {groupedProposals[status]?.length || 0}
                       </Badge>
                     </h3>
@@ -989,7 +984,7 @@ const Opportunities: React.FC = () => {
                           </TableCell>
                           <TableCell className="p-0">
                             <Select
-                              value={proposal.status}
+                              value={normalizeStatus(proposal.status)}
                               onValueChange={(value) => handleStatusChange(proposal, value as Proposal['status'])}
                               disabled={!canEditProposal(proposal.status)}
                             >
@@ -999,15 +994,14 @@ const Opportunities: React.FC = () => {
                                   proposal.status
                                 )}`}
                               >
-                                <span className="flex items-center">{proposal.status}</span>
+                                <span className="flex items-center">{getStatusLabel(proposal.status)}</span>
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="Rascunho">Rascunho</SelectItem>
-                                <SelectItem value="Criada">Criada</SelectItem>
-                                <SelectItem value="Enviada">Enviada</SelectItem>
-                                <SelectItem value="Negociando">Negociando</SelectItem>
-                                <SelectItem value="Aprovada">Aprovada</SelectItem>
-                                <SelectItem value="Rejeitada">Rejeitada</SelectItem>
+                                {PROPOSAL_STATUSES.map(status => (
+                                  <SelectItem key={status} value={status}>
+                                    {getStatusLabel(status)}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </TableCell>
@@ -1182,11 +1176,11 @@ const Opportunities: React.FC = () => {
                           value={selectedProposal.status}
                           onSave={(newValue) => handleUpdateProposalField('status', newValue)}
                           type="select"
-                          selectOptions={PROPOSAL_STATUSES.map(s => ({ value: s, label: s }))}
+                          selectOptions={PROPOSAL_STATUSES.map(s => ({ value: s, label: getStatusLabel(s) }))}
                           isLoading={isSaving.status}
                           disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                           formatDisplayValue={(value) => (
-                            <Badge className={getStatusColor(value as ProposalStatus)}>
+                            <Badge className={getStatusClasses(value as ProposalStatus)}>
                               {value}
                             </Badge>
                           )}

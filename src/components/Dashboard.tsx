@@ -29,7 +29,12 @@ import { MetricCard } from './layout/MetricCard';
 import { PageHeader } from './layout/PageHeader';
 import { PageToolbar } from './layout/PageToolbar';
 import { deriveDashboardAnalytics } from '@/features/crm/dashboard/dashboardAnalytics';
-import { canEditProposal } from '@/features/crm/proposals/proposalStatus';
+import {
+  CANONICAL_PROPOSAL_STATUSES,
+  canEditProposal,
+  getProposalStatusLabel,
+  normalizeProposalStatus,
+} from '@/features/crm/proposals/proposalStatus';
 
 interface DashboardProps {
   userId: string;
@@ -83,13 +88,14 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Criada': return 'bg-gray-200/50 text-gray-700 border-gray-200 dark:bg-gray-700/50 dark:text-gray-300 dark:border-gray-600';
-      case 'Enviada': return 'bg-yellow-200/50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/50 dark:text-yellow-300 dark:border-yellow-800';
-      case 'Negociando': return 'bg-orange-200/50 text-orange-700 border-orange-200 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-800';
-      case 'Aprovada': return 'bg-green-200/50 text-green-700 border-green-200 dark:bg-green-900/50 dark:text-green-300 dark:border-green-800';
-      case 'Rejeitada': return 'bg-red-200/50 text-red-700 border-red-200 dark:bg-red-900/50 dark:text-red-300 dark:border-red-800';
-      case 'Rascunho': return 'bg-purple-200/50 text-purple-700 border-purple-200 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-800';
+    switch (normalizeProposalStatus(status)) {
+      case 'QUALIFICACAO': return 'bg-gray-200/50 text-gray-700 border-gray-200 dark:bg-gray-700/50 dark:text-gray-300 dark:border-gray-600';
+      case 'EM_ELABORACAO': return 'bg-purple-200/50 text-purple-700 border-purple-200 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-800';
+      case 'EM_REVISAO': return 'bg-sky-200/50 text-sky-700 border-sky-200 dark:bg-sky-900/50 dark:text-sky-300 dark:border-sky-800';
+      case 'ENVIADA': return 'bg-yellow-200/50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/50 dark:text-yellow-300 dark:border-yellow-800';
+      case 'NEGOCIACAO': return 'bg-orange-200/50 text-orange-700 border-orange-200 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-800';
+      case 'FECHADO_GANHO': return 'bg-green-200/50 text-green-700 border-green-200 dark:bg-green-900/50 dark:text-green-300 dark:border-green-800';
+      case 'FECHADO_PERDIDO': return 'bg-red-200/50 text-red-700 border-red-200 dark:bg-red-900/50 dark:text-red-300 dark:border-red-800';
       default: return 'bg-gray-200/50 text-gray-700 border-gray-200 dark:bg-gray-700/50 dark:text-gray-300 dark:border-gray-600';
     }
   };
@@ -195,12 +201,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="Criada">Criada</SelectItem>
-                <SelectItem value="Enviada">Enviada</SelectItem>
-                <SelectItem value="Negociando">Negociando</SelectItem>
-                <SelectItem value="Aprovada">Aprovada</SelectItem>
-                <SelectItem value="Rejeitada">Rejeitada</SelectItem>
-                <SelectItem value="Rascunho">Rascunho</SelectItem>
+                {CANONICAL_PROPOSAL_STATUSES.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {getProposalStatusLabel(status)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -339,7 +344,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
                         variant="outline"
                         className={getStatusColor(proposal.status)}
                       >
-                        {proposal.status}
+                        {getProposalStatusLabel(proposal.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">

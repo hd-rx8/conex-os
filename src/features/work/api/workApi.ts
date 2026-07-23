@@ -64,8 +64,9 @@ const WORKSPACE_FIELDS =
 
 const WORKSPACE_TREE_FIELDS = `
   ${WORKSPACE_FIELDS},
+  workspace_folders(id,workspace_id,name,description,icon,color,position,created_at,updated_at),
   spaces(
-    id,workspace_id,name,description,status,icon,color,custom_statuses,position,created_at,updated_at,
+    id,workspace_id,workspace_folder_id,name,description,status,icon,color,custom_statuses,position,created_at,updated_at,
     folders(id,space_id,name,description,icon,color,custom_statuses,position,created_at,updated_at),
     lists(id,space_id,folder_id,name,description,icon,color,custom_statuses,position,created_at,updated_at)
   )

@@ -40,7 +40,16 @@ export default function ProjectDetails() {
   const tasksQuery = useWorkspaceTasksQuery(selectedWorkspaceId);
   const updateTask = useUpdateTaskMutation();
   const { view, setView } = useWorkViewMode('project', projectId ?? 'none');
-  const project = treeQuery.data?.spaces.find((space) => space.id === projectId);
+  const { project, folderName } = useMemo(() => {
+    if (!treeQuery.data) return { project: undefined, folderName: undefined };
+    const rootSpace = treeQuery.data.spaces.find((space) => space.id === projectId);
+    if (rootSpace) return { project: rootSpace, folderName: undefined };
+    for (const folder of treeQuery.data.workspace_folders || []) {
+      const folderSpace = folder.spaces.find((space) => space.id === projectId);
+      if (folderSpace) return { project: folderSpace, folderName: folder.name };
+    }
+    return { project: undefined, folderName: undefined };
+  }, [treeQuery.data, projectId]);
   const projectTasks = useMemo(
     () =>
       (tasksQuery.data ?? []).filter(
@@ -80,7 +89,7 @@ export default function ProjectDetails() {
 
   if (!selectedWorkspaceId) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <WorkEmptyState
           title="Selecione um workspace"
           description="Escolha o workspace que contém este projeto."
@@ -91,7 +100,7 @@ export default function ProjectDetails() {
 
   if (treeQuery.isLoading || tasksQuery.isLoading) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <WorkLoadingState label="Carregando projeto…" />
       </MainLayout>
     );
@@ -99,7 +108,7 @@ export default function ProjectDetails() {
 
   if (treeQuery.error || tasksQuery.error) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <WorkErrorState
           onRetry={() => {
             void treeQuery.refetch();
@@ -112,7 +121,7 @@ export default function ProjectDetails() {
 
   if (!project) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <WorkEmptyState
           title="Projeto não encontrado"
           description="O projeto pode ter sido movido, arquivado ou não pertencer ao workspace selecionado."
@@ -128,7 +137,7 @@ export default function ProjectDetails() {
   }
 
   return (
-    <MainLayout module="work" showGlobalFab={false}>
+    <MainLayout module="work" >
       <div className="space-y-6 pb-10">
         <Button variant="ghost" size="sm" onClick={() => navigate('/work')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -136,7 +145,13 @@ export default function ProjectDetails() {
         </Button>
 
         <WorkPageHeader
-          eyebrow={`${treeQuery.data?.name ?? 'Workspace'} · Projeto ${project.status.toLocaleLowerCase('pt-BR')}`}
+          eyebrow={
+            [
+              treeQuery.data?.name ?? 'Workspace',
+              folderName,
+              `Projeto ${project.status.toLocaleLowerCase('pt-BR')}`
+            ].filter(Boolean).join(' / ')
+          }
           title={project.name}
           description={
             project.description ??

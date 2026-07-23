@@ -24,10 +24,10 @@ describe('deriveDashboardAnalytics', () => {
     const analytics = deriveDashboardAnalytics(
       [
         proposal('1', 'Aprovada', 1900, '2026-07-23T10:00:00.000Z'),
-        proposal('2', 'Aprovada', 1350, '2026-07-23T11:00:00.000Z'),
-        proposal('3', 'Aprovada', 700, '2026-07-19T12:00:00.000Z'),
+        proposal('2', 'FECHADO_GANHO', 1350, '2026-07-23T11:00:00.000Z'),
+        proposal('3', 'FECHADO_GANHO', 700, '2026-07-19T12:00:00.000Z'),
         proposal('4', 'Rejeitada', 2375),
-        proposal('5', 'Rejeitada', 1710),
+        proposal('5', 'NEGOCIACAO', 1710),
       ],
       {
         dateField: 'created_at',
@@ -66,7 +66,8 @@ describe('deriveDashboardAnalytics', () => {
         totalConversionRate: 100,
       }),
       expect.objectContaining({
-        stage: 'Aprovadas',
+        stage: 'Fechado ganho',
+        status: 'FECHADO_GANHO',
         count: 3,
         valueSum: 3950,
         previousConversionRate: 60,
@@ -84,5 +85,25 @@ describe('deriveDashboardAnalytics', () => {
     expect(analytics.metrics.totalProposals).toBe(0);
     expect(analytics.monthlyData).toEqual([]);
     expect(analytics.funnelData.every((stage) => stage.count === 0)).toBe(true);
+  });
+
+  it('recognizes legacy and canonical sent-or-later statuses', () => {
+    const analytics = deriveDashboardAnalytics(
+      [
+        proposal('1', 'Enviada', 100),
+        proposal('2', 'ENVIADA', 200),
+        proposal('3', 'Negociando', 300),
+        proposal('4', 'EM_NEGOCIACAO', 400),
+        proposal('5', 'NEGOCIACAO', 500),
+        proposal('6', 'EM_REVISAO', 600),
+      ],
+      { dateField: 'created_at' },
+    );
+
+    expect(analytics.funnelData[1]).toMatchObject({
+      stage: 'Enviadas ou posteriores',
+      count: 5,
+      valueSum: 1500,
+    });
   });
 });
