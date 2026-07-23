@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -15,7 +15,6 @@ import {
   Copy,
   Trash2,
   Filter,
-  LayoutDashboard as LayoutDashboardIcon 
 } from 'lucide-react';
 import { useProposals, ProposalFilters } from '@/hooks/useProposals';
 import { useDashboardChart, DashboardChartFilters } from '@/hooks/useDashboardChart';
@@ -26,6 +25,10 @@ import { toast } from 'sonner';
 import DashboardBarChart from './DashboardBarChart';
 import DashboardFunnelChart from './DashboardFunnelChart';
 import FloatingActionButton from './FloatingActionButton';
+import { ContentCard } from './layout/ContentCard';
+import { MetricCard } from './layout/MetricCard';
+import { PageHeader } from './layout/PageHeader';
+import { PageToolbar } from './layout/PageToolbar';
 
 interface DashboardProps {
   userId: string;
@@ -58,7 +61,6 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
     currentPage,
     setCurrentPage,
     totalPages,
-    totalItems,
     duplicateProposal,
     deleteProposal,
     metrics,
@@ -97,13 +99,6 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
     }
   };
 
-  const handleChartPeriodChange = (period: string) => {
-    setChartFilters(prev => ({ 
-      ...prev, 
-      period: period as DashboardChartFilters['period'] 
-    }));
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Criada': return 'bg-gray-200/50 text-gray-700 border-gray-200 dark:bg-gray-700/50 dark:text-gray-300 dark:border-gray-600';
@@ -140,7 +135,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
   };
 
   return (
-    <div className="space-y-4 relative pb-20">
+    <div className="app-page relative pb-20">
       {/* Floating Action Button */}
       <FloatingActionButton
         onClick={() => navigate('/generator')}
@@ -148,319 +143,295 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
         icon={Plus}
       />
 
+      <PageHeader
+        eyebrow="CRM"
+        title="Dashboard"
+        description="Acompanhe propostas, receita e conversão em um só lugar."
+        actions={(
+          <Button onClick={() => navigate('/generator')} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Nova proposta
+          </Button>
+        )}
+      />
+
       {/* Filtros */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Período</label>
-              <Select
-                value={filters.period}
-                onValueChange={(value) => handleFilterChange('period', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecionar período" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="today">Hoje</SelectItem>
-                  <SelectItem value="7days">Semana (7 dias)</SelectItem>
-                  <SelectItem value="30days">Mês (30 dias)</SelectItem>
-                  <SelectItem value="currentMonth">Mês atual</SelectItem>
-                  <SelectItem value="custom">Personalizado</SelectItem>
-                  <SelectItem value="all">Todos</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Tipo de Data</label>
-              <Select
-                value={filters.dateField || 'created_at'}
-                onValueChange={(value) => handleFilterChange('dateField', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Tipo de data" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="created_at">Data de Criação</SelectItem>
-                  <SelectItem value="approved_at">Data de Aprovação</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Status</label>
-              <Select
-                value={filters.status}
-                onValueChange={(value) => handleFilterChange('status', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecionar status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="Criada">Criada</SelectItem>
-                  <SelectItem value="Enviada">Enviada</SelectItem>
-                  <SelectItem value="Aprovada">Aprovada</SelectItem>
-                  <SelectItem value="Rejeitada">Rejeitada</SelectItem>
-                  <SelectItem value="Rascunho">Rascunho</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      <PageToolbar className="block">
+        <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
+          <Filter className="h-4 w-4 text-primary" />
+          Filtros
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div>
+            <label className="mb-2 block text-sm font-medium">Período</label>
+            <Select
+              value={filters.period}
+              onValueChange={(value) => handleFilterChange('period', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecionar período" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Hoje</SelectItem>
+                <SelectItem value="7days">Semana (7 dias)</SelectItem>
+                <SelectItem value="30days">Mês (30 dias)</SelectItem>
+                <SelectItem value="currentMonth">Mês atual</SelectItem>
+                <SelectItem value="custom">Personalizado</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Custom Date Range - shown only when "custom" period is selected */}
-          {filters.period === 'custom' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Data Inicial</label>
-                <Input
-                  type="date"
-                  value={filters.customStartDate || ''}
-                  onChange={(e) => handleFilterChange('customStartDate', e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Data Final</label>
-                <Input
-                  type="date"
-                  value={filters.customEndDate || ''}
-                  onChange={(e) => handleFilterChange('customEndDate', e.target.value)}
-                />
-              </div>
+          <div>
+            <label className="mb-2 block text-sm font-medium">Tipo de Data</label>
+            <Select
+              value={filters.dateField || 'created_at'}
+              onValueChange={(value) => handleFilterChange('dateField', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Tipo de data" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="created_at">Data de Criação</SelectItem>
+                <SelectItem value="approved_at">Data de Aprovação</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium">Status</label>
+            <Select
+              value={filters.status}
+              onValueChange={(value) => handleFilterChange('status', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecionar status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="Criada">Criada</SelectItem>
+                <SelectItem value="Enviada">Enviada</SelectItem>
+                <SelectItem value="Aprovada">Aprovada</SelectItem>
+                <SelectItem value="Rejeitada">Rejeitada</SelectItem>
+                <SelectItem value="Rascunho">Rascunho</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {filters.period === 'custom' && (
+          <div className="mt-4 grid grid-cols-1 gap-4 border-t pt-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-medium">Data Inicial</label>
+              <Input
+                type="date"
+                value={filters.customStartDate || ''}
+                onChange={(event) => handleFilterChange('customStartDate', event.target.value)}
+              />
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <div>
+              <label className="mb-2 block text-sm font-medium">Data Final</label>
+              <Input
+                type="date"
+                value={filters.customEndDate || ''}
+                onChange={(event) => handleFilterChange('customEndDate', event.target.value)}
+              />
+            </div>
+          </div>
+        )}
+      </PageToolbar>
 
       {/* Cards de Métricas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card className="hover:shadow-lg transition-shadow duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Propostas</CardTitle>
-            <FileText className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <Skeleton className="h-7 w-24 mb-1" />
-            ) : (
-              <div className="text-2xl font-bold text-conexhub-blue-600">
-                {metrics.totalProposals}
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground">propostas criadas</p>
-          </CardContent>
-        </Card>
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          label="Total de propostas"
+          value={metrics.totalProposals}
+          detail="propostas criadas"
+          icon={FileText}
+          tone="primary"
+          loading={loading}
+        />
+        <MetricCard
+          label="Valor total"
+          value={formatCurrency(metrics.totalValue)}
+          detail="no período filtrado"
+          icon={DollarSign}
+          tone="success"
+          loading={loading}
+        />
+        <MetricCard
+          label="Taxa de conversão"
+          value={`${metrics.conversionRate.toFixed(1)}%`}
+          detail="propostas aprovadas"
+          icon={TrendingUp}
+          tone="warning"
+          loading={loading}
+        />
+        <MetricCard
+          label="Aprovado este mês"
+          value={formatCurrency(metrics.thisMonth)}
+          detail="aprovado no mês atual"
+          icon={Calendar}
+          tone="success"
+          loading={loading}
+          className="border-0 bg-gradient-to-br from-conexhub-teal-500 to-conexhub-green-600 text-white [&_.text-muted-foreground]:text-white/80"
+        />
+      </section>
 
-        <Card className="hover:shadow-lg transition-shadow duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Valor Total</CardTitle>
-            <DollarSign className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <Skeleton className="h-7 w-32 mb-1" />
-            ) : (
-              <div className="text-2xl font-bold text-conexhub-green-600">
-                {formatCurrency(metrics.totalValue)}
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground">no período filtrado</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taxa Conversão</CardTitle>
-            <TrendingUp className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <Skeleton className="h-7 w-20 mb-1" />
-            ) : (
-              <div className="text-2xl font-bold text-orange-600">
-                {metrics.conversionRate.toFixed(1)}%
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground">propostas aprovadas</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow duration-300 bg-gradient-to-br from-conexhub-teal-500 to-conexhub-green-600 text-white"> {/* Highlighted card */}
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white">Aprovado Este Mês</CardTitle>
-            <Calendar className="w-4 h-4 text-white" />
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <Skeleton className="h-7 w-16 mb-1 bg-white/30" />
-            ) : (
-              <div className="text-2xl font-bold text-white">
-                {formatCurrency(metrics.thisMonth)}
-              </div>
-            )}
-            <p className="text-xs text-conexhub-teal-100">aprovado no mês atual</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Gráficos: Barras (3/4) e Funil (1/4) */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 mb-6">
-        <div className="xl:col-span-3">
-          <DashboardBarChart 
-            data={chartData} 
-            isLoading={chartLoading} 
+      {/* Gráficos: Barras (2/3) e Funil (1/3) */}
+      <section className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+        <div className="min-w-0 xl:col-span-8">
+          <DashboardBarChart
+            data={chartData}
+            isLoading={chartLoading}
           />
         </div>
-        <div className="xl:col-span-1">
-          <DashboardFunnelChart 
+        <div className="min-w-0 xl:col-span-4">
+          <DashboardFunnelChart
             data={funnelData}
             isLoading={isFunnelLoading}
           />
         </div>
-      </div>
+      </section>
 
       {/* Tabela de Propostas Recentes */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Propostas Recentes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
+      <ContentCard
+        title="Propostas recentes"
+        description="Últimas movimentações no período selecionado."
+        contentClassName="p-0"
+      >
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="min-w-[110px]">Data</TableHead>
+                <TableHead className="min-w-[220px]">Título</TableHead>
+                <TableHead className="min-w-[180px]">Cliente</TableHead>
+                <TableHead className="min-w-[130px]">Valor</TableHead>
+                <TableHead className="min-w-[130px]">Status</TableHead>
+                <TableHead className="min-w-[150px] text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                Array.from({ length: 5 }).map((_, index) => (
+                  <ProposalSkeleton key={index} />
+                ))
+              ) : proposals.length === 0 ? (
                 <TableRow>
-                  <TableHead className="border-r min-w-[100px]">Data</TableHead>
-                  <TableHead className="border-r min-w-[200px]">Título</TableHead>
-                  <TableHead className="border-r min-w-[150px]">Cliente</TableHead>
-                  <TableHead className="border-r min-w-[120px]">Valor</TableHead>
-                  <TableHead className="border-r min-w-[120px]">Status</TableHead>
-                  <TableHead className="text-right min-w-[120px]">Ações</TableHead>
+                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                    Nenhuma proposta encontrada com os filtros aplicados.
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <ProposalSkeleton key={i} />
-                  ))
-                ) : proposals.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      Nenhuma proposta encontrada com os filtros aplicados.
+              ) : (
+                proposals.map((proposal) => (
+                  <TableRow key={proposal.id} className="h-16 hover:bg-muted/30">
+                    <TableCell>
+                      {new Date(proposal.created_at).toLocaleDateString('pt-BR')}
+                    </TableCell>
+                    <TableCell className="font-medium">{proposal.title}</TableCell>
+                    <TableCell>
+                      <div className="min-w-0">
+                        <div className="truncate font-medium">
+                          {proposal.clients?.name || 'Sem cliente'}
+                        </div>
+                        {proposal.clients?.company && (
+                          <div className="truncate text-sm text-muted-foreground">
+                            {proposal.clients.company}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-semibold text-conexhub-green-600">
+                        {formatCurrency(Number(proposal.amount))}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={getStatusColor(proposal.status)}
+                      >
+                        {proposal.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleViewProposal(proposal.share_token)}
+                          className="h-9 w-9"
+                          aria-label={`Visualizar ${proposal.title}`}
+                          title="Visualizar proposta"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditProposal(proposal.id)}
+                          className="h-9 w-9"
+                          aria-label={`Editar ${proposal.title}`}
+                          title="Editar proposta"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDuplicateProposal(proposal.id)}
+                          className="h-9 w-9"
+                          aria-label={`Duplicar ${proposal.title}`}
+                          title="Duplicar proposta"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteProposal(proposal.id)}
+                          className="h-9 w-9 text-destructive hover:text-destructive"
+                          aria-label={`Excluir ${proposal.title}`}
+                          title="Excluir proposta"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  proposals.map((proposal) => (
-                    <TableRow key={proposal.id} className="hover:bg-muted/50">
-                      <TableCell className="border-r align-middle h-[40px]">
-                        {new Date(proposal.created_at).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                      <TableCell className="font-medium border-r align-middle h-[40px]">
-                        {proposal.title}
-                      </TableCell>
-                      <TableCell className="border-r align-middle h-[40px]">
-                        <div>
-                          <div className="font-medium">{proposal.clients?.name || 'Sem cliente'}</div>
-                          {proposal.clients?.company && (
-                            <div className="text-sm text-muted-foreground">
-                              {proposal.clients.company}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="border-r align-middle h-[40px]">
-                        <span className="font-semibold text-conexhub-green-600">
-                          {formatCurrency(Number(proposal.amount))}
-                        </span>
-                      </TableCell>
-                      <TableCell className="border-r align-middle h-[40px]">
-                        <Badge 
-                          variant="outline" 
-                          className={getStatusColor(proposal.status)}
-                        >
-                          {proposal.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right align-middle h-[40px]">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewProposal(proposal.share_token)}
-                            className="h-8 w-8 p-0"
-                            title="Visualizar Proposta"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditProposal(proposal.id)}
-                            className="h-8 w-8 p-0"
-                            title="Editar Proposta"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDuplicateProposal(proposal.id)}
-                            className="h-8 w-8 p-0"
-                            title="Duplicar Proposta"
-                          >
-                            <Copy className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteProposal(proposal.id)}
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                            title="Excluir Proposta"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <p className="text-sm text-muted-foreground">
-                Página {currentPage} de {totalPages}
-              </p>
-              <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                >
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  Próxima
-                </Button>
-              </div>
+        {totalPages > 1 && (
+          <div className="flex flex-col gap-3 border-t p-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Página {currentPage} de {totalPages}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((previous) => Math.max(1, previous - 1))}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((previous) => Math.min(totalPages, previous + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Próxima
+              </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        )}
+      </ContentCard>
     </div>
   );
 };

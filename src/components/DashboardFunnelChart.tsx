@@ -102,21 +102,25 @@ const DashboardFunnelChart: React.FC<DashboardFunnelChartProps> = ({
 
   // Verificar se há dados para mostrar
   const hasData = funnelData.some(item => item.value > 0);
+  const totalProposals = data[0]?.count ?? 0;
 
   return (
-    <Card className="h-full">
-      <CardHeader>
-        <CardTitle>Funil de Conversão</CardTitle>
+    <Card className="h-full overflow-hidden shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-xl">Funil de Conversão</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          {totalProposals} {totalProposals === 1 ? 'proposta' : 'propostas'} no período
+        </p>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <Skeleton className="h-80 w-full" />
+          <Skeleton className="h-[280px] w-full" />
         ) : !hasData ? (
-          <div className="h-80 flex items-center justify-center flex-col text-muted-foreground">
+          <div className="flex h-[280px] flex-col items-center justify-center text-center text-sm text-muted-foreground">
             <p>Nenhuma proposta encontrada no período selecionado.</p>
           </div>
         ) : (
-          <div className="h-80">
+          <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <FunnelChart>
                 <Tooltip content={<CustomTooltip />} />

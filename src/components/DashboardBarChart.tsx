@@ -54,15 +54,18 @@ const DashboardBarChart: React.FC<DashboardBarChartProps> = ({
   const { formatCurrency } = useCurrency();
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
+    <Card className="h-full overflow-hidden shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-xl">{title}</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Compare o valor gerado com o valor efetivamente fechado.
+        </p>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <Skeleton className="h-80 w-full" />
+          <Skeleton className="h-[280px] w-full" />
         ) : (
-          <div className="h-80">
+          <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={data}
