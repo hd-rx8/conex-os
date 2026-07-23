@@ -430,10 +430,6 @@ const Settings = () => {
                   <CardDescription>Personalize a aparência da aplicação.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5">
-                  <div className="flex items-center justify-between gap-4">
-                    <p className="text-sm font-medium">Modo claro ou escuro</p>
-                    <ThemeToggle />
-                  </div>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm font-medium">Tema de gradiente</p>
                     <Select

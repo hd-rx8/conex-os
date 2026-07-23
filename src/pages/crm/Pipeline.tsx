@@ -472,9 +472,6 @@ const Pipeline: React.FC = () => {
               <DollarSign className="h-3 w-3" />
               {formatCurrency(Number(proposal.amount))}
             </span>
-            <Badge variant="outline" className={cn("text-xs", getCompatibleStatusClasses(proposal.status))}>
-              {getStatusIcon(proposal.status)} {getProposalStatusLabel(proposal.status)}
-            </Badge>
           </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-1">

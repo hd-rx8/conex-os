@@ -51,7 +51,7 @@ const DashboardFunnelChart: React.FC<DashboardFunnelChartProps> = ({
       case 'Em Negociação':
       case 'Enviadas ou posteriores':
         return 'hsl(38, 92%, 50%)';
-      case 'Ganho': return 'hsl(142, 76%, 36%)';
+      case 'Fechado ganho': return 'hsl(142, 76%, 36%)';
       default: return 'hsl(var(--muted-foreground))';
     }
   };
