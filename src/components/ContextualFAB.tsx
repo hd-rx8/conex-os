@@ -10,6 +10,8 @@ export interface FABAction {
   icon: LucideIcon;
   onClick: () => void;
   color?: string;
+  disabled?: boolean;
+  disabledReason?: string;
 }
 
 interface ContextualFABProps {
@@ -46,7 +48,7 @@ const ContextualFAB: React.FC<ContextualFABProps> = ({
   const handleMainClick = () => {
     if (actions.length === 1) {
       // If only one action, execute it directly
-      actions[0].onClick();
+      if (!actions[0].disabled) actions[0].onClick();
     } else {
       // Otherwise, toggle menu
       setIsOpen(!isOpen);
@@ -54,6 +56,7 @@ const ContextualFAB: React.FC<ContextualFABProps> = ({
   };
 
   const handleActionClick = (action: FABAction) => {
+    if (action.disabled) return;
     action.onClick();
     setIsOpen(false);
   };
@@ -71,6 +74,7 @@ const ContextualFAB: React.FC<ContextualFABProps> = ({
                   <TooltipTrigger asChild>
                     <Button
                       size="lg"
+                      disabled={action.disabled}
                       onClick={() => handleActionClick(action)}
                       className={cn(
                         "h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 animate-in fade-in slide-in-from-bottom-4",
@@ -85,7 +89,7 @@ const ContextualFAB: React.FC<ContextualFABProps> = ({
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="left" className="mr-2">
-                    <p>{action.label}</p>
+                    <p>{action.disabled ? action.disabledReason : action.label}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

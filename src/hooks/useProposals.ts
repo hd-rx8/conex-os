@@ -39,7 +39,7 @@ export interface Proposal {
   owner: string;
   created_at: string;
   updated_at: string;
-  approved_at: string | null; // NEW: approved_at timestamp
+  approved_at?: string | null;
   share_token: string | null;
   notes: string | null; // Added notes field
   expected_close_date: string | null; // NEW: expected_close_date

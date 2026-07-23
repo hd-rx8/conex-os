@@ -33,6 +33,7 @@ import CreateProjectModal from './modals/CreateProjectModal';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import type { WorkspaceTree } from '@/types/hierarchy';
+import { WORK_HOME } from '@/features/work/navigation/workRoutes';
 
 interface NavigationItem {
   id: string;
@@ -87,7 +88,7 @@ const NAV_WORK: NavigationItem[] = [
     id: 'projects-overview',
     label: 'Dashboard',
     icon: LayoutDashboard,
-    path: '/projects'
+    path: WORK_HOME
   },
   {
     id: 'workspaces',
@@ -99,13 +100,13 @@ const NAV_WORK: NavigationItem[] = [
     id: 'my-tasks',
     label: 'Minhas Tarefas',
     icon: ClipboardList,
-    path: '/projects/tasks'
+    path: WORK_HOME
   },
   {
     id: 'tasks-board',
     label: 'Quadro Kanban',
     icon: Kanban,
-    path: '/projects/board'
+    path: WORK_HOME
   },
   {
     id: 'settings',

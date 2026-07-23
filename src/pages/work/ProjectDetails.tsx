@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import type { Space } from '@/types/hierarchy';
 import type { List } from '@/hooks/useLists';
+import { mapSpaceRow } from '@/features/work/api/workMappers';
 
 const ProjectDetails: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -47,7 +48,7 @@ const ProjectDetails: React.FC = () => {
           .single();
 
         if (error) throw error;
-        setProject(data);
+        setProject(mapSpaceRow(data));
       } catch (err) {
         console.error('Error fetching project:', err);
         toast.error('Erro ao carregar projeto');
@@ -84,7 +85,7 @@ const ProjectDetails: React.FC = () => {
       .single();
 
     if (!fetchError && updated) {
-      setProject(updated);
+      setProject(mapSpaceRow(updated));
     }
   };
 

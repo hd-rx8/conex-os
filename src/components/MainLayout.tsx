@@ -14,9 +14,14 @@ import GlobalFAB from './GlobalFAB';
 interface MainLayoutProps {
   children: React.ReactNode;
   module?: 'crm' | 'work';
+  showGlobalFab?: boolean;
 }
 
-const MainLayout: React.FC<MainLayoutProps> = ({ children, module }) => {
+const MainLayout: React.FC<MainLayoutProps> = ({
+  children,
+  module,
+  showGlobalFab = true,
+}) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const isMobile = useIsMobile();
   const location = useLocation();
@@ -124,7 +129,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, module }) => {
       </div>
 
       {/* Global Contextual FAB */}
-      <GlobalFAB />
+      {showGlobalFab && <GlobalFAB />}
     </div>
   );
 };

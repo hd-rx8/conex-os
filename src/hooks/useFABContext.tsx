@@ -5,7 +5,9 @@ export interface FABContext {
   module: 'crm' | 'work' | 'global';
   route: string;
   projectId?: string;
+  listId?: string;
   isProjectDetail: boolean;
+  isListDetail: boolean;
   isTasksBoard: boolean;
 }
 
@@ -18,17 +20,19 @@ export const useFABContext = (): FABContext => {
   const { activeModule } = useAppModule();
 
   // Detectar se está em detalhes de um projeto
-  const projectDetailMatch = location.pathname.match(/^\/projects\/([^\/]+)$/);
+  const projectDetailMatch = location.pathname.match(/^\/work\/project\/([^/]+)$/);
   const isProjectDetail = !!projectDetailMatch;
   const projectId = projectDetailMatch?.[1];
 
-  // Detectar se está no board de tarefas
-  const isTasksBoard = location.pathname === '/tasks';
+  const listDetailMatch = location.pathname.match(/^\/work\/list\/([^/]+)$/);
+  const isListDetail = Boolean(listDetailMatch);
+  const listId = listDetailMatch?.[1];
+  const isTasksBoard = isListDetail;
 
   // Determinar o módulo baseado na rota
   let module: 'crm' | 'work' | 'global' = 'global';
 
-  if (location.pathname.startsWith('/projects') || location.pathname.startsWith('/tasks')) {
+  if (location.pathname.startsWith('/work')) {
     module = 'work';
   } else if (
     location.pathname.startsWith('/proposals') ||
@@ -46,7 +50,9 @@ export const useFABContext = (): FABContext => {
     module,
     route: location.pathname,
     projectId,
+    listId,
     isProjectDetail,
+    isListDetail,
     isTasksBoard
   };
 };

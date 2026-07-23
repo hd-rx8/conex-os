@@ -19,6 +19,7 @@ interface DeleteConfirmDialogProps {
   description: string;
   itemName?: string;
   isLoading?: boolean;
+  isDeleting?: boolean;
 }
 
 const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
@@ -29,7 +30,9 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
   description,
   itemName,
   isLoading = false,
+  isDeleting = false,
 }) => {
+  const loading = isLoading || isDeleting;
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
       <AlertDialogContent>
@@ -52,16 +55,16 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isLoading}>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={(e) => {
               e.preventDefault();
               onConfirm();
             }}
-            disabled={isLoading}
+            disabled={loading}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isLoading ? 'Excluindo...' : 'Excluir'}
+            {loading ? 'Excluindo...' : 'Excluir'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

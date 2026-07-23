@@ -28,10 +28,11 @@ import { workQueryKeys } from '../api/workQueryKeys';
 
 const WORK_STALE_TIME = 30_000;
 
-export function useWorkspacesQuery() {
+export function useWorkspacesQuery(enabled = true) {
   return useQuery({
     queryKey: workQueryKeys.workspaces,
     queryFn: fetchWorkspaces,
+    enabled,
     staleTime: WORK_STALE_TIME,
     retry: 1,
     retryDelay: 0,

@@ -9,9 +9,15 @@ import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import CreateProjectModal from '@/components/projects/CreateProjectModal';
+import CreateProjectModal from '@/components/modals/CreateProjectModal';
 import CreateTaskFromProjectModal from '@/components/projects/CreateTaskFromProjectModal';
-import useProjects from '@/hooks/useProjects';
+import type { CreateClientData } from '@/hooks/useClients';
+import type { CreateProposalData } from '@/hooks/useProposals';
+import type { Tables } from '@/integrations/supabase/types';
+import type { CreateSpaceData, CreateTaskData } from '@/types/hierarchy';
+
+const errorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
 
 // Schema para validação de cliente
 const clientSchema = z.object({
@@ -40,7 +46,7 @@ const ClientForm = ({
   onCancel,
   isSubmitting
 }: {
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: CreateClientData) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
 }) => {
@@ -140,11 +146,11 @@ const ProposalForm = ({
   allClients,
   isSubmitting
 }: {
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: CreateProposalData) => Promise<void>;
   onCancel: () => void;
   currentUserId: string;
-  allUsers: any[];
-  allClients: any[];
+  allUsers: Array<Pick<Tables<'app_users'>, 'id' | 'name'>>;
+  allClients: Array<Pick<Tables<'clients'>, 'id' | 'name' | 'email'>>;
   isSubmitting: boolean;
 }) => {
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<ProposalFormData>({
@@ -225,10 +231,9 @@ const ProposalForm = ({
  */
 const GlobalFAB: React.FC = () => {
   const { actions, modals, data } = useFABActions();
-  const { projects } = useProjects();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const handleClientSubmit = async (clientData: any) => {
+  const handleClientSubmit = async (clientData: CreateClientData) => {
     setIsSubmitting(true);
     try {
       const result = await modals.client.onSubmit(clientData);
@@ -237,14 +242,14 @@ const GlobalFAB: React.FC = () => {
       } else if (result.error) {
         toast.error(result.error.message || 'Erro ao criar cliente');
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao criar cliente');
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, 'Erro ao criar cliente'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleProposalSubmit = async (proposalData: any) => {
+  const handleProposalSubmit = async (proposalData: CreateProposalData) => {
     setIsSubmitting(true);
     try {
       const result = await modals.proposal.onSubmit(proposalData);
@@ -253,32 +258,32 @@ const GlobalFAB: React.FC = () => {
       } else if (result.error) {
         toast.error(result.error.message || 'Erro ao criar proposta');
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao criar proposta');
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, 'Erro ao criar proposta'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleProjectSubmit = async (projectData: any) => {
+  const handleProjectSubmit = async (projectData: CreateSpaceData) => {
     setIsSubmitting(true);
     try {
       await modals.project.onSubmit(projectData);
       toast.success('Projeto criado com sucesso!');
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao criar projeto');
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, 'Erro ao criar projeto'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleTaskSubmit = async (taskData: any) => {
+  const handleTaskSubmit = async (taskData: CreateTaskData) => {
     setIsSubmitting(true);
     try {
       await modals.task.onSubmit(taskData);
       toast.success('Tarefa criada com sucesso!');
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao criar tarefa');
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, 'Erro ao criar tarefa'));
     } finally {
       setIsSubmitting(false);
     }
@@ -321,20 +326,25 @@ const GlobalFAB: React.FC = () => {
       </Dialog>
 
       {/* Project Modal */}
-      <CreateProjectModal
-        isOpen={modals.project.isOpen}
-        onClose={() => modals.project.setIsOpen(false)}
-        onCreateProject={handleProjectSubmit}
-      />
+      {modals.project.isOpen && modals.project.workspaceId && (
+        <CreateProjectModal
+          isOpen={modals.project.isOpen}
+          onClose={() => modals.project.setIsOpen(false)}
+          workspaceId={modals.project.workspaceId}
+          onCreateProject={handleProjectSubmit}
+        />
+      )}
 
       {/* Task Modal */}
-      <CreateTaskFromProjectModal
-        projects={projects || []}
-        onCreateTask={handleTaskSubmit}
-        preselectedProjectId={modals.task.projectId}
-        isOpen={modals.task.isOpen}
-        onClose={() => modals.task.setIsOpen(false)}
-      />
+      {modals.task.isOpen && modals.task.spaceId && modals.task.listId && (
+        <CreateTaskFromProjectModal
+          onCreateTask={handleTaskSubmit}
+          preselectedSpaceId={modals.task.spaceId}
+          preselectedListId={modals.task.listId}
+          isOpen={modals.task.isOpen}
+          onClose={() => modals.task.setIsOpen(false)}
+        />
+      )}
     </>
   );
 };

@@ -1,61 +1,102 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useWorkspaces } from '@/hooks/useWorkspaces';
-import { useHierarchyTasks } from '@/hooks/useHierarchyTasks';
-import { useSpaces } from '@/hooks/useSpaces';
-import { useSession } from '@/hooks/useSession';
-import MainLayout from '@/components/MainLayout';
+import { FileText, FolderPlus, ListPlus, Plus, Settings, Users } from 'lucide-react';
+import { toast } from 'sonner';
+
 import HierarchyNavigator from '@/components/HierarchyNavigator';
-import CreateWorkspaceModal from '@/components/modals/CreateWorkspaceModal';
+import MainLayout from '@/components/MainLayout';
 import CreateProjectModal from '@/components/modals/CreateProjectModal';
-import FloatingActionButton from '@/components/FloatingActionButton';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import CreateWorkspaceModal from '@/components/modals/CreateWorkspaceModal';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Plus, Settings, Users, FolderPlus, ListPlus, FileText, Edit, Trash2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import type { WorkspaceTree, HierarchyTask } from '@/types/hierarchy';
-import { toast } from 'sonner';
+import {
+  useCreateSpaceMutation,
+  useListTasksQuery,
+  useWorkspacesQuery,
+  useWorkspaceTreeQuery,
+} from '@/features/work/hooks/useWorkData';
+import type { WorkDataError } from '@/features/work/api/workApi';
+import type { HierarchyTask } from '@/types/hierarchy';
 
-const WorkManagement: React.FC = () => {
-  const { user } = useSession();
+function asWorkError(error: unknown): WorkDataError | null {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    'userMessage' in error
+  ) {
+    return error as WorkDataError;
+  }
+  return error
+    ? {
+        code: 'WORK_UNKNOWN',
+        message: 'Unknown Work data error',
+        details: null,
+        hint: null,
+        userMessage: 'Não foi possível carregar seus projetos',
+      }
+    : null;
+}
+
+const WorkManagement = () => {
   const navigate = useNavigate();
-  const { workspaces, loading: workspacesLoading, getWorkspaceTree } = useWorkspaces();
-  const [selectedWorkspace, setSelectedWorkspace] = useState<WorkspaceTree | null>(null);
-  const [selectedListId, setSelectedListId] = useState<string | null>(null);
-  const { tasks, loading: tasksLoading } = useHierarchyTasks(selectedListId || undefined);
+  const workspacesQuery = useWorkspacesQuery();
+  const workspaces = useMemo(
+    () => workspacesQuery.data ?? [],
+    [workspacesQuery.data],
+  );
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>();
+  const [selectedListId, setSelectedListId] = useState<string>();
   const [isCreateWorkspaceOpen, setIsCreateWorkspaceOpen] = useState(false);
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
-  const { createSpace } = useSpaces(selectedWorkspace?.id);
 
-  // Carregar primeiro workspace por padrão
   useEffect(() => {
-    const loadDefaultWorkspace = async () => {
-      if (workspaces.length > 0 && !selectedWorkspace) {
-        const tree = await getWorkspaceTree(workspaces[0].id);
-        setSelectedWorkspace(tree);
+    if (!selectedWorkspaceId && workspaces[0]?.id) {
+      setSelectedWorkspaceId(workspaces[0].id);
+    }
+  }, [selectedWorkspaceId, workspaces]);
+
+  const treeQuery = useWorkspaceTreeQuery(selectedWorkspaceId);
+  const tasksQuery = useListTasksQuery(selectedListId);
+  const createSpaceMutation = useCreateSpaceMutation();
+  const selectedWorkspace = treeQuery.data;
+  const tasks = tasksQuery.data ?? [];
+  const loadError = asWorkError(workspacesQuery.error ?? treeQuery.error);
+
+  useEffect(() => {
+    if (loadError?.code) {
+      toast.error('Não foi possível carregar seus projetos');
+    }
+  }, [loadError?.code]);
+
+  const selectedListName = useMemo(() => {
+    if (!selectedListId || !selectedWorkspace) return null;
+
+    for (const space of selectedWorkspace.spaces) {
+      const directList = space.lists.find((list) => list.id === selectedListId);
+      if (directList) return directList.name;
+
+      for (const folder of space.folders) {
+        const folderList = folder.lists.find((list) => list.id === selectedListId);
+        if (folderList) return folderList.name;
       }
-    };
+    }
+    return null;
+  }, [selectedListId, selectedWorkspace]);
 
-    loadDefaultWorkspace();
-  }, [workspaces, selectedWorkspace, getWorkspaceTree]);
-
-  const handleWorkspaceChange = async (workspaceId: string) => {
-    const tree = await getWorkspaceTree(workspaceId);
-    setSelectedWorkspace(tree);
-    setSelectedListId(null);
-  };
-
-  const handleSelectList = (listId: string) => {
-    setSelectedListId(listId);
+  const handleWorkspaceChange = (workspaceId: string) => {
+    setSelectedWorkspaceId(workspaceId);
+    setSelectedListId(undefined);
   };
 
   const handleCreateProject = async (data: {
@@ -65,45 +106,43 @@ const WorkManagement: React.FC = () => {
     icon: string | null;
     color: string | null;
   }) => {
-    const { error } = await createSpace(data);
-
-    if (error) {
-      toast.error('Erro ao criar projeto: ' + error.message);
+    try {
+      await createSpaceMutation.mutateAsync(data);
+      toast.success('Projeto criado com sucesso!');
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Não foi possível criar o projeto.';
+      toast.error(message);
       throw error;
     }
-
-    toast.success('Projeto criado com sucesso!');
-
-    // Recarregar workspace tree
-    if (selectedWorkspace) {
-      const tree = await getWorkspaceTree(selectedWorkspace.id);
-      setSelectedWorkspace(tree);
-    }
   };
 
-
-  const getSelectedListName = () => {
-    if (!selectedListId || !selectedWorkspace) return null;
-
-    for (const space of selectedWorkspace.spaces) {
-      // Buscar em lists diretas
-      const directList = space.lists.find((l) => l.id === selectedListId);
-      if (directList) return directList.name;
-
-      // Buscar em folders
-      for (const folder of space.folders) {
-        const folderList = folder.lists.find((l) => l.id === selectedListId);
-        if (folderList) return folderList.name;
-      }
-    }
-    return null;
-  };
-
-  if (workspacesLoading) {
+  if (workspacesQuery.isLoading) {
     return (
-      <MainLayout module="work">
-        <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-          <p className="text-muted-foreground">Carregando workspaces...</p>
+      <MainLayout module="work" showGlobalFab={false}>
+        <div className="flex h-[calc(100vh-200px)] items-center justify-center">
+          <p className="text-muted-foreground">Carregando workspaces…</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (loadError) {
+    const retry = workspacesQuery.error
+      ? workspacesQuery.refetch
+      : treeQuery.refetch;
+
+    return (
+      <MainLayout module="work" showGlobalFab={false}>
+        <div className="flex h-[calc(100vh-200px)] items-center justify-center">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Não foi possível carregar seus projetos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => void retry()}>Tentar novamente</Button>
+            </CardContent>
+          </Card>
         </div>
       </MainLayout>
     );
@@ -111,27 +150,29 @@ const WorkManagement: React.FC = () => {
 
   if (workspaces.length === 0) {
     return (
-      <MainLayout module="work">
-        <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+      <MainLayout module="work" showGlobalFab={false}>
+        <div className="flex h-[calc(100vh-200px)] items-center justify-center">
           <Card className="w-full max-w-md">
             <CardHeader>
-              <CardTitle className="text-center">Nenhum Workspace Encontrado</CardTitle>
+              <CardTitle className="text-center">
+                Nenhum workspace encontrado
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-center text-muted-foreground">
-                Você ainda não tem acesso a nenhum workspace. Crie um novo workspace para começar.
+                Crie um workspace para organizar seus projetos, listas e tarefas.
               </p>
-              <Button className="w-full" onClick={() => setIsCreateWorkspaceOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Criar Workspace
+              <Button
+                className="w-full"
+                onClick={() => setIsCreateWorkspaceOpen(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Criar workspace
               </Button>
               <CreateWorkspaceModal
                 isOpen={isCreateWorkspaceOpen}
                 onClose={() => setIsCreateWorkspaceOpen(false)}
-                onSuccess={async (workspaceId) => {
-                  const tree = await getWorkspaceTree(workspaceId);
-                  setSelectedWorkspace(tree);
-                }}
+                onSuccess={setSelectedWorkspaceId}
               />
             </CardContent>
           </Card>
@@ -140,49 +181,55 @@ const WorkManagement: React.FC = () => {
     );
   }
 
+  if (treeQuery.isLoading || !selectedWorkspace) {
+    return (
+      <MainLayout module="work" showGlobalFab={false}>
+        <div className="flex h-[calc(100vh-200px)] items-center justify-center">
+          <p className="text-muted-foreground">Carregando projetos…</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
-    <MainLayout module="work">
+    <MainLayout module="work" showGlobalFab={false}>
       <div className="flex h-[calc(100vh-80px)] gap-4">
-        {/* Sidebar - Navegação Hierárquica */}
-        <div className="w-80 border-r bg-card">
-          <div className="p-4 space-y-4">
-            {/* Workspace Selector */}
+        <aside className="w-80 border-r bg-card">
+          <div className="space-y-4 p-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-muted-foreground">WORKSPACE</h3>
+                <h3 className="text-sm font-semibold text-muted-foreground">
+                  WORKSPACE
+                </h3>
                 <div className="flex gap-1">
-                  {selectedWorkspace && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0"
-                        onClick={() => navigate('/work/workspaces')}
-                        title="Gerenciar Workspaces"
-                      >
-                        <Settings className="h-3 w-3" />
-                      </Button>
-                    </>
-                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => navigate('/work/workspaces')}
+                    title="Gerenciar workspaces"
+                  >
+                    <Settings className="h-3 w-3" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="h-6 w-6 p-0"
                     onClick={() => setIsCreateWorkspaceOpen(true)}
-                    title="Criar Workspace"
+                    title="Criar workspace"
                   >
                     <Plus className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
               <select
-                className="w-full p-2 border rounded-md bg-background"
-                value={selectedWorkspace?.id || ''}
-                onChange={(e) => handleWorkspaceChange(e.target.value)}
+                className="w-full rounded-md border bg-background p-2"
+                value={selectedWorkspaceId}
+                onChange={(event) => handleWorkspaceChange(event.target.value)}
               >
-                {workspaces.map((ws) => (
-                  <option key={ws.id} value={ws.id}>
-                    {ws.icon} {ws.name}
+                {workspaces.map((workspace) => (
+                  <option key={workspace.id} value={workspace.id}>
+                    {workspace.icon} {workspace.name}
                   </option>
                 ))}
               </select>
@@ -190,69 +237,59 @@ const WorkManagement: React.FC = () => {
 
             <Separator />
 
-            {/* Botão Criar Projeto */}
-            {selectedWorkspace && (
-              <Button
-                onClick={() => setIsCreateProjectOpen(true)}
-                className="w-full"
-                size="sm"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Criar Projeto
-              </Button>
-            )}
+            <Button
+              onClick={() => setIsCreateProjectOpen(true)}
+              className="w-full"
+              size="sm"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Criar projeto
+            </Button>
 
-            {/* Navegação em Árvore */}
-            {selectedWorkspace && (
-              <ScrollArea className="h-[calc(100vh-320px)]">
-                <HierarchyNavigator
-                  workspace={selectedWorkspace}
-                  selectedListId={selectedListId || undefined}
-                  onSelectList={handleSelectList}
-                  onCreateSpace={() => setIsCreateProjectOpen(true)}
-                  onCreateFolder={(sId) => toast.info('Criar Folder - Em desenvolvimento')}
-                  onCreateList={(sId, fId) => toast.info('Criar List - Em desenvolvimento')}
-                />
-              </ScrollArea>
-            )}
+            <ScrollArea className="h-[calc(100vh-320px)]">
+              <HierarchyNavigator
+                workspace={selectedWorkspace}
+                selectedListId={selectedListId}
+                onSelectList={setSelectedListId}
+                onCreateSpace={() => setIsCreateProjectOpen(true)}
+                onCreateFolder={() =>
+                  toast.info('Criação de pasta em desenvolvimento')
+                }
+                onCreateList={() =>
+                  toast.info('Criação de lista em desenvolvimento')
+                }
+              />
+            </ScrollArea>
           </div>
-        </div>
+        </aside>
 
-        {/* Main Content - Tasks */}
-        <div className="flex-1 p-4">
+        <main className="flex-1 p-4">
           {selectedListId ? (
             <div className="space-y-4">
-              {/* Header da List */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-2xl font-bold">{getSelectedListName()}</h1>
+                  <h1 className="text-2xl font-bold">{selectedListName}</h1>
                   <p className="text-sm text-muted-foreground">
                     {tasks.length} {tasks.length === 1 ? 'tarefa' : 'tarefas'}
                   </p>
                 </div>
-                <Button onClick={() => toast.info('Criar Task - Em desenvolvimento')}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nova Task
+                <Button onClick={() => toast.info('Criação de tarefa em desenvolvimento')}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nova tarefa
                 </Button>
               </div>
 
               <Separator />
 
-              {/* Tasks List */}
               <div className="space-y-3">
-                {tasksLoading ? (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">Carregando tasks...</p>
-                  </div>
+                {tasksQuery.isLoading ? (
+                  <p className="py-8 text-center text-muted-foreground">
+                    Carregando tarefas…
+                  </p>
                 ) : tasks.length === 0 ? (
                   <Card>
-                    <CardContent className="py-12">
-                      <div className="text-center space-y-2">
-                        <p className="text-lg font-medium">Nenhuma task encontrada</p>
-                        <p className="text-sm text-muted-foreground">
-                          Crie sua primeira task para começar
-                        </p>
-                      </div>
+                    <CardContent className="py-12 text-center">
+                      Nenhuma tarefa encontrada
                     </CardContent>
                   </Card>
                 ) : (
@@ -261,164 +298,107 @@ const WorkManagement: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex h-full items-center justify-center">
               <Card className="w-full max-w-md">
-                <CardContent className="py-12">
-                  <div className="text-center space-y-2">
-                    <p className="text-lg font-medium">Selecione uma lista</p>
-                    <p className="text-sm text-muted-foreground">
-                      Escolha uma lista na barra lateral para visualizar as tasks
-                    </p>
-                  </div>
+                <CardContent className="py-12 text-center">
+                  Selecione uma lista para visualizar as tarefas
                 </CardContent>
               </Card>
             </div>
           )}
-        </div>
+        </main>
       </div>
 
-      {/* Modals */}
       <CreateWorkspaceModal
         isOpen={isCreateWorkspaceOpen}
         onClose={() => setIsCreateWorkspaceOpen(false)}
-        onSuccess={async (workspaceId) => {
-          const tree = await getWorkspaceTree(workspaceId);
-          setSelectedWorkspace(tree);
-        }}
+        onSuccess={setSelectedWorkspaceId}
       />
 
-      {selectedWorkspace && (
-        <CreateProjectModal
-          isOpen={isCreateProjectOpen}
-          onClose={() => setIsCreateProjectOpen(false)}
-          workspaceId={selectedWorkspace.id}
-          onCreateProject={handleCreateProject}
-        />
-      )}
+      <CreateProjectModal
+        isOpen={isCreateProjectOpen}
+        onClose={() => setIsCreateProjectOpen(false)}
+        workspaceId={selectedWorkspace.id}
+        onCreateProject={handleCreateProject}
+      />
 
-      {/* FAB Context-Aware */}
-      {selectedWorkspace && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              size="lg"
-              className="fixed bottom-6 right-6 h-14 w-14 rounded-full gradient-button-bg hover:opacity-90 text-white shadow-lg hover:shadow-xl transition-all duration-200 z-50 p-0 sm:bottom-8 sm:right-8"
-            >
-              <Plus className="w-6 h-6" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 mb-2">
-            <DropdownMenuItem onClick={() => setIsCreateProjectOpen(true)}>
-              <FolderPlus className="mr-2 h-4 w-4" />
-              Criar Projeto
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => toast.info('Criar Folder - Em desenvolvimento')}>
-              <FolderPlus className="mr-2 h-4 w-4" />
-              Criar Folder
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => toast.info('Criar List - Em desenvolvimento')}>
-              <ListPlus className="mr-2 h-4 w-4" />
-              Criar Lista
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => toast.info('Criar Task - Em desenvolvimento')}
-              disabled={!selectedListId}
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              Criar Tarefa
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            size="lg"
+            className="gradient-button-bg fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full p-0 text-white shadow-lg"
+          >
+            <Plus className="h-6 w-6" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="mb-2 w-56">
+          <DropdownMenuItem onClick={() => setIsCreateProjectOpen(true)}>
+            <FolderPlus className="mr-2 h-4 w-4" />
+            Criar projeto
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => toast.info('Criação de pasta em desenvolvimento')}
+          >
+            <FolderPlus className="mr-2 h-4 w-4" />
+            Criar pasta
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => toast.info('Criação de lista em desenvolvimento')}
+          >
+            <ListPlus className="mr-2 h-4 w-4" />
+            Criar lista
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem disabled={!selectedListId}>
+            <FileText className="mr-2 h-4 w-4" />
+            Criar tarefa
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </MainLayout>
   );
 };
 
-// Componente para exibir uma Task
-const TaskCard: React.FC<{ task: HierarchyTask }> = ({ task }) => {
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'Urgente':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'Alta':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'Média':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Baixa':
-        return 'bg-green-100 text-green-800 border-green-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Concluída':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'Em Progresso':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'Pendente':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer">
-      <CardContent className="p-4">
-        <div className="space-y-3">
-          {/* Header */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-base truncate">{task.title}</h3>
-              {task.description && (
-                <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                  {task.description}
-                </p>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Badge variant="outline" className={getPriorityColor(task.priority)}>
-                {task.priority}
-              </Badge>
-              <Badge variant="outline" className={getStatusColor(task.status)}>
-                {task.status}
-              </Badge>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <div className="flex items-center gap-4">
-              {task.assignee && (
-                <div className="flex items-center gap-2">
-                  <Users className="h-3 w-3" />
-                  <span>{task.assignee.name}</span>
-                </div>
-              )}
-              {task.due_date && (
-                <div className="flex items-center gap-2">
-                  <span>📅</span>
-                  <span>{new Date(task.due_date).toLocaleDateString('pt-BR')}</span>
-                </div>
-              )}
-            </div>
-            {task.tags && task.tags.length > 0 && (
-              <div className="flex gap-1">
-                {task.tags.slice(0, 3).map((tag, idx) => (
-                  <Badge key={idx} variant="secondary" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
+const TaskCard = ({ task }: { task: HierarchyTask }) => (
+  <Card className="transition-shadow hover:shadow-md">
+    <CardContent className="space-y-3 p-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate font-semibold">{task.title}</h3>
+          {task.description && (
+            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+              {task.description}
+            </p>
+          )}
         </div>
-      </CardContent>
-    </Card>
-  );
-};
+        <div className="flex gap-2">
+          <Badge variant="outline">{task.priority}</Badge>
+          <Badge variant="outline">{task.status}</Badge>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <div className="flex items-center gap-4">
+          {task.assignee && (
+            <span className="flex items-center gap-2">
+              <Users className="h-3 w-3" />
+              {task.assignee.name}
+            </span>
+          )}
+          {task.due_date && (
+            <span>{new Date(task.due_date).toLocaleDateString('pt-BR')}</span>
+          )}
+        </div>
+        <div className="flex gap-1">
+          {task.tags?.slice(0, 3).map((tag) => (
+            <Badge key={tag} variant="secondary" className="text-xs">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 export default WorkManagement;

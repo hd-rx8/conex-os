@@ -32,7 +32,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { CalendarIcon } from 'lucide-react';
-import { CreateTaskData } from '@/hooks/useTasks';
+import type { CreateTaskData } from '@/types/hierarchy';
 import { useSpaces } from '@/hooks/useSpaces';
 import { useLists } from '@/hooks/useLists';
 

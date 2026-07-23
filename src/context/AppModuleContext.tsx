@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { WORK_HOME } from '@/features/work/navigation/workRoutes';
 
 // Definindo os tipos de módulos disponíveis
 export type AppModuleType = 'crm' | 'work';
@@ -26,7 +27,7 @@ export const useAppModule = () => {
 // Rotas iniciais para cada módulo
 const MODULE_HOME_ROUTES: Record<AppModuleType, string> = {
   crm: '/',
-  work: '/projects'
+  work: WORK_HOME
 };
 
 // Provedor do contexto

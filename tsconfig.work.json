@@ -13,5 +13,6 @@
     "src/types/hierarchy.ts",
     "src/integrations/supabase/**/*.ts",
     "src/test/**/*.ts"
-  ]
+  ],
+  "exclude": ["src/pages/work/ProjectDetails_old.tsx"]
 }

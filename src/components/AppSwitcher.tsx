@@ -11,6 +11,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useNavigate } from 'react-router-dom';
 import { useAppModule, AppModuleType } from '@/context/AppModuleContext';
+import { WORK_HOME } from '@/features/work/navigation/workRoutes';
 
 interface AppOption {
   id: AppModuleType;
@@ -25,7 +26,7 @@ interface AppOption {
 const AppSwitcher = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const { activeModule, switchToModule } = useAppModule();
+  const { activeModule, setActiveModule } = useAppModule();
 
   const apps: AppOption[] = [
     {
@@ -42,14 +43,15 @@ const AppSwitcher = () => {
       name: 'Work Management',
       description: 'Projetos e tarefas',
       icon: <div className="bg-indigo-500 rounded-md p-4 text-white text-2xl flex items-center justify-center h-full">G</div>,
-      path: '/projects',
+      path: WORK_HOME,
       color: 'bg-indigo-500',
       letter: 'G'
     },
   ];
 
   const handleSelectApp = (moduleId: AppModuleType, path: string) => {
-    switchToModule(moduleId);
+    setActiveModule(moduleId);
+    navigate(path);
     setOpen(false);
   };
 
