@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { WorkspaceTree, SpaceTree, FolderTree, ListTree } from '@/types/hierarchy';
+import type { WorkspaceTree, WorkspaceFolderTree, SpaceTree, FolderTree, ListTree } from '@/types/hierarchy';
 
 interface HierarchyNavigatorProps {
   workspace: WorkspaceTree;
@@ -28,6 +28,7 @@ export const HierarchyNavigator: React.FC<HierarchyNavigatorProps> = ({
   selectedListId,
 }) => {
   const [expandedSpaces, setExpandedSpaces] = useState<Set<string>>(new Set());
+  const [expandedWorkspaceFolders, setExpandedWorkspaceFolders] = useState<Set<string>>(new Set());
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
   const toggleSpace = (spaceId: string) => {
@@ -37,6 +38,18 @@ export const HierarchyNavigator: React.FC<HierarchyNavigatorProps> = ({
         next.delete(spaceId);
       } else {
         next.add(spaceId);
+      }
+      return next;
+    });
+  };
+
+  const toggleWorkspaceFolder = (folderId: string) => {
+    setExpandedWorkspaceFolders((prev) => {
+      const next = new Set(prev);
+      if (next.has(folderId)) {
+        next.delete(folderId);
+      } else {
+        next.add(folderId);
       }
       return next;
     });
@@ -74,8 +87,24 @@ export const HierarchyNavigator: React.FC<HierarchyNavigatorProps> = ({
         )}
       </div>
 
-      {/* Spaces */}
+      {/* Pastas canônicas do workspace */}
       <div className="ml-2 space-y-1">
+        {workspace.workspace_folders.map((folder) => (
+          <WorkspaceFolderNode
+            key={folder.id}
+            folder={folder}
+            isExpanded={expandedWorkspaceFolders.has(folder.id)}
+            onToggle={() => toggleWorkspaceFolder(folder.id)}
+            expandedSpaces={expandedSpaces}
+            onToggleSpace={toggleSpace}
+            expandedFolders={expandedFolders}
+            onToggleFolder={toggleFolder}
+            onSelectList={onSelectList}
+            onCreateFolder={onCreateFolder}
+            onCreateList={onCreateList}
+            selectedListId={selectedListId}
+          />
+        ))}
         {workspace.spaces.map((space) => (
           <SpaceNode
             key={space.id}
@@ -91,6 +120,84 @@ export const HierarchyNavigator: React.FC<HierarchyNavigatorProps> = ({
           />
         ))}
       </div>
+    </div>
+  );
+};
+
+interface WorkspaceFolderNodeProps {
+  folder: WorkspaceFolderTree;
+  isExpanded: boolean;
+  onToggle: () => void;
+  expandedSpaces: Set<string>;
+  onToggleSpace: (spaceId: string) => void;
+  expandedFolders: Set<string>;
+  onToggleFolder: (folderId: string) => void;
+  onSelectList?: (listId: string) => void;
+  onCreateFolder?: (spaceId: string) => void;
+  onCreateList?: (spaceId: string, folderId?: string) => void;
+  selectedListId?: string;
+}
+
+const WorkspaceFolderNode: React.FC<WorkspaceFolderNodeProps> = ({
+  folder,
+  isExpanded,
+  onToggle,
+  expandedSpaces,
+  onToggleSpace,
+  expandedFolders,
+  onToggleFolder,
+  onSelectList,
+  onCreateFolder,
+  onCreateList,
+  selectedListId,
+}) => {
+  const hasContent = folder.lists.length > 0 || folder.spaces.length > 0;
+
+  return (
+    <div>
+      <div className="flex items-center gap-1 rounded-md hover:bg-accent/50">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 w-6 p-0"
+          onClick={onToggle}
+          disabled={!hasContent}
+          aria-label={`Alternar ${folder.name}`}
+        >
+          {hasContent ? (
+            isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />
+          ) : <div className="w-3" />}
+        </Button>
+        <span className="text-sm">{folder.icon || '📁'}</span>
+        <span className="text-sm font-medium">{folder.name}</span>
+      </div>
+
+      {isExpanded && hasContent && (
+        <div className="ml-7 space-y-1 mt-1">
+          {folder.lists.map((list) => (
+            <ListNode
+              key={list.id}
+              list={list}
+              onSelect={onSelectList}
+              isSelected={selectedListId === list.id}
+            />
+          ))}
+          {folder.spaces.map((space) => (
+            <SpaceNode
+              key={space.id}
+              space={space}
+              isExpanded={expandedSpaces.has(space.id)}
+              onToggle={() => onToggleSpace(space.id)}
+              expandedFolders={expandedFolders}
+              onToggleFolder={onToggleFolder}
+              onSelectList={onSelectList}
+              onCreateFolder={onCreateFolder}
+              onCreateList={onCreateList}
+              selectedListId={selectedListId}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
