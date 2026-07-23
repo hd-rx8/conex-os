@@ -1,6 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import Opportunities from './Opportunities';
 
 const proposal = (overrides: Record<string, unknown> = {}) => ({
@@ -55,8 +55,8 @@ const LocationState = () => {
   return <output data-testid="location">{JSON.stringify({ pathname: location.pathname, state: location.state })}</output>;
 };
 
-const renderOpportunities = () => {
-  localStorage.setItem('opportunities-view', 'list');
+const renderOpportunities = (view: 'kanban' | 'list' | 'table') => {
+  localStorage.setItem('opportunities-view', view);
   return render(
     <MemoryRouter initialEntries={['/crm/opportunities']}>
       <Opportunities />
@@ -65,25 +65,87 @@ const renderOpportunities = () => {
   );
 };
 
+const expectEditRoute = () => {
+  expect(screen.getByTestId('location')).toHaveTextContent(JSON.stringify({
+    pathname: '/generator/proposal-1/edit',
+    state: { returnTo: '/crm/opportunities' },
+  }));
+};
+
+const openKanbanActions = (title: string) => {
+  const trigger = screen.getByRole('button', { name: `Mais ações para ${title}` });
+  fireEvent.keyDown(trigger, { key: 'Enter' });
+};
+
+afterEach(() => {
+  localStorage.clear();
+  proposalsApi.duplicateProposal.mockReset();
+  proposalsApi.updateProposalStatus.mockReset();
+});
+
 describe('Opportunities proposal actions', () => {
   it('routes editable proposals from the list to their canonical edit route with a return location', () => {
-    renderOpportunities();
+    renderOpportunities('list');
 
     fireEvent.click(screen.getByRole('button', { name: 'Editar Proposta editável' }));
 
-    expect(screen.getByTestId('location')).toHaveTextContent(JSON.stringify({
-      pathname: '/generator/proposal-1/edit',
-      state: { returnTo: '/crm/opportunities' },
-    }));
+    expectEditRoute();
   });
 
-  it('blocks editing finalized proposals while retaining view and duplicate actions in the list', () => {
-    renderOpportunities();
+  it('routes editable proposals from the Kanban action menu to their canonical edit route', async () => {
+    renderOpportunities('kanban');
 
+    openKanbanActions('Proposta editável');
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Editar' }));
+
+    expectEditRoute();
+  });
+
+  it('routes editable proposals from the table to their canonical edit route', () => {
+    renderOpportunities('table');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Editar Proposta editável' }));
+
+    expectEditRoute();
+  });
+
+  it('keeps finalized Kanban cards non-draggable and preserves view and duplicate actions', async () => {
+    renderOpportunities('kanban');
+
+    const card = screen.getByRole('heading', { name: 'Proposta finalizada' }).closest('[draggable]');
+    expect(card).toHaveAttribute('draggable', 'false');
+    expect(card).not.toHaveClass('cursor-grab');
+
+    openKanbanActions('Proposta finalizada');
+
+    expect(await screen.findByRole('menuitem', { name: /Editar indisponível/ })).toHaveAttribute('data-disabled');
+    expect(screen.getByRole('menuitem', { name: 'Visualizar' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Duplicar' })).toBeInTheDocument();
+  });
+
+  it('blocks finalized proposals in the table before opening their detail', () => {
+    renderOpportunities('table');
+
+    expect(screen.getByRole('combobox', { name: 'Status Proposta finalizada' })).toBeDisabled();
     expect(screen.getByRole('button', {
       name: 'Editar Proposta finalizada. Proposta finalizada: duplique para editar',
     })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Visualizar Proposta finalizada' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Duplicar Proposta finalizada' })).toBeInTheDocument();
+  });
+
+  it('keeps finalized detail fields read-only and duplicates into an editable copy', async () => {
+    proposalsApi.duplicateProposal.mockResolvedValue({ data: { id: 'proposal-copy-1' }, error: null });
+    renderOpportunities('table');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Visualizar Proposta finalizada' }));
+
+    expect(screen.queryByRole('button', { name: 'Editar Título da Proposta' })).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Proposta finalizada: duplique para editar.');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Duplicar Proposta finalizada para editar' }));
+
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(JSON.stringify({
+      pathname: '/generator/proposal-copy-1/edit',
+      state: { returnTo: '/crm/opportunities' },
+    })));
   });
 });

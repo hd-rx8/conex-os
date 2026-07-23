@@ -135,6 +135,7 @@ const Opportunities: React.FC = () => {
 
   // Duplicate state
   const [duplicatingProposal, setDuplicatingProposal] = useState<Proposal | null>(null);
+  const [isDuplicatingForEdit, setIsDuplicatingForEdit] = useState(false);
 
   // Filter states
   const [showFilters, setShowFilters] = useState(true);
@@ -347,6 +348,24 @@ const Opportunities: React.FC = () => {
     });
   };
 
+  const handleDuplicateForEdit = async (proposal: Proposal) => {
+    if (!currentUser || isDuplicatingForEdit) return;
+
+    setIsDuplicatingForEdit(true);
+    try {
+      const result = await duplicateProposal(proposal.id, currentUser.id);
+      if (result.data) {
+        navigate(`/generator/${result.data.id}/edit`, {
+          state: { returnTo: location.pathname },
+        });
+      } else if (result.error) {
+        toast.error('Erro ao duplicar proposta para edição.');
+      }
+    } finally {
+      setIsDuplicatingForEdit(false);
+    }
+  };
+
   const handleDuplicateWithOptions = async (proposalId: string, newClientId: string | null, newTitle: string) => {
     if (!currentUser) return;
 
@@ -462,9 +481,12 @@ const Opportunities: React.FC = () => {
   const KanbanCard: React.FC<{ proposal: Proposal }> = ({ proposal }) => (
     <Card
       draggable={canEditProposal(proposal.status)}
-      onDragStart={(e) => handleDragStart(e, proposal.id)}
+      onDragStart={canEditProposal(proposal.status) ? (e) => handleDragStart(e, proposal.id) : undefined}
       onClick={() => handleCardClick(proposal)}
-      className="cursor-grab active:cursor-grabbing hover:shadow-lg transition-shadow duration-200 group border"
+      className={cn(
+        'hover:shadow-lg transition-shadow duration-200 group border',
+        canEditProposal(proposal.status) && 'cursor-grab active:cursor-grabbing',
+      )}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
@@ -479,7 +501,12 @@ const Opportunities: React.FC = () => {
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                aria-label={`Mais ações para ${proposal.title}`}
+              >
                 <MoreVertical className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
@@ -967,6 +994,7 @@ const Opportunities: React.FC = () => {
                               disabled={!canEditProposal(proposal.status)}
                             >
                               <SelectTrigger
+                                aria-label={`Status ${proposal.title}`}
                                 className={`w-full h-full justify-center rounded-none border-none bg-transparent py-1 px-2 text-xs font-semibold uppercase tracking-wider transition-colors focus:ring-0 focus:ring-offset-0 ${getStatusClasses(
                                   proposal.status
                                 )}`}
@@ -1102,9 +1130,25 @@ const Opportunities: React.FC = () => {
                         Editar proposta
                       </Button>
                     ) : (
-                      <p className="text-sm text-muted-foreground" role="status">
-                        Proposta finalizada: duplique para editar.
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm text-muted-foreground" role="status">
+                          Proposta finalizada: duplique para editar.
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDuplicateForEdit(selectedProposal)}
+                          disabled={isDuplicatingForEdit}
+                          aria-label={`Duplicar ${selectedProposal.title} para editar`}
+                        >
+                          {isDuplicatingForEdit ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Copy className="mr-2 h-4 w-4" />
+                          )}
+                          Duplicar para editar
+                        </Button>
+                      </div>
                     )}
 
                     <div className="space-y-1">

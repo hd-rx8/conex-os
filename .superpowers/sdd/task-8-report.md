@@ -7,6 +7,12 @@
 - Propostas finalizadas mantêm ações de visualizar/duplicar, mas desabilitam edição com a mensagem acessível `Proposta finalizada: duplique para editar`.
 - Controles inline, mudança de status e arrastar cartões são bloqueados para propostas finalizadas.
 
+## Correção de revisão
+
+- O detalhe de uma proposta finalizada agora oferece `Duplicar para editar`, evita reentrância enquanto a cópia é criada e abre a cópia em sua rota editável com `returnTo`.
+- Cartões finalizados não expõem cursor nem handler de arraste.
+- Os testes exercitam Lista, Kanban (menu por teclado), Tabela e Detalhe; também cobrem status, campos inline e affordances bloqueadas.
+
 ## TDD
 
 - RED confirmado para rota legada do Dashboard e para affordances ausentes/bloqueio de propostas finalizadas.
@@ -14,7 +20,7 @@
 
 ## Validação
 
-- `pnpm vitest run src/components/Dashboard.test.tsx src/pages/crm/Opportunities.test.tsx` — 4 testes aprovados.
+- `pnpm vitest run src/components/Dashboard.test.tsx src/pages/crm/Opportunities.test.tsx` — 8 testes aprovados.
 - `pnpm test` — 31 arquivos, 118 testes aprovados.
 - `pnpm typecheck:work` — aprovado.
 - `pnpm build` — aprovado.
