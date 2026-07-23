@@ -82,7 +82,7 @@ const WORK_TASK_FIELDS = `
   creator:app_users!tasks_creator_id_fkey(id,name,email),
   list:lists!inner(
     id,name,workspace_id,workspace_folder_id,space_id,
-    space:spaces!inner(id,name,workspace_id)
+    space:spaces(id,name,workspace_id)
   )
 `;
 

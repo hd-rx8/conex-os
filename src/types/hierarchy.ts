@@ -191,7 +191,9 @@ export interface UpdateFolderData {
 // ====================================
 export interface List {
   id: string;
-  space_id: string;
+  space_id: string | null;
+  workspace_id: string;
+  workspace_folder_id: string | null;
   folder_id: string | null; // OPCIONAL
   name: string;
   description: string | null;
@@ -207,7 +209,9 @@ export interface List {
 }
 
 export interface CreateListData {
-  space_id: string;
+  space_id?: string | null;
+  workspace_id?: string;
+  workspace_folder_id?: string | null;
   folder_id?: string | null;
   name: string;
   description?: string;
@@ -218,7 +222,9 @@ export interface CreateListData {
 }
 
 export interface UpdateListData {
-  space_id?: string;
+  space_id?: string | null;
+  workspace_id?: string;
+  workspace_folder_id?: string | null;
   name?: string;
   description?: string;
   icon?: string;
@@ -264,8 +270,8 @@ export interface HierarchyTask {
 
 export interface WorkTaskContext {
   workspace_id: string;
-  space_id: string;
-  space_name: string;
+  space_id: string | null;
+  space_name: string | null;
   list_id: string;
   list_name: string;
 }

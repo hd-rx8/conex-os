@@ -25,7 +25,7 @@ export function TaskListView({ tasks, onTaskClick }: TaskListViewProps) {
             >
               <p className="truncate font-medium">{task.title}</p>
               <p className="mt-1 truncate text-xs text-muted-foreground">
-                {task.context.space_name}
+                {task.context.space_name ?? 'Sem projeto'}
                 <span aria-hidden="true"> / </span>
                 {task.context.list_name}
               </p>

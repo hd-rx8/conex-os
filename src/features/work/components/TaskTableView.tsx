@@ -47,7 +47,7 @@ export function TaskTableView({ tasks, onTaskClick }: TaskTableViewProps) {
                 <Badge variant="outline">{task.priority}</Badge>
               </TableCell>
               <TableCell>{task.assignee?.name ?? 'Sem responsável'}</TableCell>
-              <TableCell>{task.context.space_name}</TableCell>
+              <TableCell>{task.context.space_name ?? 'Sem projeto'}</TableCell>
               <TableCell>{task.context.list_name}</TableCell>
               <TableCell>
                 {task.due_date

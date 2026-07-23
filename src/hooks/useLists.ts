@@ -6,10 +6,12 @@ import { useCallback } from 'react';
 export type List = Tables<'lists'>;
 
 export type CreateListData = {
-  space_id: string;
+  space_id?: string | null;
   folder_id?: string | null;
   name: string;
   description?: string | null;
+  workspace_id?: string;
+  workspace_folder_id?: string | null;
 };
 
 type CanonicalListPath = Pick<
@@ -19,12 +21,19 @@ type CanonicalListPath = Pick<
 
 export function buildCanonicalListInsert(
   listData: CreateListData,
-  path: CanonicalListPath,
+  path?: CanonicalListPath,
 ) {
+  const workspaceId = listData.workspace_id ?? path?.workspace_id;
+
+  if (!workspaceId) {
+    throw new Error('Informe um workspace ou um projeto para criar a lista.');
+  }
+
   return {
     ...listData,
-    workspace_id: path.workspace_id,
-    workspace_folder_id: path.workspace_folder_id,
+    workspace_id: workspaceId,
+    workspace_folder_id:
+      listData.workspace_folder_id ?? path?.workspace_folder_id ?? null,
   };
 }
 
@@ -71,17 +80,26 @@ export const useLists = (spaceId?: string, folderId?: string) => {
   // Create a new list
   const createList = useCallback(async (listData: CreateListData) => {
     try {
-      const { data: space, error: spaceError } = await supabase
-        .from('spaces')
-        .select('workspace_id, workspace_folder_id')
-        .eq('id', listData.space_id)
-        .single();
+      let path: CanonicalListPath | undefined;
 
-      if (spaceError) throw spaceError;
+      if (!listData.workspace_id) {
+        if (!listData.space_id) {
+          throw new Error('Informe um workspace ou um projeto para criar a lista.');
+        }
+
+        const { data: space, error: spaceError } = await supabase
+          .from('spaces')
+          .select('workspace_id, workspace_folder_id')
+          .eq('id', listData.space_id)
+          .single();
+
+        if (spaceError) throw spaceError;
+        path = space;
+      }
 
       const { data, error } = await supabase
         .from('lists')
-        .insert(buildCanonicalListInsert(listData, space))
+        .insert(buildCanonicalListInsert(listData, path))
         .select();
 
       if (error) throw error;

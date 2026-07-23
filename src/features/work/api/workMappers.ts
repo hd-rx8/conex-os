@@ -24,14 +24,14 @@ export type WorkTaskQueryRow = Tables<'tasks'> & {
   list: {
     id: string;
     name: string;
-    space_id: string;
+    space_id: string | null;
     workspace_id: string | null;
     workspace_folder_id: string | null;
     space: {
       id: string;
       name: string;
       workspace_id: string;
-    };
+    } | null;
   };
 };
 
@@ -144,6 +144,11 @@ export function mapWorkspaceTreeRow(row: WorkspaceTreeRow): WorkspaceTree {
 
 export function mapWorkTaskRow(row: WorkTaskQueryRow): WorkTaskItem {
   const { list, assignee, creator, ...task } = row;
+  const workspaceId = list.workspace_id ?? list.space?.workspace_id;
+
+  if (!workspaceId) {
+    throw new Error('A lista da tarefa não possui um workspace válido.');
+  }
 
   return {
     ...task,
@@ -151,9 +156,9 @@ export function mapWorkTaskRow(row: WorkTaskQueryRow): WorkTaskItem {
     assignee: assignee ?? undefined,
     creator: creator ?? undefined,
     context: {
-      workspace_id: list.workspace_id ?? list.space.workspace_id,
-      space_id: list.space.id,
-      space_name: list.space.name,
+      workspace_id: workspaceId,
+      space_id: list.space?.id ?? list.space_id,
+      space_name: list.space?.name ?? null,
       list_id: list.id,
       list_name: list.name,
     },

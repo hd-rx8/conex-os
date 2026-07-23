@@ -173,6 +173,44 @@ describe('mapWorkTaskRow', () => {
       },
     });
   });
+
+  it('mantém o contexto da tarefa quando a lista não possui projeto legado', () => {
+    const row: WorkTaskQueryRow = {
+      id: 'task-canonical',
+      list_id: 'list-canonical',
+      title: 'Tarefa canônica',
+      description: null,
+      status: 'Pendente',
+      priority: 'Média',
+      due_date: null,
+      assignee_id: null,
+      creator_id: 'user-1',
+      tags: null,
+      estimated_hours: null,
+      actual_hours: null,
+      position: 0,
+      created_at: '2026-07-23T00:00:00.000Z',
+      updated_at: '2026-07-23T00:00:00.000Z',
+      completed_at: null,
+      assignee: null,
+      creator: { id: 'user-1', name: 'Hendrix', email: null },
+      list: {
+        id: 'list-canonical',
+        name: 'Entrega',
+        space_id: null,
+        workspace_id: 'workspace-1',
+        workspace_folder_id: 'workspace-folder-1',
+        space: null,
+      },
+    };
+
+    expect(mapWorkTaskRow(row).context).toMatchObject({
+      workspace_id: 'workspace-1',
+      space_id: null,
+      space_name: null,
+      list_name: 'Entrega',
+    });
+  });
 });
 
 describe('normalizeWorkError', () => {

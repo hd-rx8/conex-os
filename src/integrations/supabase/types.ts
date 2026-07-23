@@ -149,8 +149,6 @@ export type Database = {
           position: number
           space_id: string
           updated_at: string
-          workspace_folder_id: string | null
-          workspace_id: string | null
         }
         Insert: {
           color?: string | null
@@ -163,8 +161,6 @@ export type Database = {
           position?: number
           space_id: string
           updated_at?: string
-          workspace_folder_id?: string | null
-          workspace_id?: string | null
         }
         Update: {
           color?: string | null
@@ -177,8 +173,6 @@ export type Database = {
           position?: number
           space_id?: string
           updated_at?: string
-          workspace_folder_id?: string | null
-          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -293,8 +287,10 @@ export type Database = {
           id: string
           name: string
           position: number
-          space_id: string
+          space_id: string | null
           updated_at: string
+          workspace_folder_id: string | null
+          workspace_id: string
         }
         Insert: {
           color?: string | null
@@ -306,8 +302,10 @@ export type Database = {
           id?: string
           name: string
           position?: number
-          space_id: string
+          space_id?: string | null
           updated_at?: string
+          workspace_folder_id?: string | null
+          workspace_id: string
         }
         Update: {
           color?: string | null
@@ -319,8 +317,10 @@ export type Database = {
           id?: string
           name?: string
           position?: number
-          space_id?: string
+          space_id?: string | null
           updated_at?: string
+          workspace_folder_id?: string | null
+          workspace_id?: string
         }
         Relationships: [
           {

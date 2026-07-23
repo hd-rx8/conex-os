@@ -26,4 +26,24 @@ describe('buildCanonicalListInsert', () => {
       workspace_folder_id: 'workspace-folder-1',
     });
   });
+
+  it('creates a direct workspace list without requiring a legacy project', () => {
+    expect(
+      buildCanonicalListInsert({
+        space_id: null,
+        folder_id: null,
+        name: 'Solicitações',
+        description: null,
+        workspace_id: 'workspace-1',
+        workspace_folder_id: 'workspace-folder-1',
+      }),
+    ).toEqual({
+      space_id: null,
+      folder_id: null,
+      name: 'Solicitações',
+      description: null,
+      workspace_id: 'workspace-1',
+      workspace_folder_id: 'workspace-folder-1',
+    });
+  });
 });
