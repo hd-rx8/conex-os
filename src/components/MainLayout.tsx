@@ -70,7 +70,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   };
 
   return (
-    <div className="h-screen overflow-hidden bg-background">
+    <div className="h-dvh overflow-hidden bg-muted/20">
       {/* Sidebar */}
       <NavigationSidebar
         isCollapsed={sidebarCollapsed}
@@ -88,7 +88,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
       {/* Main content */}
       <div
         className={cn(
-          "flex flex-col h-full transition-all duration-300 ease-in-out",
+          "flex h-full min-w-0 flex-col transition-all duration-300 ease-in-out",
           // Desktop margins
           !isMobile && !sidebarCollapsed && "md:ml-64",
           !isMobile && sidebarCollapsed && "md:ml-16",
@@ -97,15 +97,15 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         )}
       >
         {/* Desktop header with app switcher and theme toggle */}
-        <header className="flex items-center justify-between p-4 border-b bg-background sticky top-0 z-30">
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-6">
           {/* Mobile menu toggle and logo */}
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-3">
             {isMobile && <MobileMenuToggle onToggle={toggleSidebar} />}
-            <h1 className="text-lg font-bold gradient-text">CONEX.HUB</h1>
+            <h1 className="truncate text-lg font-bold gradient-text">CONEX.HUB</h1>
           </div>
           
           {/* Right side controls */}
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2">
             <AppSwitcher />
             <ThemeToggle />
             {isMobile && (
@@ -119,9 +119,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         </header>
 
         {/* Content area */}
-        <main className="flex-1 overflow-auto">
-          <div className="w-full px-2 sm:px-4 lg:px-6 xl:px-8 py-6">
-            <div className="mx-auto max-w-none xl:max-w-[1400px] 2xl:max-w-[1600px]">
+        <main className="min-w-0 flex-1 overflow-auto">
+          <div className="w-full px-4 py-6 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1600px]">
               {children}
             </div>
           </div>

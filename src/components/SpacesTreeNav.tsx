@@ -53,7 +53,7 @@ const SpacesTreeNav: React.FC<SpacesTreeNavProps> = ({
   }
 
   return (
-    <div className="space-y-1">
+    <div className="w-full min-w-0 space-y-1 overflow-hidden">
       {spaces.map((space) => (
         <SpaceNode
           key={space.id}
@@ -98,8 +98,8 @@ const SpaceNode: React.FC<SpaceNodeProps> = ({
   const hasContent = space.folders.length > 0 || space.lists.length > 0;
 
   return (
-    <div>
-      <div className="flex items-center gap-1">
+    <div className="w-full min-w-0">
+      <div className="flex w-full min-w-0 items-center gap-1">
         <Button
           variant="ghost"
           size="icon"
@@ -122,18 +122,21 @@ const SpaceNode: React.FC<SpaceNodeProps> = ({
         <Button
           variant="ghost"
           onClick={() => onSelect?.(space.id)}
+          title={space.name}
           className={cn(
-            'flex-1 justify-start gap-2 h-9 px-3 font-normal',
+            'h-9 w-0 min-w-0 flex-1 justify-start gap-2 px-3 font-normal',
             isSelected && 'bg-accent font-medium'
           )}
         >
-          <span className="text-sm">{space.icon || '📁'}</span>
-          <span className="truncate text-sm">{space.name}</span>
+          <span className="shrink-0 text-sm">{space.icon || '📁'}</span>
+          <span className="min-w-0 flex-1 truncate text-left text-sm">
+            {space.name}
+          </span>
         </Button>
       </div>
 
       {isExpanded && hasContent && (
-        <div className="ml-4 space-y-1 mt-1">
+        <div className="ml-4 min-w-0 space-y-1 overflow-hidden mt-1">
           {/* Folders */}
           {space.folders.map((folder) => (
             <FolderNode
@@ -179,12 +182,13 @@ const FolderNode: React.FC<FolderNodeProps> = ({
   const hasLists = folder.lists.length > 0;
 
   return (
-    <div>
+    <div className="w-full min-w-0">
       <Button
         variant="ghost"
         onClick={onToggle}
+        title={folder.name}
         className={cn(
-          'w-full justify-start gap-2 h-8 px-3 font-normal',
+          'h-8 w-full min-w-0 justify-start gap-2 px-3 font-normal',
           !hasLists && 'cursor-default'
         )}
         disabled={!hasLists}
@@ -198,12 +202,14 @@ const FolderNode: React.FC<FolderNodeProps> = ({
         ) : (
           <div className="w-3" />
         )}
-        <span className="text-sm">📂</span>
-        <span className="truncate text-sm">{folder.name}</span>
+        <span className="shrink-0 text-sm">📂</span>
+        <span className="min-w-0 flex-1 truncate text-left text-sm">
+          {folder.name}
+        </span>
       </Button>
 
       {isExpanded && hasLists && (
-        <div className="ml-4 space-y-1 mt-1">
+        <div className="ml-4 min-w-0 space-y-1 overflow-hidden mt-1">
           {folder.lists.map((list) => (
             <ListNode
               key={list.id}
@@ -229,16 +235,21 @@ const ListNode: React.FC<ListNodeProps> = ({ list, onSelect, isSelected }) => {
     <Button
       variant="ghost"
       onClick={() => onSelect?.(list.id)}
+      title={list.name}
       className={cn(
-        'w-full justify-start gap-2 h-8 px-3 font-normal',
+        'h-8 w-full min-w-0 justify-start gap-2 px-3 font-normal',
         isSelected && 'bg-accent font-medium'
       )}
     >
-      <div className="w-3" />
-      <span className="text-sm">📋</span>
-      <span className="truncate text-sm">{list.name}</span>
+      <div className="w-3 shrink-0" />
+      <span className="shrink-0 text-sm">📋</span>
+      <span className="min-w-0 flex-1 truncate text-left text-sm">
+        {list.name}
+      </span>
       {list.taskCount !== undefined && (
-        <span className="ml-auto text-xs text-muted-foreground">{list.taskCount}</span>
+        <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+          {list.taskCount}
+        </span>
       )}
     </Button>
   );

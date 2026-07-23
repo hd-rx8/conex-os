@@ -22,10 +22,14 @@ const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
   const selectedWorkspace = workspaces.find((w) => w.id === selectedWorkspaceId);
 
   if (isCollapsed) {
-    // Versão colapsada - apenas ícone
     return (
       <div className="flex items-center justify-center p-2">
-        <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-lg">
+        <div
+          role="img"
+          aria-label={`Workspace atual: ${selectedWorkspace?.name || 'Não selecionado'}`}
+          title={selectedWorkspace?.name}
+          className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-base"
+        >
           {selectedWorkspace?.icon || '🏢'}
         </div>
       </div>
@@ -33,14 +37,24 @@ const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
+    <div className="w-full min-w-0">
+      <div
+        data-testid="workspace-selector-row"
+        className="flex w-full min-w-0 items-center gap-2"
+      >
         <Select value={selectedWorkspaceId} onValueChange={onSelect}>
-          <SelectTrigger className="flex-1">
+          <SelectTrigger
+            className="w-0 min-w-0 flex-1"
+            aria-label="Selecionar workspace"
+          >
             <SelectValue>
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{selectedWorkspace?.icon || '🏢'}</span>
-                <span className="truncate">{selectedWorkspace?.name || 'Selecione...'}</span>
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="shrink-0 text-base">
+                  {selectedWorkspace?.icon || '🏢'}
+                </span>
+                <span className="min-w-0 truncate" title={selectedWorkspace?.name}>
+                  {selectedWorkspace?.name || 'Selecione...'}
+                </span>
               </div>
             </SelectValue>
           </SelectTrigger>
@@ -60,8 +74,9 @@ const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
             variant="outline"
             size="icon"
             onClick={onCreateProject}
-            className="shrink-0"
-            title="Criar Projeto"
+            className="h-10 w-10 shrink-0"
+            aria-label="Criar projeto"
+            title="Criar projeto"
           >
             <Plus className="h-4 w-4" />
           </Button>

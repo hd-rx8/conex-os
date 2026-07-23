@@ -35,7 +35,11 @@ const UserNav: React.FC<UserNavProps> = ({ userName, userEmail, avatarUrl, colla
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className={`relative ${collapsed ? 'h-9 w-9 px-0' : 'h-9 w-auto px-2'} flex items-center ${collapsed ? 'justify-center' : 'space-x-2'}`}>
+        <Button
+          variant="ghost"
+          aria-label={collapsed ? 'Abrir menu do usuário' : undefined}
+          className={`relative flex min-w-0 ${collapsed ? 'h-9 w-9 justify-center px-0' : 'h-11 w-full justify-start gap-2 px-2'}`}
+        >
           <Avatar className="h-8 w-8">
             <AvatarImage src={avatarUrl || undefined} alt={userName || "User"} />
             <AvatarFallback>
@@ -43,9 +47,13 @@ const UserNav: React.FC<UserNavProps> = ({ userName, userEmail, avatarUrl, colla
             </AvatarFallback>
           </Avatar>
           {!collapsed && (
-            <div className="flex flex-col items-start hidden sm:block">
-              <p className="text-sm font-medium leading-none">{userName || 'Usuário'}</p>
-              <p className="text-xs leading-none text-muted-foreground">{userEmail}</p>
+            <div className="hidden min-w-0 flex-1 flex-col items-start text-left sm:flex">
+              <p className="w-full truncate text-sm font-medium leading-none">
+                {userName || 'Usuário'}
+              </p>
+              <p className="mt-1 w-full truncate text-xs leading-none text-muted-foreground">
+                {userEmail}
+              </p>
             </div>
           )}
         </Button>
