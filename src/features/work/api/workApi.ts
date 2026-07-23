@@ -1,23 +1,23 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { Tables } from '@/integrations/supabase/types';
 import type {
-  HierarchyTask,
   CreateSpaceData,
   CreateTaskData,
   CreateWorkspaceData,
   Space,
   TaskFilters,
-  TaskPriority,
   UpdateSpaceData,
   UpdateTaskData,
   UpdateWorkspaceData,
+  WorkTaskItem,
   Workspace,
   WorkspaceTree,
 } from '@/types/hierarchy';
 
 import {
   mapSpaceRow,
+  mapWorkTaskRow,
   mapWorkspaceTreeRow,
+  type WorkTaskQueryRow,
   type WorkspaceTreeRow,
 } from './workMappers';
 
@@ -71,39 +71,38 @@ const WORKSPACE_TREE_FIELDS = `
   )
 `;
 
-const TASK_FIELDS = `
+const WORK_TASK_FIELDS = `
   id,list_id,title,description,status,priority,due_date,assignee_id,creator_id,
   tags,estimated_hours,actual_hours,position,created_at,updated_at,completed_at,
   assignee:app_users!tasks_assignee_id_fkey(id,name,email),
-  creator:app_users!tasks_creator_id_fkey(id,name,email)
+  creator:app_users!tasks_creator_id_fkey(id,name,email),
+  list:lists!inner(
+    id,name,space_id,
+    space:spaces!inner(id,name,workspace_id)
+  )
 `;
 
-type AppUserSummary = Pick<Tables<'app_users'>, 'id' | 'name' | 'email'>;
-type TaskQueryRow = Tables<'tasks'> & {
-  assignee: AppUserSummary | null;
-  creator: AppUserSummary | null;
-};
-
-const TASK_PRIORITIES: readonly TaskPriority[] = [
-  'Baixa',
-  'Média',
-  'Alta',
-  'Urgente',
-];
-
-function mapTaskPriority(value: string): TaskPriority {
-  return TASK_PRIORITIES.includes(value as TaskPriority)
-    ? (value as TaskPriority)
-    : 'Média';
+function createTaskQuery() {
+  return supabase.from('tasks').select(WORK_TASK_FIELDS);
 }
 
-function mapTask(row: TaskQueryRow): HierarchyTask {
-  return {
-    ...row,
-    priority: mapTaskPriority(row.priority),
-    assignee: row.assignee ?? undefined,
-    creator: row.creator ?? undefined,
-  };
+type TaskQuery = ReturnType<typeof createTaskQuery>;
+
+function applyTaskFilters(
+  initialQuery: TaskQuery,
+  filters?: TaskFilters,
+): TaskQuery {
+  let query = initialQuery;
+  if (filters?.status) query = query.eq('status', filters.status);
+  if (filters?.priority) query = query.eq('priority', filters.priority);
+  if (filters?.assignee_id) query = query.eq('assignee_id', filters.assignee_id);
+  if (filters?.space_id) query = query.eq('list.space_id', filters.space_id);
+  if (filters?.list_id) query = query.eq('list_id', filters.list_id);
+  if (filters?.due_date_from) query = query.gte('due_date', filters.due_date_from);
+  if (filters?.due_date_to) query = query.lte('due_date', filters.due_date_to);
+  if (filters?.tags?.length) query = query.contains('tags', filters.tags);
+  if (filters?.search) query = query.ilike('title', `%${filters.search}%`);
+  return query;
 }
 
 export async function fetchWorkspaces(): Promise<Workspace[]> {
@@ -132,24 +131,40 @@ export async function fetchWorkspaceTree(
 export async function fetchTasksByList(
   listId: string,
   filters?: TaskFilters,
-): Promise<HierarchyTask[]> {
-  let query = supabase
-    .from('tasks')
-    .select(TASK_FIELDS)
-    .eq('list_id', listId)
-    .order('position');
-
-  if (filters?.status) query = query.eq('status', filters.status);
-  if (filters?.priority) query = query.eq('priority', filters.priority);
-  if (filters?.assignee_id) query = query.eq('assignee_id', filters.assignee_id);
-  if (filters?.due_date_from) query = query.gte('due_date', filters.due_date_from);
-  if (filters?.due_date_to) query = query.lte('due_date', filters.due_date_to);
-  if (filters?.tags?.length) query = query.contains('tags', filters.tags);
-  if (filters?.search) query = query.ilike('title', `%${filters.search}%`);
+): Promise<WorkTaskItem[]> {
+  const query = applyTaskFilters(
+    createTaskQuery().eq('list_id', listId),
+    filters,
+  ).order('position');
 
   const { data, error } = await query;
   if (error) throw normalizeWorkError(error);
-  return ((data ?? []) as TaskQueryRow[]).map(mapTask);
+  return ((data ?? []) as WorkTaskQueryRow[]).map(mapWorkTaskRow);
+}
+
+export async function fetchWorkspaceTasks(
+  workspaceId: string,
+  filters?: TaskFilters,
+): Promise<WorkTaskItem[]> {
+  const query = applyTaskFilters(
+    createTaskQuery().eq('list.space.workspace_id', workspaceId),
+    filters,
+  ).order('position');
+
+  const { data, error } = await query;
+  if (error) throw normalizeWorkError(error);
+  return ((data ?? []) as WorkTaskQueryRow[]).map(mapWorkTaskRow);
+}
+
+export async function fetchAssignedTasks(
+  workspaceId: string,
+  assigneeId: string,
+  filters?: TaskFilters,
+): Promise<WorkTaskItem[]> {
+  return fetchWorkspaceTasks(workspaceId, {
+    ...filters,
+    assignee_id: assigneeId,
+  });
 }
 
 export async function updateWorkspace(
@@ -228,30 +243,30 @@ export async function deleteSpace(id: string): Promise<void> {
   if (error) throw normalizeWorkError(error);
 }
 
-export async function createTask(data: CreateTaskData): Promise<HierarchyTask> {
+export async function createTask(data: CreateTaskData): Promise<WorkTaskItem> {
   const { data: task, error } = await supabase
     .from('tasks')
     .insert(data)
-    .select(TASK_FIELDS)
+    .select(WORK_TASK_FIELDS)
     .single();
 
   if (error) throw normalizeWorkError(error);
-  return mapTask(task as TaskQueryRow);
+  return mapWorkTaskRow(task as WorkTaskQueryRow);
 }
 
 export async function updateTask(
   id: string,
   data: UpdateTaskData,
-): Promise<HierarchyTask> {
+): Promise<WorkTaskItem> {
   const { data: task, error } = await supabase
     .from('tasks')
     .update(data)
     .eq('id', id)
-    .select(TASK_FIELDS)
+    .select(WORK_TASK_FIELDS)
     .single();
 
   if (error) throw normalizeWorkError(error);
-  return mapTask(task as TaskQueryRow);
+  return mapWorkTaskRow(task as WorkTaskQueryRow);
 }
 
 export async function deleteTask(id: string): Promise<void> {

@@ -17,7 +17,9 @@ import {
   deleteSpace,
   deleteTask,
   deleteWorkspace,
+  fetchAssignedTasks,
   fetchTasksByList,
+  fetchWorkspaceTasks,
   fetchWorkspaces,
   fetchWorkspaceTree,
   updateSpace,
@@ -55,6 +57,44 @@ export function useListTasksQuery(listId?: string, filters?: TaskFilters) {
     queryKey: workQueryKeys.tasks(listId ?? 'none', filters),
     queryFn: () => fetchTasksByList(listId as string, filters),
     enabled: Boolean(listId),
+    staleTime: WORK_STALE_TIME,
+    retry: 1,
+    retryDelay: 0,
+  });
+}
+
+export function useWorkspaceTasksQuery(
+  workspaceId?: string,
+  filters?: TaskFilters,
+) {
+  return useQuery({
+    queryKey: workQueryKeys.workspaceTasks(workspaceId ?? 'none', filters),
+    queryFn: () => fetchWorkspaceTasks(workspaceId as string, filters),
+    enabled: Boolean(workspaceId),
+    staleTime: WORK_STALE_TIME,
+    retry: 1,
+    retryDelay: 0,
+  });
+}
+
+export function useAssignedTasksQuery(
+  workspaceId?: string,
+  assigneeId?: string,
+  filters?: TaskFilters,
+) {
+  return useQuery({
+    queryKey: workQueryKeys.assignedTasks(
+      workspaceId ?? 'none',
+      assigneeId ?? 'none',
+      filters,
+    ),
+    queryFn: () =>
+      fetchAssignedTasks(
+        workspaceId as string,
+        assigneeId as string,
+        filters,
+      ),
+    enabled: Boolean(workspaceId && assigneeId),
     staleTime: WORK_STALE_TIME,
     retry: 1,
     retryDelay: 0,
@@ -149,11 +189,27 @@ export function useCreateTaskMutation(listId?: string, filters?: TaskFilters) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateTaskData) => createTask(data),
-    onSuccess: (_, data) => {
+    onSuccess: (task, data) => {
       void queryClient.invalidateQueries({
         queryKey: workQueryKeys.tasks(listId ?? data.list_id, filters),
         exact: true,
       });
+      void queryClient.invalidateQueries({
+        queryKey: ['work', 'tasks', 'workspace', task.context.workspace_id],
+        exact: false,
+      });
+      if (task.assignee_id) {
+        void queryClient.invalidateQueries({
+          queryKey: [
+            'work',
+            'tasks',
+            'assigned',
+            task.context.workspace_id,
+            task.assignee_id,
+          ],
+          exact: false,
+        });
+      }
     },
   });
 }
@@ -163,11 +219,27 @@ export function useUpdateTaskMutation(listId?: string, filters?: TaskFilters) {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateTaskData }) =>
       updateTask(id, data),
-    onSuccess: () => {
+    onSuccess: (task) => {
       if (listId) {
         void queryClient.invalidateQueries({
           queryKey: workQueryKeys.tasks(listId, filters),
           exact: true,
+        });
+      }
+      void queryClient.invalidateQueries({
+        queryKey: ['work', 'tasks', 'workspace', task.context.workspace_id],
+        exact: false,
+      });
+      if (task.assignee_id) {
+        void queryClient.invalidateQueries({
+          queryKey: [
+            'work',
+            'tasks',
+            'assigned',
+            task.context.workspace_id,
+            task.assignee_id,
+          ],
+          exact: false,
         });
       }
     },

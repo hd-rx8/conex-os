@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import { normalizeWorkError } from './workApi';
-import { mapWorkspaceTreeRow, type WorkspaceTreeRow } from './workMappers';
+import {
+  mapWorkspaceTreeRow,
+  mapWorkTaskRow,
+  type WorkspaceTreeRow,
+  type WorkTaskQueryRow,
+} from './workMappers';
 
 const workspaceRow: WorkspaceTreeRow = {
   id: 'workspace-1',
@@ -79,6 +84,53 @@ describe('mapWorkspaceTreeRow', () => {
     expect(tree.spaces[0].folders[0].lists.map((list) => list.id)).toEqual([
       'list-folder',
     ]);
+  });
+});
+
+describe('mapWorkTaskRow', () => {
+  it('normaliza a relação lista, projeto e workspace em um único contexto', () => {
+    const row: WorkTaskQueryRow = {
+      id: 'task-1',
+      list_id: 'list-1',
+      title: 'Preparar proposta',
+      description: null,
+      status: 'Pendente',
+      priority: 'Alta',
+      due_date: null,
+      assignee_id: 'user-1',
+      creator_id: 'user-1',
+      tags: [],
+      estimated_hours: null,
+      actual_hours: null,
+      position: 0,
+      created_at: '2026-07-22T12:00:00Z',
+      updated_at: '2026-07-22T12:00:00Z',
+      completed_at: null,
+      assignee: { id: 'user-1', name: 'Hendrix', email: null },
+      creator: { id: 'user-1', name: 'Hendrix', email: null },
+      list: {
+        id: 'list-1',
+        name: 'Comercial',
+        space_id: 'space-1',
+        space: {
+          id: 'space-1',
+          name: 'Website',
+          workspace_id: 'workspace-1',
+        },
+      },
+    };
+
+    expect(mapWorkTaskRow(row)).toMatchObject({
+      id: 'task-1',
+      priority: 'Alta',
+      context: {
+        workspace_id: 'workspace-1',
+        space_id: 'space-1',
+        space_name: 'Website',
+        list_id: 'list-1',
+        list_name: 'Comercial',
+      },
+    });
   });
 });
 

@@ -6,6 +6,8 @@ import type {
   Space,
   SpaceStatus,
   SpaceTree,
+  TaskPriority,
+  WorkTaskItem,
   WorkspaceTree,
 } from '@/types/hierarchy';
 
@@ -13,6 +15,22 @@ type WorkspaceRow = Tables<'workspaces'>;
 type SpaceRow = Tables<'spaces'>;
 type FolderRow = Tables<'folders'>;
 type ListRow = Tables<'lists'>;
+type AppUserSummary = Pick<Tables<'app_users'>, 'id' | 'name' | 'email'>;
+
+export type WorkTaskQueryRow = Tables<'tasks'> & {
+  assignee: AppUserSummary | null;
+  creator: AppUserSummary | null;
+  list: {
+    id: string;
+    name: string;
+    space_id: string;
+    space: {
+      id: string;
+      name: string;
+      workspace_id: string;
+    };
+  };
+};
 
 export type WorkspaceTreeRow = WorkspaceRow & {
   spaces: Array<
@@ -27,6 +45,13 @@ const SPACE_STATUSES: readonly SpaceStatus[] = [
   'Ativo',
   'Concluído',
   'Arquivado',
+];
+
+const TASK_PRIORITIES: readonly TaskPriority[] = [
+  'Baixa',
+  'Média',
+  'Alta',
+  'Urgente',
 ];
 
 function isRecord(value: Json): value is { [key: string]: Json | undefined } {
@@ -49,6 +74,12 @@ function mapSpaceStatus(value: string): SpaceStatus {
   return SPACE_STATUSES.includes(value as SpaceStatus)
     ? (value as SpaceStatus)
     : 'Ativo';
+}
+
+function mapTaskPriority(value: string): TaskPriority {
+  return TASK_PRIORITIES.includes(value as TaskPriority)
+    ? (value as TaskPriority)
+    : 'Média';
 }
 
 export function mapSpaceRow(row: SpaceRow): Space {
@@ -91,5 +122,23 @@ export function mapWorkspaceTreeRow(row: WorkspaceTreeRow): WorkspaceTree {
   return {
     ...workspace,
     spaces: spaces.map(mapSpace),
+  };
+}
+
+export function mapWorkTaskRow(row: WorkTaskQueryRow): WorkTaskItem {
+  const { list, assignee, creator, ...task } = row;
+
+  return {
+    ...task,
+    priority: mapTaskPriority(task.priority),
+    assignee: assignee ?? undefined,
+    creator: creator ?? undefined,
+    context: {
+      workspace_id: list.space.workspace_id,
+      space_id: list.space.id,
+      space_name: list.space.name,
+      list_id: list.id,
+      list_name: list.name,
+    },
   };
 }
