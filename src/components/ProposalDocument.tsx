@@ -29,9 +29,13 @@ const ProposalDocument: React.FC<ProposalDocumentProps> = ({ snapshot, className
 
   // Determine if both one-time and monthly services are present
   const hasBothServiceTypes = oneTimeServices.length > 0 && monthlyServices.length > 0;
+  const interestRate = snapshot.totals.subtotal > 0
+    ? ((snapshot.totals.totalInstallment - snapshot.totals.subtotal)
+      / snapshot.totals.subtotal) * 100
+    : 0;
 
   // Helper function to safely render service price
-  const renderServicePrice = (service: any, showDiscount = false) => {
+  const renderServicePrice = (service: ProposalSnapshot['services'][number], showDiscount = false) => {
     const price = getServicePrice(service.custom_price, service.base_price);
     const quantity = service.quantity || 1;
     const discount = service.discount || 0;
@@ -278,6 +282,12 @@ const ProposalDocument: React.FC<ProposalDocumentProps> = ({ snapshot, className
                     {snapshot.payment.installment_number}x de {formatCurrency(snapshot.payment.installment_value)}
                   </span>
                 </div>
+                {snapshot.payment.type === 'installment' && snapshot.payment.show_interest_rate && (
+                  <div className="flex justify-between text-xs mt-1 print:text-xs">
+                    <span className="text-conexhub-blue-700">Taxa de juros:</span>
+                    <span className="font-semibold text-conexhub-blue-800">{interestRate.toFixed(2)}%</span>
+                  </div>
+                )}
               </div>
             )}
           </div>

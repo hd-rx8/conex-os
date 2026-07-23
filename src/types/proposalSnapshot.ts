@@ -47,6 +47,7 @@ export interface ProposalSnapshot {
     installment_number: number;
     installment_value: number;
     manual_installment_total: number;
+    show_interest_rate: boolean;
   };
   
   // Validity settings

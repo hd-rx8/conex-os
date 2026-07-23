@@ -100,6 +100,7 @@ export const getProposalSnapshot = async (proposalId: string): Promise<ProposalS
       installment_number: normalizedProposal.installment_number,
       installment_value: normalizedProposal.installment_value,
       manual_installment_total: normalizedProposal.manual_installment_total,
+      show_interest_rate: (proposal as { show_interest_rate?: boolean | null }).show_interest_rate ?? true,
     },
     
     // Validity settings
