@@ -61,10 +61,10 @@ export function WorkOverviewCharts({
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Status dos projetos</CardTitle>
+    <div className="grid gap-6 lg:grid-cols-2">
+      <Card className="overflow-hidden shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-xl">Status dos projetos</CardTitle>
         </CardHeader>
         <CardContent className="h-64">
           <ResponsiveContainer width="100%" height="100%">
@@ -89,9 +89,9 @@ export function WorkOverviewCharts({
           </ResponsiveContainer>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Status das tarefas</CardTitle>
+      <Card className="overflow-hidden shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-xl">Status das tarefas</CardTitle>
         </CardHeader>
         <CardContent className="h-64">
           <ResponsiveContainer width="100%" height="100%">
@@ -112,9 +112,12 @@ export function WorkOverviewCharts({
           </ResponsiveContainer>
         </CardContent>
       </Card>
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle className="text-base">Produtividade por projeto</CardTitle>
+      <Card className="overflow-hidden shadow-sm lg:col-span-2">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-xl">Produtividade por projeto</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Percentual de tarefas concluídas por projeto.
+          </p>
         </CardHeader>
         <CardContent className="h-72">
           <ResponsiveContainer width="100%" height="100%">

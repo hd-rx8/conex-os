@@ -3,7 +3,7 @@ import { CheckCircle2, CircleDot, Layers3 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import MainLayout from '@/components/MainLayout';
-import { Card, CardContent } from '@/components/ui/card';
+import { MetricCard } from '@/components/layout/MetricCard';
 import { TaskBoardView } from '@/features/work/components/TaskBoardView';
 import { WorkPageHeader } from '@/features/work/components/WorkPageHeader';
 import {
@@ -85,41 +85,32 @@ export default function WorkBoard() {
 
   return (
     <MainLayout module="work" showGlobalFab={false}>
-      <div className="space-y-6 pb-10">
+      <div className="app-page">
         <WorkPageHeader
           eyebrow={treeQuery.data?.name ?? 'Work Management'}
           title="Quadro"
           description="Acompanhe o fluxo do workspace e mova tarefas entre os status."
         />
 
-        <section className="grid gap-3 sm:grid-cols-3">
-          <Card>
-            <CardContent className="flex items-center gap-3 p-4">
-              <Layers3 className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-xl font-semibold">{metrics.total}</p>
-                <p className="text-xs text-muted-foreground">Tarefas no quadro</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center gap-3 p-4">
-              <CircleDot className="h-5 w-5 text-blue-600" />
-              <div>
-                <p className="text-xl font-semibold">{metrics.inProgress}</p>
-                <p className="text-xs text-muted-foreground">Em progresso</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center gap-3 p-4">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-              <div>
-                <p className="text-xl font-semibold">{metrics.completed}</p>
-                <p className="text-xs text-muted-foreground">Concluídas</p>
-              </div>
-            </CardContent>
-          </Card>
+        <section className="grid gap-4 sm:grid-cols-3">
+          <MetricCard
+            label="Tarefas no quadro"
+            value={metrics.total}
+            icon={Layers3}
+            tone="primary"
+          />
+          <MetricCard
+            label="Em progresso"
+            value={metrics.inProgress}
+            icon={CircleDot}
+            tone="primary"
+          />
+          <MetricCard
+            label="Concluídas"
+            value={metrics.completed}
+            icon={CheckCircle2}
+            tone="success"
+          />
         </section>
 
         <WorkTaskFilters

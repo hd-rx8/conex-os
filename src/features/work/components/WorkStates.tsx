@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 export function WorkLoadingState({ label = 'Carregando…' }: { label?: string }) {
   return (
-    <Card>
+    <Card className="shadow-sm">
       <CardContent className="flex min-h-48 items-center justify-center gap-2 text-muted-foreground">
         <LoaderCircle className="h-5 w-5 animate-spin" />
         {label}
@@ -26,7 +26,7 @@ export function WorkEmptyState({
   action,
 }: WorkEmptyStateProps) {
   return (
-    <Card className="border-dashed">
+    <Card className="border-dashed shadow-sm">
       <CardContent className="flex min-h-48 flex-col items-center justify-center gap-3 text-center">
         <Inbox className="h-8 w-8 text-muted-foreground" />
         <div>
@@ -45,7 +45,7 @@ export function WorkErrorState({
   onRetry: () => void;
 }) {
   return (
-    <Card className="border-destructive/30">
+    <Card className="border-destructive/30 shadow-sm">
       <CardContent className="flex min-h-48 flex-col items-center justify-center gap-3 text-center">
         <AlertCircle className="h-8 w-8 text-destructive" />
         <div>

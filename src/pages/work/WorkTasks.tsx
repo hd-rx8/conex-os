@@ -3,7 +3,7 @@ import { AlertTriangle, CheckCircle2, Clock3, PlayCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 import MainLayout from '@/components/MainLayout';
-import { Card, CardContent } from '@/components/ui/card';
+import { MetricCard } from '@/components/layout/MetricCard';
 import { TaskBoardView } from '@/features/work/components/TaskBoardView';
 import { TaskListView } from '@/features/work/components/TaskListView';
 import { TaskTableView } from '@/features/work/components/TaskTableView';
@@ -33,24 +33,24 @@ import type {
 } from '@/types/hierarchy';
 
 const METRIC_CARDS = [
-  { key: 'pending', label: 'Pendentes', icon: Clock3, color: 'text-amber-600' },
+  { key: 'pending', label: 'Pendentes', icon: Clock3, tone: 'warning' },
   {
     key: 'inProgress',
     label: 'Em progresso',
     icon: PlayCircle,
-    color: 'text-blue-600',
+    tone: 'primary',
   },
   {
     key: 'completed',
     label: 'Concluídas',
     icon: CheckCircle2,
-    color: 'text-emerald-600',
+    tone: 'success',
   },
   {
     key: 'overdue',
     label: 'Atrasadas',
     icon: AlertTriangle,
-    color: 'text-red-600',
+    tone: 'danger',
   },
 ] as const;
 
@@ -115,7 +115,7 @@ export default function WorkTasks() {
 
   return (
     <MainLayout module="work" showGlobalFab={false}>
-      <div className="space-y-6 pb-10">
+      <div className="app-page">
         <WorkPageHeader
           eyebrow={treeQuery.data?.name ?? 'Work Management'}
           title="Minhas tarefas"
@@ -123,19 +123,17 @@ export default function WorkTasks() {
           actions={<WorkViewSwitcher value={view} onChange={setView} />}
         />
 
-        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {METRIC_CARDS.map((metric) => {
             const Icon = metric.icon;
             return (
-              <Card key={metric.key}>
-                <CardContent className="flex items-center gap-3 p-4">
-                  <Icon className={`h-5 w-5 ${metric.color}`} />
-                  <div>
-                    <p className="text-xl font-semibold">{metrics[metric.key]}</p>
-                    <p className="text-xs text-muted-foreground">{metric.label}</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <MetricCard
+                key={metric.key}
+                label={metric.label}
+                value={metrics[metric.key]}
+                icon={Icon}
+                tone={metric.tone}
+              />
             );
           })}
         </section>

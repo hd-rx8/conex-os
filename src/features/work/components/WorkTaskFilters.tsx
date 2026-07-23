@@ -1,6 +1,7 @@
 import { Search, SlidersHorizontal } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
+import { PageToolbar } from '@/components/layout/PageToolbar';
 import {
   Select,
   SelectContent,
@@ -22,7 +23,7 @@ export function WorkTaskFilters({
   projects = [],
 }: WorkTaskFiltersProps) {
   return (
-    <div className="flex flex-col gap-3 rounded-xl border bg-card p-3 lg:flex-row">
+    <PageToolbar>
       <label className="relative flex-1">
         <span className="sr-only">Buscar tarefas</span>
         <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -36,14 +37,14 @@ export function WorkTaskFilters({
           }
         />
       </label>
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap">
         <Select
           value={value.status ?? 'all'}
           onValueChange={(status) =>
             onChange({ ...value, status: status === 'all' ? undefined : status })
           }
         >
-          <SelectTrigger className="w-40" aria-label="Status">
+          <SelectTrigger className="w-full lg:w-40" aria-label="Status">
             <SlidersHorizontal className="mr-2 h-4 w-4" />
             <SelectValue />
           </SelectTrigger>
@@ -66,7 +67,7 @@ export function WorkTaskFilters({
             })
           }
         >
-          <SelectTrigger className="w-36" aria-label="Prioridade">
+          <SelectTrigger className="w-full lg:w-36" aria-label="Prioridade">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -87,7 +88,7 @@ export function WorkTaskFilters({
               })
             }
           >
-            <SelectTrigger className="w-44" aria-label="Projeto">
+            <SelectTrigger className="w-full lg:w-44" aria-label="Projeto">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -101,6 +102,6 @@ export function WorkTaskFilters({
           </Select>
         )}
       </div>
-    </div>
+    </PageToolbar>
   );
 }

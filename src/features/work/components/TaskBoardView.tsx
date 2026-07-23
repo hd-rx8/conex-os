@@ -31,7 +31,7 @@ export function TaskBoardView({
 }: TaskBoardViewProps) {
   return (
     <div
-      className="grid gap-4 overflow-x-auto pb-3 lg:grid-cols-3"
+      className="grid auto-cols-[minmax(280px,1fr)] grid-flow-col gap-4 overflow-x-auto pb-3 lg:grid-flow-row lg:grid-cols-3"
       data-testid="work-board-view"
     >
       {STATUSES.map((status) => {
@@ -39,7 +39,7 @@ export function TaskBoardView({
         return (
           <section
             key={status.value}
-            className="min-w-[280px] rounded-xl border bg-muted/25 p-3"
+            className="min-w-[280px] rounded-xl border bg-muted/25 p-3 shadow-sm"
             aria-labelledby={`work-column-${status.value}`}
           >
             <div className="mb-3 flex items-center justify-between">
@@ -54,7 +54,11 @@ export function TaskBoardView({
             </div>
             <div className="space-y-3">
               {statusTasks.map((task) => (
-                <Card key={task.id} draggable className="group bg-background">
+                <Card
+                  key={task.id}
+                  draggable
+                  className="group bg-background shadow-sm transition-shadow hover:shadow-md"
+                >
                   <CardContent className="space-y-3 p-3">
                     <div className="flex items-start gap-2">
                       <button

@@ -17,12 +17,12 @@ interface TaskTableViewProps {
 export function TaskTableView({ tasks, onTaskClick }: TaskTableViewProps) {
   return (
     <div
-      className="overflow-x-auto rounded-xl border bg-card"
+      className="app-table-wrap"
       data-testid="work-table-view"
     >
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="bg-muted/40 hover:bg-muted/40">
             <TableHead className="min-w-64">Tarefa</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Prioridade</TableHead>
@@ -36,7 +36,7 @@ export function TaskTableView({ tasks, onTaskClick }: TaskTableViewProps) {
           {tasks.map((task) => (
             <TableRow
               key={task.id}
-              className="cursor-pointer"
+              className="h-16 cursor-pointer hover:bg-muted/30"
               onClick={() => onTaskClick?.(task)}
             >
               <TableCell className="font-medium">{task.title}</TableCell>

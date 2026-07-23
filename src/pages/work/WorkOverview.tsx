@@ -10,8 +10,8 @@ import {
 } from 'lucide-react';
 
 import MainLayout from '@/components/MainLayout';
+import { MetricCard } from '@/components/layout/MetricCard';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -37,10 +37,10 @@ import {
 import { deriveWorkTaskMetrics } from '@/features/work/view/workTaskSelectors';
 
 const METRIC_STYLE = [
-  { icon: FolderKanban, className: 'text-blue-600 bg-blue-500/10' },
-  { icon: TrendingUp, className: 'text-indigo-600 bg-indigo-500/10' },
-  { icon: Clock3, className: 'text-amber-600 bg-amber-500/10' },
-  { icon: CheckCircle2, className: 'text-emerald-600 bg-emerald-500/10' },
+  { icon: FolderKanban, tone: 'primary' },
+  { icon: TrendingUp, tone: 'primary' },
+  { icon: Clock3, tone: 'warning' },
+  { icon: CheckCircle2, tone: 'success' },
 ] as const;
 
 export default function WorkOverview() {
@@ -151,31 +151,25 @@ export default function WorkOverview() {
 
   return (
     <MainLayout module="work" showGlobalFab={false}>
-      <div className="space-y-6 pb-10">
+      <div className="app-page">
         <WorkPageHeader
           eyebrow={treeQuery.data.name}
           title="Visão geral"
           description="Acompanhe projetos, prazos e produtividade em um único lugar."
         />
 
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {metrics.map((metric, index) => {
             const Icon = METRIC_STYLE[index].icon;
             return (
-              <Card key={metric.label}>
-                <CardContent className="flex items-center justify-between p-5">
-                  <div>
-                    <p className="text-sm text-muted-foreground">{metric.label}</p>
-                    <p className="mt-1 text-2xl font-semibold">{metric.value}</p>
-                    <p className="text-xs text-muted-foreground">{metric.detail}</p>
-                  </div>
-                  <span
-                    className={`rounded-xl p-3 ${METRIC_STYLE[index].className}`}
-                  >
-                    <Icon className="h-5 w-5" />
-                  </span>
-                </CardContent>
-              </Card>
+              <MetricCard
+                key={metric.label}
+                label={metric.label}
+                value={metric.value}
+                detail={metric.detail}
+                icon={Icon}
+                tone={METRIC_STYLE[index].tone}
+              />
             );
           })}
         </section>
@@ -203,10 +197,10 @@ export default function WorkOverview() {
             </label>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border bg-card">
+          <div className="app-table-wrap">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="bg-muted/40 hover:bg-muted/40">
                   <TableHead>Projeto</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Tarefas</TableHead>
@@ -229,7 +223,7 @@ export default function WorkOverview() {
                   return (
                     <TableRow
                       key={project.id}
-                      className="cursor-pointer"
+                      className="h-16 cursor-pointer hover:bg-muted/30"
                       onClick={() => navigate(`/work/project/${project.id}`)}
                     >
                       <TableCell>

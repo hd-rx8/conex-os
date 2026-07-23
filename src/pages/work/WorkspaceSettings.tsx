@@ -7,10 +7,14 @@ import MainLayout from '@/components/MainLayout';
 import CreateWorkspaceModal from '@/components/modals/CreateWorkspaceModal';
 import EditWorkspaceModal from '@/components/modals/EditWorkspaceModal';
 import DeleteConfirmDialog from '@/components/modals/DeleteConfirmDialog';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import {
+  WorkEmptyState,
+  WorkLoadingState,
+} from '@/features/work/components/WorkStates';
 import { toast } from 'sonner';
 import type { Workspace } from '@/types/hierarchy';
 
@@ -64,8 +68,13 @@ const WorkspaceSettings: React.FC = () => {
   if (loading) {
     return (
       <MainLayout module="work">
-        <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-          <p className="text-muted-foreground">Carregando workspaces...</p>
+        <div className="app-page">
+          <PageHeader
+            eyebrow="Work Management"
+            title="Workspaces"
+            description="Configure setores, equipes e a estrutura dos seus projetos."
+          />
+          <WorkLoadingState label="Carregando workspaces…" />
         </div>
       </MainLayout>
     );
@@ -73,62 +82,63 @@ const WorkspaceSettings: React.FC = () => {
 
   return (
     <MainLayout module="work">
-      <div className="space-y-6 p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <div className="app-page">
+        <PageHeader
+          eyebrow="Work Management"
+          title="Workspaces"
+          description="Configure setores, equipes e a estrutura dos seus projetos."
+          breadcrumbs={
             <Button
               variant="ghost"
-              size="icon"
+              size="sm"
+              className="-ml-3 w-fit text-muted-foreground"
               onClick={() => navigate('/work')}
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar para a visão geral
             </Button>
-            <div>
-              <h1 className="text-2xl font-bold">Gerenciar Workspaces</h1>
-              <p className="text-sm text-muted-foreground">
-                Configure seus workspaces (setores) e organize seus projetos
-              </p>
-            </div>
-          </div>
-
-          <Button onClick={() => setIsCreateOpen(true)}>
+          }
+          actions={
+            <Button onClick={() => setIsCreateOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Novo Workspace
-          </Button>
-        </div>
+            </Button>
+          }
+        />
 
-        <Separator />
-
-        {/* Workspaces List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {workspaces.map((workspace) => (
-            <Card key={workspace.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
+            <Card
+              key={workspace.id}
+              className="overflow-hidden shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+            >
+              <CardHeader className="pb-4">
+                <div className="flex min-w-0 items-start gap-3">
                     <div
-                      className="flex items-center justify-center w-12 h-12 rounded-lg text-2xl"
+                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl shadow-sm"
                       style={{ backgroundColor: workspace.color || '#3B82F6' }}
                     >
                       {workspace.icon || '🏢'}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg truncate">{workspace.name}</CardTitle>
+                    <div className="min-w-0 flex-1">
+                      <CardTitle className="truncate text-lg" title={workspace.name}>
+                        {workspace.name}
+                      </CardTitle>
                       {workspace.description && (
-                        <CardDescription className="line-clamp-2 mt-1">
+                        <CardDescription className="mt-1 line-clamp-2 min-h-10">
                           {workspace.description}
                         </CardDescription>
                       )}
                     </div>
-                  </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="border-t bg-muted/20 pt-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Users className="h-4 w-4" />
-                    <span>{workspace.owner === user?.id ? 'Proprietário' : 'Membro'}</span>
+                    <Badge variant="secondary" className="font-normal">
+                      {workspace.owner === user?.id ? 'Proprietário' : 'Membro'}
+                    </Badge>
                   </div>
 
                   <div className="flex gap-1">
@@ -138,16 +148,18 @@ const WorkspaceSettings: React.FC = () => {
                       className="h-8 w-8"
                       onClick={() => setEditingWorkspace(workspace)}
                       title="Editar"
+                      aria-label={`Editar workspace ${workspace.name}`}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
+                      className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
                       onClick={() => setDeletingWorkspace(workspace)}
                       disabled={workspace.owner !== user?.id}
                       title={workspace.owner !== user?.id ? 'Apenas o proprietário pode excluir' : 'Excluir'}
+                      aria-label={`Excluir workspace ${workspace.name}`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -158,20 +170,18 @@ const WorkspaceSettings: React.FC = () => {
           ))}
 
           {workspaces.length === 0 && (
-            <Card className="col-span-full">
-              <CardContent className="py-12">
-                <div className="text-center space-y-4">
-                  <p className="text-lg font-medium">Nenhum workspace encontrado</p>
-                  <p className="text-sm text-muted-foreground">
-                    Crie seu primeiro workspace para começar a organizar seus projetos
-                  </p>
+            <div className="col-span-full">
+              <WorkEmptyState
+                title="Nenhum workspace encontrado"
+                description="Crie seu primeiro workspace para começar a organizar seus projetos."
+                action={
                   <Button onClick={() => setIsCreateOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Criar Workspace
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
+                }
+              />
+            </div>
           )}
         </div>
       </div>

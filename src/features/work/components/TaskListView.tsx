@@ -15,9 +15,9 @@ export function TaskListView({ tasks, onTaskClick }: TaskListViewProps) {
       {tasks.map((task) => (
         <Card
           key={task.id}
-          className="transition-colors hover:border-primary/30 hover:bg-muted/20"
+          className="shadow-sm transition-all hover:border-primary/30 hover:bg-muted/20 hover:shadow-md"
         >
-          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+          <CardContent className="flex min-h-20 flex-col gap-3 p-4 sm:flex-row sm:items-center">
             <button
               type="button"
               className="min-w-0 flex-1 text-left"

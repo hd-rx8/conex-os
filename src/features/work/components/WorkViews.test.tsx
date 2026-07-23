@@ -71,5 +71,13 @@ describe('WorkViewSwitcher', () => {
       'aria-pressed',
       'true',
     );
+    expect(screen.getByRole('button', { name: 'Tabela' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    expect(screen.getByRole('button', { name: 'Kanban' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
   });
 });

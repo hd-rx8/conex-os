@@ -5,6 +5,8 @@ import { toast } from 'sonner';
 
 import HierarchyNavigator from '@/components/HierarchyNavigator';
 import MainLayout from '@/components/MainLayout';
+import { ContentCard } from '@/components/layout/ContentCard';
+import { PageToolbar } from '@/components/layout/PageToolbar';
 import CreateProjectModal from '@/components/modals/CreateProjectModal';
 import CreateWorkspaceModal from '@/components/modals/CreateWorkspaceModal';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
+import { WorkPageHeader } from '@/features/work/components/WorkPageHeader';
 import {
   useCreateSpaceMutation,
   useListTasksQuery,
@@ -193,60 +195,63 @@ const WorkManagement = () => {
 
   return (
     <MainLayout module="work" showGlobalFab={false}>
-      <div className="flex h-[calc(100vh-80px)] gap-4">
-        <aside className="w-80 border-r bg-card">
-          <div className="space-y-4 p-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-muted-foreground">
-                  WORKSPACE
-                </h3>
-                <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                    onClick={() => navigate('/work/workspaces')}
-                    title="Gerenciar workspaces"
-                  >
-                    <Settings className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                    onClick={() => setIsCreateWorkspaceOpen(true)}
-                    title="Criar workspace"
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-              <select
-                className="w-full rounded-md border bg-background p-2"
-                value={selectedWorkspaceId}
-                onChange={(event) => handleWorkspaceChange(event.target.value)}
+      <div className="app-page">
+        <WorkPageHeader
+          eyebrow={selectedWorkspace.name}
+          title="Workspaces e projetos"
+          description="Organize a estrutura do workspace e acesse as tarefas de cada lista."
+          actions={(
+            <>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/work/workspaces')}
+                className="gap-2"
               >
-                {workspaces.map((workspace) => (
-                  <option key={workspace.id} value={workspace.id}>
-                    {workspace.icon} {workspace.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <Settings className="h-4 w-4" />
+                Gerenciar
+              </Button>
+              <Button
+                onClick={() => setIsCreateWorkspaceOpen(true)}
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Novo workspace
+              </Button>
+            </>
+          )}
+        />
 
-            <Separator />
-
-            <Button
-              onClick={() => setIsCreateProjectOpen(true)}
-              className="w-full"
-              size="sm"
+        <PageToolbar>
+          <label className="flex min-w-0 flex-1 flex-col gap-2 text-sm font-medium">
+            Workspace atual
+            <select
+              className="h-10 w-full min-w-0 rounded-md border bg-background px-3 text-sm"
+              value={selectedWorkspaceId}
+              onChange={(event) => handleWorkspaceChange(event.target.value)}
             >
-              <Plus className="mr-2 h-4 w-4" />
-              Criar projeto
-            </Button>
+              {workspaces.map((workspace) => (
+                <option key={workspace.id} value={workspace.id}>
+                  {workspace.icon} {workspace.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button
+            variant="outline"
+            onClick={() => setIsCreateProjectOpen(true)}
+            className="gap-2 lg:self-end"
+          >
+            <Plus className="h-4 w-4" />
+            Criar projeto
+          </Button>
+        </PageToolbar>
 
-            <ScrollArea className="h-[calc(100vh-320px)]">
+        <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(300px,0.9fr)_minmax(0,2fr)]">
+          <ContentCard
+            title="Estrutura"
+            description="Projetos, pastas e listas do workspace selecionado."
+          >
+            <ScrollArea className="h-[520px] pr-3">
               <HierarchyNavigator
                 workspace={selectedWorkspace}
                 selectedListId={selectedListId}
@@ -260,53 +265,48 @@ const WorkManagement = () => {
                 }
               />
             </ScrollArea>
-          </div>
-        </aside>
+          </ContentCard>
 
-        <main className="flex-1 p-4">
-          {selectedListId ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold">{selectedListName}</h1>
-                  <p className="text-sm text-muted-foreground">
-                    {tasks.length} {tasks.length === 1 ? 'tarefa' : 'tarefas'}
-                  </p>
-                </div>
-                <Button onClick={() => toast.info('Criação de tarefa em desenvolvimento')}>
-                  <Plus className="mr-2 h-4 w-4" />
+          <ContentCard
+            title={selectedListName || 'Tarefas da lista'}
+            description={
+              selectedListId
+                ? `${tasks.length} ${tasks.length === 1 ? 'tarefa' : 'tarefas'}`
+                : 'Selecione uma lista na estrutura para visualizar suas tarefas.'
+            }
+            action={
+              selectedListId ? (
+                <Button
+                  onClick={() => toast.info('Criação de tarefa em desenvolvimento')}
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
                   Nova tarefa
                 </Button>
-              </div>
-
-              <Separator />
-
+              ) : undefined
+            }
+          >
+            {selectedListId ? (
               <div className="space-y-3">
                 {tasksQuery.isLoading ? (
-                  <p className="py-8 text-center text-muted-foreground">
+                  <p className="py-12 text-center text-muted-foreground">
                     Carregando tarefas…
                   </p>
                 ) : tasks.length === 0 ? (
-                  <Card>
-                    <CardContent className="py-12 text-center">
-                      Nenhuma tarefa encontrada
-                    </CardContent>
-                  </Card>
+                  <div className="rounded-xl border border-dashed py-12 text-center text-muted-foreground">
+                    Nenhuma tarefa encontrada
+                  </div>
                 ) : (
                   tasks.map((task) => <TaskCard key={task.id} task={task} />)
                 )}
               </div>
-            </div>
-          ) : (
-            <div className="flex h-full items-center justify-center">
-              <Card className="w-full max-w-md">
-                <CardContent className="py-12 text-center">
-                  Selecione uma lista para visualizar as tarefas
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </main>
+            ) : (
+              <div className="flex min-h-[360px] items-center justify-center rounded-xl border border-dashed text-center text-sm text-muted-foreground">
+                Selecione uma lista para visualizar as tarefas
+              </div>
+            )}
+          </ContentCard>
+        </div>
       </div>
 
       <CreateWorkspaceModal

@@ -136,5 +136,6 @@ describe('WorkManagement states', () => {
 
     renderPage();
     expect(screen.getByText('Árvore: Workspace principal')).toBeInTheDocument();
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
   });
 });

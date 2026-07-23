@@ -23,6 +23,7 @@ export function WorkViewSwitcher({
     <div
       className="inline-flex items-center rounded-lg border bg-muted/40 p-1"
       aria-label="Visualização das tarefas"
+      role="group"
     >
       {VIEW_OPTIONS.map((option) => {
         const Icon = option.icon;
