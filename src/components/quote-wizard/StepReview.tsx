@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import QuoteResult, { QuoteResultRef } from '@/components/QuoteResult'; // Import QuoteResultRef
 import { useQuoteWizard } from '@/context/QuoteWizardContext';
-import { Loader2, Save, Link as LinkIcon, ClipboardCopy, Printer, Send } from 'lucide-react'; // Import Printer and Send
+import { Loader2, Save, Link as LinkIcon, ClipboardCopy, Printer, Send, Eye, X } from 'lucide-react'; // Import Printer and Send
 import { useSession } from '@/hooks/useSession';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,15 +21,38 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 
+const getSafeReturnTo = (returnTo: unknown) => (
+  returnTo === '/' || returnTo === '/opportunities' || returnTo === '/clients'
+    ? returnTo
+    : '/opportunities'
+);
+
+const getSaveErrorMessage = (error: string | null) => {
+  switch (error) {
+    case 'locked':
+      return 'Esta proposta não pode mais ser alterada porque seu status foi atualizado.';
+    case 'conflict':
+      return 'Esta proposta foi alterada em outro lugar. Atualize os dados antes de tentar salvar novamente.';
+    case 'validation':
+      return 'Revise os campos obrigatórios antes de salvar as alterações.';
+    case 'unknown':
+      return 'Não foi possível salvar as alterações. Tente novamente.';
+    default:
+      return null;
+  }
+};
+
 const StepReview: React.FC = () => {
   const { user } = useSession();
   const navigate = useNavigate();
+  const location = useLocation();
   const quoteResultRef = useRef<QuoteResultRef>(null); // Create a ref for QuoteResult
 
   const {
     selectedServices, clientInfo, cashDiscountPercentage,
     calculateOriginalSubtotal, calculateTotal, calculateCashDiscount, calculateFinalTotal,
     getSelectedPayment, getTotalInstallmentValue, notes, isValidityEnabled, validityDays,
+    mode, isSaving, saveError, saveProposalChanges, reloadProposal,
     generateShareableLink, registerProposal,
     proposalTitle, proposalLogoUrl, proposalGradientTheme,
     generatedShareLink, isGeneratingLink, paymentType, installmentValue, manualInstallmentTotal
@@ -37,6 +60,7 @@ const StepReview: React.FC = () => {
 
   const [isRegistering, setIsRegistering] = React.useState(false);
   const [isShareLinkDialogOpen, setIsShareLinkDialogOpen] = React.useState(false);
+  const safeReturnTo = getSafeReturnTo((location.state as { returnTo?: unknown } | null)?.returnTo);
 
   const handleGenerateShareableLink = async () => {
     if (!user?.id) {
@@ -62,6 +86,16 @@ const StepReview: React.FC = () => {
     }
   };
 
+  const handleSaveChanges = async () => {
+    if (!saveProposalChanges || isSaving) return;
+
+    const success = await saveProposalChanges();
+    if (success) {
+      toast.success('Alterações salvas com sucesso.');
+      navigate(safeReturnTo, { replace: true });
+    }
+  };
+
   const handleCopyLink = () => {
     if (generatedShareLink) {
       navigator.clipboard.writeText(generatedShareLink);
@@ -75,6 +109,14 @@ const StepReview: React.FC = () => {
 
   const handleShare = () => {
     quoteResultRef.current?.handleWhatsApp();
+  };
+
+  const handleViewProposal = () => {
+    if (!generatedShareLink) {
+      toast.error('O link desta proposta não está disponível.');
+      return;
+    }
+    window.open(generatedShareLink, '_blank', 'noopener,noreferrer');
   };
 
   const canProceed = selectedServices.length > 0 && clientInfo.name && clientInfo.email && proposalTitle;
@@ -155,50 +197,93 @@ const StepReview: React.FC = () => {
           )}
         </CardContent>
       </Card>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8"> {/* Grid for 4 buttons */}
-        {/* 1. Gerar Link Compartilhável (sem cor) */}
-        <Button
-          onClick={handleGenerateShareableLink}
-          disabled={!canProceed || isGeneratingLink || isRegistering}
-          variant="outline"
-          className="flex items-center space-x-2"
-        >
-          {isGeneratingLink && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          <LinkIcon className="w-4 h-4" />
-          <span>Gerar Link Compartilhável</span>
-        </Button>
-        
-        {/* 2. Imprimir Proposta (colorido) */}
-        <Button onClick={handlePrint} className="gradient-button-bg flex items-center space-x-2">
-          <Printer className="w-4 h-4" />
-          <span>Imprimir Proposta</span>
-        </Button>
+      {mode === 'edit' ? (
+        <>
+          {getSaveErrorMessage(saveError) && (
+            <Alert className="border-destructive/30 bg-destructive/5">
+              <AlertCircle className="h-4 w-4 text-destructive" />
+              <AlertDescription className="flex flex-wrap items-center gap-3 text-destructive">
+                <span>{getSaveErrorMessage(saveError)}</span>
+                {(saveError === 'locked' || saveError === 'conflict') && (
+                  <Button variant="outline" size="sm" onClick={() => void reloadProposal()}>
+                    Atualizar proposta
+                  </Button>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mt-8">
+            <Button variant="outline" onClick={() => navigate(safeReturnTo)}>
+              <X className="w-4 h-4" />
+              <span>Cancelar</span>
+            </Button>
+            <Button variant="outline" onClick={handleViewProposal} disabled={!generatedShareLink}>
+              <Eye className="w-4 h-4" />
+              <span>Visualizar proposta</span>
+            </Button>
+            {generatedShareLink && (
+              <Button variant="outline" onClick={handleCopyLink}>
+                <ClipboardCopy className="w-4 h-4" />
+                <span>Copiar link</span>
+              </Button>
+            )}
+            <Button
+              onClick={() => void handleSaveChanges()}
+              disabled={!canProceed || isSaving}
+              className="gradient-button-bg"
+            >
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Save className="w-4 h-4" />
+              <span>Salvar alterações</span>
+            </Button>
+          </div>
+        </>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8"> {/* Grid for 4 buttons */}
+          {/* 1. Gerar Link Compartilhável (sem cor) */}
+          <Button
+            onClick={handleGenerateShareableLink}
+            disabled={!canProceed || isGeneratingLink || isRegistering}
+            variant="outline"
+            className="flex items-center space-x-2"
+          >
+            {isGeneratingLink && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <LinkIcon className="w-4 h-4" />
+            <span>Gerar Link Compartilhável</span>
+          </Button>
 
-        {/* 3. Enviar por WhatsApp (sem cor) */}
-        <Button
-          onClick={handleShare}
-          disabled={!generatedShareLink}
-          variant="outline"
-          className="flex items-center space-x-2"
-        >
-          <Send className="w-4 h-4" />
-          <span>Enviar por WhatsApp</span>
-        </Button>
+          {/* 2. Imprimir Proposta (colorido) */}
+          <Button onClick={handlePrint} className="gradient-button-bg flex items-center space-x-2">
+            <Printer className="w-4 h-4" />
+            <span>Imprimir Proposta</span>
+          </Button>
 
-        {/* 4. Salvar Proposta (colorido) */}
-        <Button
-          onClick={handleRegisterProposal}
-          disabled={!canProceed || isRegistering || isGeneratingLink}
-          className="gradient-button-bg flex items-center space-x-2"
-        >
-          {isRegistering && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          <Save className="w-4 h-4" />
-          <span>Salvar Proposta</span>
-        </Button>
-      </div>
+          {/* 3. Enviar por WhatsApp (sem cor) */}
+          <Button
+            onClick={handleShare}
+            disabled={!generatedShareLink}
+            variant="outline"
+            className="flex items-center space-x-2"
+          >
+            <Send className="w-4 h-4" />
+            <span>Enviar por WhatsApp</span>
+          </Button>
+
+          {/* 4. Salvar Proposta (colorido) */}
+          <Button
+            onClick={handleRegisterProposal}
+            disabled={!canProceed || isRegistering || isGeneratingLink}
+            className="gradient-button-bg flex items-center space-x-2"
+          >
+            {isRegistering && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Save className="w-4 h-4" />
+            <span>Salvar Proposta</span>
+          </Button>
+        </div>
+      )}
 
       {/* Share Link Dialog */}
-      <AlertDialog open={isShareLinkDialogOpen} onOpenChange={setIsShareLinkDialogOpen}>
+      {mode === 'create' && <AlertDialog open={isShareLinkDialogOpen} onOpenChange={setIsShareLinkDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Link Compartilhável Gerado!</AlertDialogTitle>
@@ -217,7 +302,7 @@ const StepReview: React.FC = () => {
             <AlertDialogAction onClick={() => setIsShareLinkDialogOpen(false)}>Fechar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
+      </AlertDialog>}
     </div>
   );
 };

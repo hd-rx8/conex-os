@@ -1,6 +1,10 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useNavigate } from 'react-router-dom';
+import { useProposals } from '@/hooks/useProposals';
 import Stepper from '@/components/Stepper';
 import { useQuoteWizard } from '@/context/QuoteWizardContext';
 import StepServices from '@/components/quote-wizard/StepServices';
@@ -16,7 +20,25 @@ interface QuoteGeneratorPageProps {
 }
 
 const QuoteGeneratorPage: React.FC<QuoteGeneratorPageProps> = ({ userId }) => {
-  const { currentStep, goToNextStep, goToPreviousStep, steps, selectedServices, clientInfo, proposalTitle } = useQuoteWizard();
+  const navigate = useNavigate();
+  const { duplicateProposal } = useProposals();
+  const {
+    mode,
+    proposalMeta,
+    isHydrating,
+    loadError,
+    isLocked,
+    isDirty,
+    currentStep,
+    goToNextStep,
+    goToPreviousStep,
+    reloadProposal,
+    steps,
+    selectedServices,
+    clientInfo,
+    proposalTitle,
+  } = useQuoteWizard();
+  const isEditing = mode === 'edit';
 
   const renderStepContent = () => {
     switch (steps[currentStep].id) {
@@ -49,14 +71,109 @@ const QuoteGeneratorPage: React.FC<QuoteGeneratorPageProps> = ({ userId }) => {
     }
   };
 
+  const handleDuplicateProposal = async () => {
+    if (!proposalMeta) return;
+
+    const { data, error } = await duplicateProposal(proposalMeta.id, userId);
+    if (!error && data?.id) {
+      navigate(`/generator/${data.id}/edit`);
+    }
+  };
+
+  const header = (
+    <PageHeader
+      eyebrow="CRM"
+      title={isEditing ? 'Editando proposta' : 'Gerador de propostas'}
+      description={isEditing && proposalMeta
+        ? proposalMeta.title
+        : `Etapa ${currentStep + 1} de ${steps.length}: ${steps[currentStep]?.name || 'Configuração'}.`}
+      actions={isEditing && proposalMeta ? (
+        <>
+          <Badge variant="outline">{proposalMeta.status}</Badge>
+          {isDirty && <Badge variant="secondary">Alterações não salvas</Badge>}
+        </>
+      ) : undefined}
+    />
+  );
+
+  if (isEditing && isHydrating) {
+    return (
+      <MainLayout module="crm">
+        <div className="app-page">
+          {header}
+          <div className="mx-auto w-full max-w-6xl" data-testid="proposal-editor-loading">
+            <ContentCard contentClassName="space-y-6 p-4 sm:p-6">
+              <Skeleton className="h-8 w-56" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-[360px] w-full" />
+              <div className="flex justify-between border-t pt-4">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-24" />
+              </div>
+            </ContentCard>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (isEditing && loadError) {
+    return (
+      <MainLayout module="crm">
+        <div className="app-page">
+          {header}
+          <div className="mx-auto w-full max-w-3xl">
+            <ContentCard
+              title="Não foi possível abrir a proposta"
+              description="Não foi possível abrir esta proposta. Ela pode não existir ou não estar disponível para sua conta."
+              contentClassName="flex flex-wrap gap-3 p-4 sm:p-6"
+            >
+              <Button onClick={() => void reloadProposal()}>Tentar novamente</Button>
+              <Button variant="outline" onClick={() => navigate('/opportunities')}>Voltar para oportunidades</Button>
+            </ContentCard>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (isEditing && isLocked) {
+    const status = proposalMeta?.status ?? 'finalizada';
+    return (
+      <MainLayout module="crm">
+        <div className="app-page">
+          {header}
+          <div className="mx-auto w-full max-w-3xl">
+            <ContentCard
+              title="Proposta bloqueada para edição"
+              description={`Esta proposta está ${status} e não pode mais ser alterada. Você ainda pode visualizá-la ou criar uma cópia editável.`}
+              contentClassName="flex flex-wrap gap-3 p-4 sm:p-6"
+            >
+              <Button
+                onClick={() => {
+                  if (proposalMeta?.shareToken) window.open(`/p/${proposalMeta.shareToken}`, '_blank', 'noopener,noreferrer');
+                }}
+                disabled={!proposalMeta?.shareToken}
+              >
+                Visualizar proposta
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => void handleDuplicateProposal()}
+              >
+                Duplicar proposta
+              </Button>
+            </ContentCard>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout module="crm">
       <div className="app-page">
-        <PageHeader
-          eyebrow="CRM"
-          title="Gerador de propostas"
-          description={`Etapa ${currentStep + 1} de ${steps.length}: ${steps[currentStep]?.name || 'Configuração'}.`}
-        />
+        {header}
 
         <div className="mx-auto w-full max-w-6xl">
           <ContentCard
