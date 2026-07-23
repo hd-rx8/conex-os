@@ -3,9 +3,9 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
-  useWorkContext,
   WorkContextProvider,
 } from './WorkContext';
+import { useWorkContext } from './workContextState';
 
 function wrapper({ children }: PropsWithChildren) {
   return <WorkContextProvider>{children}</WorkContextProvider>;

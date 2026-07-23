@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { AppModuleProvider, useAppModule } from "./context/AppModuleContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -18,13 +18,6 @@ import ProposalPrint from "./pages/crm/ProposalPrint";
 import Clients from "./pages/crm/Clients";
 import QuoteGeneratorPage from "./pages/crm/QuoteGeneratorPage";
 import PublicProposalView from "./pages/crm/PublicProposalView";
-// Importar Work Management (hierarquia)
-import WorkOverview from "./pages/work/WorkOverview";
-import WorkTasks from "./pages/work/WorkTasks";
-import WorkBoard from "./pages/work/WorkBoard";
-import ProjectDetails from "./pages/work/ProjectDetails";
-import WorkspaceSettings from "./pages/work/WorkspaceSettings";
-import ListDetails from "./pages/work/ListDetails";
 import { useSession } from "./hooks/useSession";
 import { useUsers } from "./hooks/useUsers";
 import ModuleProtectedRoute from "./components/ModuleProtectedRoute";
@@ -40,6 +33,13 @@ import {
   WORK_WORKSPACES,
 } from "./features/work/navigation/workRoutes";
 import { WorkContextProvider } from "./features/work/context/WorkContext";
+
+const WorkOverview = lazy(() => import("./pages/work/WorkOverview"));
+const WorkTasks = lazy(() => import("./pages/work/WorkTasks"));
+const WorkBoard = lazy(() => import("./pages/work/WorkBoard"));
+const ProjectDetails = lazy(() => import("./pages/work/ProjectDetails"));
+const WorkspaceSettings = lazy(() => import("./pages/work/WorkspaceSettings"));
+const ListDetails = lazy(() => import("./pages/work/ListDetails"));
 
 const queryClient = new QueryClient();
 
@@ -61,7 +61,14 @@ const AppContent = () => {
 
   return (
     <QuoteWizardProvider userId={user?.id || ''}>
-      <Routes>
+      <Suspense
+        fallback={
+          <div className="flex min-h-[50vh] items-center justify-center text-sm text-muted-foreground">
+            Carregando módulo…
+          </div>
+        }
+      >
+        <Routes>
         {/* Rotas do módulo CRM */}
         <Route 
           path="/" 
@@ -204,7 +211,8 @@ const AppContent = () => {
           element={<PublicProposalView />}
         />
         <Route path="*" element={<NotFound />} />
-      </Routes>
+        </Routes>
+      </Suspense>
     </QuoteWizardProvider>
   );
 };

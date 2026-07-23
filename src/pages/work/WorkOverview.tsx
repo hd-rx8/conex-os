@@ -28,7 +28,7 @@ import {
   WorkErrorState,
   WorkLoadingState,
 } from '@/features/work/components/WorkStates';
-import { useWorkContext } from '@/features/work/context/WorkContext';
+import { useWorkContext } from '@/features/work/context/workContextState';
 import {
   useWorkspaceTasksQuery,
   useWorkspacesQuery,

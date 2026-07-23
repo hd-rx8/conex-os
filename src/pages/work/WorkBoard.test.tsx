@@ -49,7 +49,7 @@ const queries = vi.hoisted(() => ({
 vi.mock('@/components/MainLayout', () => ({
   default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
-vi.mock('@/features/work/context/WorkContext', () => ({
+vi.mock('@/features/work/context/workContextState', () => ({
   useWorkContext: () => ({ selectedWorkspaceId: 'workspace-1' }),
 }));
 vi.mock('@/features/work/hooks/useWorkData', () => ({

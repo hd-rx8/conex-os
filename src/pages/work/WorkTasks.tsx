@@ -15,7 +15,7 @@ import {
 } from '@/features/work/components/WorkStates';
 import { WorkTaskFilters } from '@/features/work/components/WorkTaskFilters';
 import { WorkViewSwitcher } from '@/features/work/components/WorkViewSwitcher';
-import { useWorkContext } from '@/features/work/context/WorkContext';
+import { useWorkContext } from '@/features/work/context/workContextState';
 import {
   useAssignedTasksQuery,
   useUpdateTaskMutation,

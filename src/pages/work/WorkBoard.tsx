@@ -12,7 +12,7 @@ import {
   WorkLoadingState,
 } from '@/features/work/components/WorkStates';
 import { WorkTaskFilters } from '@/features/work/components/WorkTaskFilters';
-import { useWorkContext } from '@/features/work/context/WorkContext';
+import { useWorkContext } from '@/features/work/context/workContextState';
 import {
   useUpdateTaskMutation,
   useWorkspaceTasksQuery,

@@ -39,7 +39,7 @@ import {
   WORK_TASKS,
   WORK_WORKSPACES,
 } from '@/features/work/navigation/workRoutes';
-import { useWorkContext } from '@/features/work/context/WorkContext';
+import { useWorkContext } from '@/features/work/context/workContextState';
 
 interface NavigationItem {
   id: string;
