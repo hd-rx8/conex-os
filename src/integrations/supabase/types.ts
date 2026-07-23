@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -35,186 +35,134 @@ export type Database = {
         }
         Relationships: []
       }
-      company_settings: {
-        Row: {
-          id: string
-          user_id: string
-          company_name: string | null
-          cnpj: string | null
-          phone: string | null
-          email: string | null
-          website: string | null
-          address: string | null
-          city: string | null
-          state: string | null
-          zip_code: string | null
-          logo_url: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          company_name?: string | null
-          cnpj?: string | null
-          phone?: string | null
-          email?: string | null
-          website?: string | null
-          address?: string | null
-          city?: string | null
-          state?: string | null
-          zip_code?: string | null
-          logo_url?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          company_name?: string | null
-          cnpj?: string | null
-          phone?: string | null
-          email?: string | null
-          website?: string | null
-          address?: string | null
-          city?: string | null
-          state?: string | null
-          zip_code?: string | null
-          logo_url?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "company_settings_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-
       clients: {
         Row: {
+          company: string | null
+          created_at: string | null
+          created_by: string | null
+          email: string | null
           id: string
           name: string
-          email: string | null
-          company: string | null
           phone: string | null
-          created_at: string
-          updated_at: string
-          created_by: string | null
+          updated_at: string | null
         }
         Insert: {
+          company?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
           id?: string
           name: string
-          email?: string | null
-          company?: string | null
           phone?: string | null
-          created_at?: string
-          updated_at?: string
-          created_by?: string | null
+          updated_at?: string | null
         }
         Update: {
+          company?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
           id?: string
           name?: string
-          email?: string | null
-          company?: string | null
           phone?: string | null
-          created_at?: string
-          updated_at?: string
-          created_by?: string | null
+          updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "clients_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      company_settings: {
+        Row: {
+          company_name: string
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          company_name: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          company_name?: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       custom_services: {
         Row: {
-          id: string
-          user_id: string
-          name: string
-          description: string
           base_price: number
-          features: string[]
+          billing_type: Database["public"]["Enums"]["billing_type"]
           category: string
-          icon: string
-          popular: boolean
           created_at: string
+          description: string
+          features: string[]
+          icon: string
+          id: string
+          name: string
+          popular: boolean
           updated_at: string
-          billing_type: Database["public"]["Enums"]["billing_type"] // Added billing_type
+          user_id: string
         }
         Insert: {
-          id?: string
-          user_id: string
-          name: string
-          description: string
           base_price?: number
-          features?: string[]
+          billing_type?: Database["public"]["Enums"]["billing_type"]
           category: string
-          icon?: string
-          popular?: boolean
           created_at?: string
+          description: string
+          features?: string[]
+          icon?: string
+          id?: string
+          name: string
+          popular?: boolean
           updated_at?: string
-          billing_type?: Database["public"]["Enums"]["billing_type"] // Added billing_type
+          user_id: string
         }
         Update: {
-          id?: string
-          user_id?: string
-          name?: string
-          description?: string
           base_price?: number
-          features?: string[]
+          billing_type?: Database["public"]["Enums"]["billing_type"]
           category?: string
-          icon?: string
-          popular?: boolean
           created_at?: string
+          description?: string
+          features?: string[]
+          icon?: string
+          id?: string
+          name?: string
+          popular?: boolean
           updated_at?: string
-          billing_type?: Database["public"]["Enums"]["billing_type"] // Added billing_type
+          user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "custom_services_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       projects: {
         Row: {
-          id: string
-          title: string
-          description: string | null
-          status: string
-          owner: string
           created_at: string
+          description: string | null
+          id: string
+          owner: string
+          status: string
+          title: string
           updated_at: string
         }
         Insert: {
-          id?: string
-          title: string
-          description?: string | null
-          status?: string
-          owner: string
           created_at?: string
+          description?: string | null
+          id?: string
+          owner: string
+          status?: string
+          title: string
           updated_at?: string
         }
         Update: {
-          id?: string
-          title?: string
-          description?: string | null
-          status?: string
-          owner?: string
           created_at?: string
+          description?: string | null
+          id?: string
+          owner?: string
+          status?: string
+          title?: string
           updated_at?: string
         }
         Relationships: [
@@ -224,75 +172,143 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "app_users"
             referencedColumns: ["id"]
-          }
+          },
+        ]
+      }
+      proposal_services: {
+        Row: {
+          base_price: number
+          billing_type: Database["public"]["Enums"]["billing_type"]
+          category: string | null
+          created_at: string | null
+          custom_price: number | null
+          description: string | null
+          discount: number | null
+          discount_percentage: number | null
+          discount_type: string | null
+          features: string[] | null
+          icon: string | null
+          id: string
+          is_custom: boolean | null
+          name: string
+          proposal_id: string
+          quantity: number
+          service_id: string
+        }
+        Insert: {
+          base_price: number
+          billing_type?: Database["public"]["Enums"]["billing_type"]
+          category?: string | null
+          created_at?: string | null
+          custom_price?: number | null
+          description?: string | null
+          discount?: number | null
+          discount_percentage?: number | null
+          discount_type?: string | null
+          features?: string[] | null
+          icon?: string | null
+          id?: string
+          is_custom?: boolean | null
+          name: string
+          proposal_id: string
+          quantity?: number
+          service_id: string
+        }
+        Update: {
+          base_price?: number
+          billing_type?: Database["public"]["Enums"]["billing_type"]
+          category?: string | null
+          created_at?: string | null
+          custom_price?: number | null
+          description?: string | null
+          discount?: number | null
+          discount_percentage?: number | null
+          discount_type?: string | null
+          features?: string[] | null
+          icon?: string | null
+          id?: string
+          is_custom?: boolean | null
+          name?: string
+          proposal_id?: string
+          quantity?: number
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_services_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
         ]
       }
       proposals: {
         Row: {
           amount: number
+          cash_discount_percentage: number | null
           client_id: string | null
           created_at: string
+          expected_close_date: string | null
           id: string
+          installment_number: number | null
+          installment_value: number | null
+          is_validity_enabled: boolean | null
+          manual_installment_total: number | null
+          notes: string | null
           owner: string
+          payment_type: string | null
+          proposal_gradient_theme: string | null
+          proposal_logo_url: string | null
+          share_token: string | null
           status: string
           title: string
           updated_at: string
-          share_token: string | null
-          notes: string | null // Added notes column
-          payment_type: string | null // Added payment_type
-          cash_discount_percentage: number | null // Added cash_discount_percentage
-          installment_number: number | null // Added installment_number
-          installment_value: number | null // Added installment_value
-          manual_installment_total: number | null // Added manual_installment_total
-          is_validity_enabled: boolean | null // Added is_validity_enabled
-          validity_days: number | null // Added validity_days
-          proposal_logo_url: string | null // Added proposal_logo_url
-          proposal_gradient_theme: string | null // Added proposal_gradient_theme
-          expected_close_date: string | null // NEW: expected_close_date
+          validity_days: number | null
         }
         Insert: {
           amount?: number
+          cash_discount_percentage?: number | null
           client_id?: string | null
           created_at?: string
+          expected_close_date?: string | null
           id?: string
+          installment_number?: number | null
+          installment_value?: number | null
+          is_validity_enabled?: boolean | null
+          manual_installment_total?: number | null
+          notes?: string | null
           owner: string
+          payment_type?: string | null
+          proposal_gradient_theme?: string | null
+          proposal_logo_url?: string | null
+          share_token?: string | null
           status?: string
           title: string
           updated_at?: string
-          share_token?: string
-          notes?: string | null // Added notes column
-          payment_type?: string | null // Added payment_type
-          cash_discount_percentage?: number | null // Added cash_discount_percentage
-          installment_number?: number | null // Added installment_number
-          installment_value?: number | null // Added installment_value
-          manual_installment_total?: number | null // Added manual_installment_total
-          is_validity_enabled?: boolean | null // Added is_validity_enabled
-          validity_days?: number | null // Added validity_days
-          proposal_logo_url?: string | null // Added proposal_logo_url
-          proposal_gradient_theme?: string | null // Added proposal_gradient_theme
-          expected_close_date?: string | null // NEW: expected_close_date
+          validity_days?: number | null
         }
         Update: {
           amount?: number
+          cash_discount_percentage?: number | null
           client_id?: string | null
           created_at?: string
+          expected_close_date?: string | null
           id?: string
+          installment_number?: number | null
+          installment_value?: number | null
+          is_validity_enabled?: boolean | null
+          manual_installment_total?: number | null
+          notes?: string | null
           owner?: string
+          payment_type?: string | null
+          proposal_gradient_theme?: string | null
+          proposal_logo_url?: string | null
+          share_token?: string | null
           status?: string
           title?: string
           updated_at?: string
-          share_token?: string
-          notes?: string | null // Added notes column
-          payment_type?: string | null // Added payment_type
-          cash_discount_percentage?: number | null // Added cash_discount_percentage
-          installment_number?: number | null // Added installment_number
-          installment_value?: number | null // Added installment_value
-          manual_installment_total?: number | null // Added manual_installment_total
-          is_validity_enabled?: boolean | null // Added is_validity_enabled
-          validity_days?: number | null // Added validity_days
-          proposal_logo_url?: string | null // Added proposal_logo_url
-          proposal_gradient_theme?: string | null // Added proposal_gradient_theme
-          expected_close_date?: string | null // NEW: expected_close_date
+          validity_days?: number | null
         }
         Relationships: [
           {
@@ -311,109 +327,51 @@ export type Database = {
           },
         ]
       }
-      proposal_services: { // New table proposal_services
-        Row: {
-          id: string
-          proposal_id: string
-          service_id: string
-          name: string
-          description: string | null
-          base_price: number
-          quantity: number
-          custom_price: number | null
-          discount: number
-          discount_percentage: number
-          discount_type: string
-          features: string[]
-          category: string | null
-          icon: string | null
-          is_custom: boolean
-          billing_type: Database["public"]["Enums"]["billing_type"]
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          proposal_id: string
-          service_id: string
-          name: string
-          description?: string | null
-          base_price: number
-          quantity?: number
-          custom_price?: number | null
-          discount?: number
-          discount_percentage?: number
-          discount_type?: string
-          features?: string[]
-          category?: string | null
-          icon?: string | null
-          is_custom?: boolean
-          billing_type?: Database["public"]["Enums"]["billing_type"]
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          proposal_id?: string
-          service_id?: string
-          name?: string
-          description?: string | null
-          base_price?: number
-          quantity?: number
-          custom_price?: number | null
-          discount?: number
-          discount_percentage?: number
-          discount_type?: string
-          features?: string[]
-          category?: string | null
-          icon?: string | null
-          is_custom?: boolean
-          billing_type?: Database["public"]["Enums"]["billing_type"]
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "proposal_services_proposal_id_fkey"
-            columns: ["proposal_id"]
-            isOneToOne: false
-            referencedRelation: "proposals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       tasks: {
         Row: {
-          id: string
-          project_id: string
-          title: string
-          description: string | null
-          status: string
-          due_date: string | null
-          owner: string
           created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          owner: string
+          priority: string
+          project_id: string
+          status: string
+          title: string
           updated_at: string
         }
         Insert: {
-          id?: string
-          project_id: string
-          title: string
-          description?: string | null
-          status?: string
-          due_date?: string | null
-          owner: string
           created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          owner: string
+          priority?: string
+          project_id: string
+          status?: string
+          title: string
           updated_at?: string
         }
         Update: {
-          id?: string
-          project_id?: string
-          title?: string
-          description?: string | null
-          status?: string
-          due_date?: string | null
-          owner?: string
           created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          owner?: string
+          priority?: string
+          project_id?: string
+          status?: string
+          title?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tasks_owner_fkey"
+            columns: ["owner"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tasks_project_id_fkey"
             columns: ["project_id"]
@@ -421,13 +379,6 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "tasks_owner_fkey"
-            columns: ["owner"]
-            isOneToOne: false
-            referencedRelation: "app_users"
-            referencedColumns: ["id"]
-          }
         ]
       }
     }
@@ -435,10 +386,41 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      dashboard_values_by_month: {
+        Args: { p_from: string; p_to: string; p_user: string }
+        Returns: {
+          closed_total: number
+          generated_total: number
+          month_label: string
+          month_start: string
+          proposals_count: number
+        }[]
+      }
+      proposals_aggregate: {
+        Args: {
+          p_from: string
+          p_granularity?: string
+          p_to: string
+          p_user: string
+        }
+        Returns: {
+          approved_count: number
+          bucket_label: string
+          bucket_start: string
+          total_amount: number
+          total_count: number
+        }[]
+      }
     }
     Enums: {
-      billing_type: "one_time" | "monthly" // New ENUM type
+      billing_type: "one_time" | "monthly"
+      proposal_status:
+        | "Criada"
+        | "Enviada"
+        | "Aprovada"
+        | "Rejeitada"
+        | "Rascunho"
+      task_priority: "Baixa" | "Media" | "Alta" | "Urgente"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -566,10 +548,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      billing_type: {
-        one_time: "one_time",
-        monthly: "monthly",
-      },
+      billing_type: ["one_time", "monthly"],
+      proposal_status: [
+        "Criada",
+        "Enviada",
+        "Aprovada",
+        "Rejeitada",
+        "Rascunho",
+      ],
+      task_priority: ["Baixa", "Media", "Alta", "Urgente"],
     },
   },
 } as const
