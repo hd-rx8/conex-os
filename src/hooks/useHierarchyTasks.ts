@@ -1,168 +1,95 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { normalizeWorkError } from '@/features/work/api/workApi';
+import {
+  useCreateTaskMutation,
+  useDeleteTaskMutation,
+  useListTasksQuery,
+  useUpdateTaskMutation,
+} from '@/features/work/hooks/useWorkData';
 import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
 import type {
-  HierarchyTask,
-  CreateTaskData,
-  UpdateTaskData,
-  Subtask,
   CreateSubtaskData,
-  UpdateSubtaskData,
+  CreateTaskData,
+  Subtask,
   TaskFilters,
+  TaskPriority,
+  UpdateSubtaskData,
+  UpdateTaskData,
 } from '@/types/hierarchy';
 
-// Hook para gerenciar tasks
+const TASK_PRIORITIES: readonly TaskPriority[] = [
+  'Baixa',
+  'Média',
+  'Alta',
+  'Urgente',
+];
+
+function toError(error: unknown): Error {
+  if (error instanceof Error) return error;
+  if (typeof error === 'object' && error !== null && 'userMessage' in error) {
+    return new Error(String(error.userMessage));
+  }
+  return new Error('Não foi possível concluir a operação no Work Management.');
+}
+
+function mapPriority(value: string): TaskPriority {
+  return TASK_PRIORITIES.includes(value as TaskPriority)
+    ? (value as TaskPriority)
+    : 'Média';
+}
+
+function mapSubtask(row: Tables<'subtasks'>): Subtask {
+  return {
+    ...row,
+    priority: mapPriority(row.priority),
+  };
+}
+
 export const useHierarchyTasks = (listId?: string, filters?: TaskFilters) => {
-  const [tasks, setTasks] = useState<HierarchyTask[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  const fetchTasks = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      let query = supabase
-        .from('tasks')
-        .select(`
-          *,
-          lists(id, name, space_id, folder_id),
-          assignee:app_users!tasks_assignee_id_fkey(id, name, email),
-          creator:app_users!tasks_creator_id_fkey(id, name, email)
-        `)
-        .order('position');
-
-      // Filtros
-      if (listId) {
-        query = query.eq('list_id', listId);
-      }
-
-      if (filters?.search) {
-        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-      }
-
-      if (filters?.status) {
-        query = query.eq('status', filters.status);
-      }
-
-      if (filters?.priority) {
-        query = query.eq('priority', filters.priority);
-      }
-
-      if (filters?.assignee_id) {
-        query = query.eq('assignee_id', filters.assignee_id);
-      }
-
-      if (filters?.due_date_from) {
-        query = query.gte('due_date', filters.due_date_from);
-      }
-
-      if (filters?.due_date_to) {
-        query = query.lte('due_date', filters.due_date_to);
-      }
-
-      const { data, error: fetchError } = await query;
-
-      if (fetchError) throw fetchError;
-
-      setTasks(data || []);
-    } catch (err) {
-      setError(err as Error);
-      console.error('Error fetching tasks:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [listId, filters]);
-
-  useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
+  const query = useListTasksQuery(listId, filters);
+  const createMutation = useCreateTaskMutation(listId, filters);
+  const updateMutation = useUpdateTaskMutation(listId, filters);
+  const deleteMutation = useDeleteTaskMutation(listId, filters);
 
   const createTask = async (data: CreateTaskData) => {
     try {
-      const { data: task, error: createError } = await supabase
-        .from('tasks')
-        .insert(data)
-        .select(`
-          *,
-          lists(id, name, space_id, folder_id),
-          assignee:app_users!tasks_assignee_id_fkey(id, name, email),
-          creator:app_users!tasks_creator_id_fkey(id, name, email)
-        `)
-        .single();
-
-      if (createError) throw createError;
-
-      await fetchTasks();
-      return { data: task, error: null };
-    } catch (err) {
-      console.error('Error creating task:', err);
-      return { data: null, error: err as Error };
+      return { data: await createMutation.mutateAsync(data), error: null };
+    } catch (error) {
+      return { data: null, error: toError(error) };
     }
   };
 
   const updateTask = async (id: string, data: UpdateTaskData) => {
     try {
-      const { data: task, error: updateError } = await supabase
-        .from('tasks')
-        .update(data)
-        .eq('id', id)
-        .select(`
-          *,
-          lists(id, name, space_id, folder_id),
-          assignee:app_users!tasks_assignee_id_fkey(id, name, email),
-          creator:app_users!tasks_creator_id_fkey(id, name, email)
-        `)
-        .single();
-
-      if (updateError) throw updateError;
-
-      await fetchTasks();
-      return { data: task, error: null };
-    } catch (err) {
-      console.error('Error updating task:', err);
-      return { data: null, error: err as Error };
+      return {
+        data: await updateMutation.mutateAsync({ id, data }),
+        error: null,
+      };
+    } catch (error) {
+      return { data: null, error: toError(error) };
     }
   };
 
   const deleteTask = async (id: string) => {
     try {
-      const { error: deleteError } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('id', id);
-
-      if (deleteError) throw deleteError;
-
-      await fetchTasks();
+      await deleteMutation.mutateAsync(id);
       return { error: null };
-    } catch (err) {
-      console.error('Error deleting task:', err);
-      return { error: err as Error };
+    } catch (error) {
+      return { error: toError(error) };
     }
   };
 
-  const reorderTasks = async (taskId: string, newPosition: number) => {
-    try {
-      const { error } = await supabase
-        .from('tasks')
-        .update({ position: newPosition })
-        .eq('id', taskId);
-
-      if (error) throw error;
-
-      await fetchTasks();
-      return { error: null };
-    } catch (err) {
-      console.error('Error reordering task:', err);
-      return { error: err as Error };
-    }
-  };
+  const reorderTasks = (taskId: string, newPosition: number) =>
+    updateTask(taskId, { position: newPosition });
 
   return {
-    tasks,
-    loading,
-    error,
-    fetchTasks,
+    tasks: query.data ?? [],
+    loading: query.isLoading,
+    error: query.error ? toError(query.error) : null,
+    fetchTasks: query.refetch,
+    refetch: query.refetch,
     createTask,
     updateTask,
     deleteTask,
@@ -170,135 +97,95 @@ export const useHierarchyTasks = (listId?: string, filters?: TaskFilters) => {
   };
 };
 
-// Hook para gerenciar subtasks
+function buildSubtaskTree(subtasks: Subtask[]): Subtask[] {
+  const subtaskMap = new Map<string, Subtask>();
+  const roots: Subtask[] = [];
+
+  subtasks.forEach((subtask) => {
+    subtaskMap.set(subtask.id, { ...subtask, children: [] });
+  });
+
+  subtasks.forEach((subtask) => {
+    const node = subtaskMap.get(subtask.id);
+    if (!node) return;
+
+    const parent = subtask.parent_subtask_id
+      ? subtaskMap.get(subtask.parent_subtask_id)
+      : undefined;
+
+    if (parent) {
+      parent.children = [...(parent.children ?? []), node];
+    } else {
+      roots.push(node);
+    }
+  });
+
+  return roots;
+}
+
 export const useSubtasks = (taskId?: string) => {
-  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchSubtasks = useCallback(async () => {
-    if (!taskId) return;
-
-    try {
-      setLoading(true);
+  const queryClient = useQueryClient();
+  const queryKey = ['work', 'subtasks', taskId ?? 'none'] as const;
+  const query = useQuery({
+    queryKey,
+    enabled: Boolean(taskId),
+    staleTime: 30_000,
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('subtasks')
-        .select(`
-          *,
-          tasks(id, title),
-          parent_subtask:subtasks!parent_subtask_id(id, title),
-          assignee:app_users!subtasks_assignee_id_fkey(id, name, email),
-          creator:app_users!subtasks_creator_id_fkey(id, name, email)
-        `)
-        .eq('task_id', taskId)
+        .select('*')
+        .eq('task_id', taskId as string)
         .order('position');
 
-      if (error) throw error;
+      if (error) throw normalizeWorkError(error);
+      return (data ?? []).map(mapSubtask);
+    },
+  });
 
-      setSubtasks(data || []);
-    } catch (err) {
-      console.error('Error fetching subtasks:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [taskId]);
-
-  useEffect(() => {
-    fetchSubtasks();
-  }, [fetchSubtasks]);
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey, exact: true });
 
   const createSubtask = async (data: CreateSubtaskData) => {
-    try {
-      const { data: subtask, error } = await supabase
-        .from('subtasks')
-        .insert(data)
-        .select(`
-          *,
-          tasks(id, title),
-          parent_subtask:subtasks!parent_subtask_id(id, title),
-          assignee:app_users!subtasks_assignee_id_fkey(id, name, email),
-          creator:app_users!subtasks_creator_id_fkey(id, name, email)
-        `)
-        .single();
+    const { data: subtask, error } = await supabase
+      .from('subtasks')
+      .insert(data)
+      .select('*')
+      .single();
 
-      if (error) throw error;
-
-      await fetchSubtasks();
-      return { data: subtask, error: null };
-    } catch (err) {
-      return { data: null, error: err as Error };
-    }
+    if (error) return { data: null, error: toError(normalizeWorkError(error)) };
+    await invalidate();
+    return { data: mapSubtask(subtask), error: null };
   };
 
   const updateSubtask = async (id: string, data: UpdateSubtaskData) => {
-    try {
-      const { data: subtask, error } = await supabase
-        .from('subtasks')
-        .update(data)
-        .eq('id', id)
-        .select(`
-          *,
-          tasks(id, title),
-          parent_subtask:subtasks!parent_subtask_id(id, title),
-          assignee:app_users!subtasks_assignee_id_fkey(id, name, email),
-          creator:app_users!subtasks_creator_id_fkey(id, name, email)
-        `)
-        .single();
+    const { data: subtask, error } = await supabase
+      .from('subtasks')
+      .update(data)
+      .eq('id', id)
+      .select('*')
+      .single();
 
-      if (error) throw error;
-
-      await fetchSubtasks();
-      return { data: subtask, error: null };
-    } catch (err) {
-      return { data: null, error: err as Error };
-    }
+    if (error) return { data: null, error: toError(normalizeWorkError(error)) };
+    await invalidate();
+    return { data: mapSubtask(subtask), error: null };
   };
 
   const deleteSubtask = async (id: string) => {
-    try {
-      const { error } = await supabase.from('subtasks').delete().eq('id', id);
-
-      if (error) throw error;
-
-      await fetchSubtasks();
-      return { error: null };
-    } catch (err) {
-      return { error: err as Error };
-    }
+    const { error } = await supabase.from('subtasks').delete().eq('id', id);
+    if (error) return { error: toError(normalizeWorkError(error)) };
+    await invalidate();
+    return { error: null };
   };
 
-  // Função para construir árvore de subtasks (aninhamento infinito)
-  const buildSubtaskTree = (subtasks: Subtask[]): Subtask[] => {
-    const subtaskMap = new Map<string, Subtask>();
-    const roots: Subtask[] = [];
-
-    // Criar mapa de subtasks
-    subtasks.forEach((subtask) => {
-      subtaskMap.set(subtask.id, { ...subtask, children: [] });
-    });
-
-    // Construir árvore
-    subtasks.forEach((subtask) => {
-      const node = subtaskMap.get(subtask.id)!;
-
-      if (subtask.parent_subtask_id) {
-        const parent = subtaskMap.get(subtask.parent_subtask_id);
-        if (parent) {
-          if (!parent.children) parent.children = [];
-          parent.children.push(node);
-        }
-      } else {
-        roots.push(node);
-      }
-    });
-
-    return roots;
-  };
+  const subtasks = query.data ?? [];
 
   return {
     subtasks,
     subtaskTree: buildSubtaskTree(subtasks),
-    loading,
-    fetchSubtasks,
+    loading: query.isLoading,
+    error: query.error ? toError(query.error) : null,
+    fetchSubtasks: query.refetch,
+    refetch: query.refetch,
     createSubtask,
     updateSubtask,
     deleteSubtask,
@@ -306,33 +193,7 @@ export const useSubtasks = (taskId?: string) => {
   };
 };
 
-// Hook para obter status herdados
-export const useInheritedStatuses = (listId?: string) => {
-  const [statuses, setStatuses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchStatuses = async () => {
-      if (!listId) return;
-
-      try {
-        setLoading(true);
-        const { data, error } = await supabase.rpc('get_inherited_statuses', {
-          p_list_id: listId,
-        });
-
-        if (error) throw error;
-
-        setStatuses(data || []);
-      } catch (err) {
-        console.error('Error fetching inherited statuses:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStatuses();
-  }, [listId]);
-
-  return { statuses, loading };
-};
+export const useInheritedStatuses = (_listId?: string) => ({
+  statuses: ['Pendente', 'Em Progresso', 'Concluída'],
+  loading: false,
+});

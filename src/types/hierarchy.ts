@@ -58,7 +58,7 @@ export interface WorkspaceMember {
   app_users?: {
     id: string;
     name: string;
-    email: string;
+    email: string | null;
   };
 }
 
@@ -216,12 +216,12 @@ export interface HierarchyTask {
   assignee?: {
     id: string;
     name: string;
-    email: string;
+    email: string | null;
   };
   creator?: {
     id: string;
     name: string;
-    email: string;
+    email: string | null;
   };
 }
 
@@ -276,12 +276,12 @@ export interface Subtask {
   assignee?: {
     id: string;
     name: string;
-    email: string;
+    email: string | null;
   };
   creator?: {
     id: string;
     name: string;
-    email: string;
+    email: string | null;
   };
   // Para renderização em árvore
   children?: Subtask[];
