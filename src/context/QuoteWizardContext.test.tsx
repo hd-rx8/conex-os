@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CurrencyProvider } from '@/context/CurrencyContext';
 import type { ProposalEditorSnapshot } from '@/features/crm/proposals/proposalEditorTypes';
@@ -75,6 +76,8 @@ const snapshot: ProposalEditorSnapshot = {
 
 const Probe = () => {
   const wizard = useQuoteWizard();
+  const [generationComplete, setGenerationComplete] = useState(false);
+  const [registrationComplete, setRegistrationComplete] = useState(false);
   return (
     <>
       <output data-testid="step">{wizard.currentStep}</output>
@@ -85,8 +88,14 @@ const Probe = () => {
       <output data-testid="dirty">{String(wizard.isDirty)}</output>
       <output data-testid="link">{wizard.generatedShareLink}</output>
       <output data-testid="status">{wizard.proposalMeta?.status}</output>
+      <output data-testid="updated-at">{wizard.proposalMeta?.updatedAt}</output>
       <button onClick={() => wizard.setNotes('Notas locais')}>editar notas</button>
       {wizard.saveProposalChanges && <button onClick={() => void wizard.saveProposalChanges?.()}>salvar</button>}
+      <output data-testid="generation-complete">{String(generationComplete)}</output>
+      <output data-testid="registration-complete">{String(registrationComplete)}</output>
+      <button onClick={() => void wizard.generateShareableLink('user-1').then(() => setGenerationComplete(true))}>gerar link</button>
+      <button onClick={() => void wizard.registerProposal('user-1').then(() => setRegistrationComplete(true))}>registrar proposta</button>
+      <button onClick={() => void wizard.reloadProposal()}>recarregar</button>
     </>
   );
 };
@@ -105,6 +114,8 @@ describe('QuoteWizardProvider', () => {
   beforeEach(() => {
     editorApi.getProposalEditorSnapshot.mockReset();
     editorApi.saveProposalEdit.mockReset();
+    proposalsApi.createDraftProposal.mockReset();
+    proposalsApi.createProposal.mockReset();
   });
 
   it('starts a create session at step zero with an empty draft', () => {
@@ -196,5 +207,56 @@ describe('QuoteWizardProvider', () => {
 
     await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('Aprovada'));
     expect(screen.queryByRole('button', { name: 'salvar' })).not.toBeInTheDocument();
+  });
+
+  it('does not create a draft or proposal from an editable edit session', async () => {
+    editorApi.getProposalEditorSnapshot.mockResolvedValue(snapshot);
+    proposalsApi.createDraftProposal.mockResolvedValue({ data: null, error: null });
+    proposalsApi.createProposal.mockResolvedValue({ data: null, error: null });
+    renderWizard({ mode: 'edit', proposalId: snapshot.id });
+    await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('Rascunho'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'gerar link' }));
+    fireEvent.click(screen.getByRole('button', { name: 'registrar proposta' }));
+
+    await waitFor(() => expect(screen.getByTestId('generation-complete')).toHaveTextContent('true'));
+    await waitFor(() => expect(screen.getByTestId('registration-complete')).toHaveTextContent('true'));
+    expect(proposalsApi.createDraftProposal).not.toHaveBeenCalled();
+    expect(proposalsApi.createProposal).not.toHaveBeenCalled();
+  });
+
+  it('does not create a draft or proposal from a locked edit session', async () => {
+    editorApi.getProposalEditorSnapshot.mockResolvedValue({ ...snapshot, status: 'Aprovada' });
+    proposalsApi.createDraftProposal.mockResolvedValue({ data: null, error: null });
+    proposalsApi.createProposal.mockResolvedValue({ data: null, error: null });
+    renderWizard({ mode: 'edit', proposalId: snapshot.id });
+    await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('Aprovada'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'gerar link' }));
+    fireEvent.click(screen.getByRole('button', { name: 'registrar proposta' }));
+
+    await waitFor(() => expect(screen.getByTestId('generation-complete')).toHaveTextContent('true'));
+    await waitFor(() => expect(screen.getByTestId('registration-complete')).toHaveTextContent('true'));
+    expect(proposalsApi.createDraftProposal).not.toHaveBeenCalled();
+    expect(proposalsApi.createProposal).not.toHaveBeenCalled();
+  });
+
+  it('keeps dirty local values while a newer reload refreshes proposal metadata', async () => {
+    const newerSnapshot = {
+      ...snapshot,
+      title: 'Título atualizado no servidor',
+      updated_at: '2026-07-21T10:00:00.000Z',
+    };
+    editorApi.getProposalEditorSnapshot
+      .mockResolvedValueOnce(snapshot)
+      .mockResolvedValueOnce(newerSnapshot);
+    renderWizard({ mode: 'edit', proposalId: snapshot.id });
+    await waitFor(() => expect(screen.getByTestId('title')).toHaveTextContent(snapshot.title));
+    fireEvent.click(screen.getByRole('button', { name: 'editar notas' }));
+    fireEvent.click(screen.getByRole('button', { name: 'recarregar' }));
+
+    await waitFor(() => expect(screen.getByTestId('updated-at')).toHaveTextContent(newerSnapshot.updated_at));
+    expect(screen.getByTestId('title')).toHaveTextContent(snapshot.title);
+    expect(screen.getByTestId('notes')).toHaveTextContent('Notas locais');
   });
 });

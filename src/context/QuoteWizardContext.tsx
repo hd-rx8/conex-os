@@ -175,6 +175,7 @@ export const QuoteWizardProvider = ({
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<ProposalEditorErrorCode | null>(null);
   const hydratedVersionRef = useRef<string | null>(null);
+  const isMountedRef = useRef(true);
   const steps = useMemo(() => [
     { id: 'services', name: 'Serviços' },
     { id: 'settings', name: 'Configurações' },
@@ -256,13 +257,23 @@ export const QuoteWizardProvider = ({
     setIsHydrating(true);
     setLoadError(null);
     try {
-      applySnapshot(await getProposalEditorSnapshot(proposalId));
+      const snapshot = await getProposalEditorSnapshot(proposalId);
+      if (!isMountedRef.current) return;
+      applySnapshot(snapshot);
     } catch (error) {
+      if (!isMountedRef.current) return;
       setLoadError(error instanceof ProposalEditorDomainError ? error.code : mapProposalEditorError(error));
     } finally {
-      setIsHydrating(false);
+      if (isMountedRef.current) setIsHydrating(false);
     }
   }, [applySnapshot, mode, proposalId]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (mode !== 'edit') return;
@@ -518,6 +529,8 @@ export const QuoteWizardProvider = ({
   };
 
   const generateShareableLink = async (ownerId: string): Promise<string | null> => {
+    if (mode !== 'create') return null;
+
     if (selectedServices.length === 0 || !clientInfo.name || !clientInfo.email || !proposalTitle) {
       toast.error('Por favor, preencha todos os campos obrigatórios e selecione pelo menos um serviço.');
       return null;
@@ -547,6 +560,8 @@ export const QuoteWizardProvider = ({
   };
 
   const registerProposal = async (ownerId: string): Promise<boolean> => {
+    if (mode !== 'create') return false;
+
     if (selectedServices.length === 0 || !clientInfo.name || !clientInfo.email || !proposalTitle) {
       toast.error('Por favor, preencha todos os campos obrigatórios e selecione pelo menos um serviço.');
       return false;
