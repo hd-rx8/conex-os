@@ -225,6 +225,18 @@ export interface HierarchyTask {
   };
 }
 
+export interface WorkTaskContext {
+  workspace_id: string;
+  space_id: string;
+  space_name: string;
+  list_id: string;
+  list_name: string;
+}
+
+export interface WorkTaskItem extends HierarchyTask {
+  context: WorkTaskContext;
+}
+
 export interface CreateTaskData {
   list_id: string;
   title: string;
