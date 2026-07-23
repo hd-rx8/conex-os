@@ -17,6 +17,36 @@ const workspaceRow: WorkspaceTreeRow = {
   owner: 'user-1',
   created_at: '2026-07-22T12:00:00Z',
   updated_at: '2026-07-22T12:00:00Z',
+  workspace_folders: [
+    {
+      id: 'workspace-folder-1',
+      workspace_id: 'workspace-1',
+      name: 'Marketing',
+      description: null,
+      icon: null,
+      color: null,
+      position: 0,
+      created_at: '2026-07-22T12:00:00Z',
+      updated_at: '2026-07-22T12:00:00Z',
+      lists: [
+        {
+          id: 'list-canonical',
+          workspace_id: 'workspace-1',
+          workspace_folder_id: 'workspace-folder-1',
+          space_id: 'space-1',
+          folder_id: null,
+          name: 'Planejamento',
+          description: null,
+          icon: null,
+          color: null,
+          custom_statuses: null,
+          position: 0,
+          created_at: '2026-07-22T12:00:00Z',
+          updated_at: '2026-07-22T12:00:00Z',
+        },
+      ],
+    },
+  ],
   spaces: [
     {
       id: 'space-1',
@@ -84,6 +114,14 @@ describe('mapWorkspaceTreeRow', () => {
     expect(tree.spaces[0].lists.map((list) => list.id)).toEqual(['list-direct']);
     expect(tree.spaces[0].folders[0].lists.map((list) => list.id)).toEqual([
       'list-folder',
+    ]);
+  });
+
+  it('prioriza listas canônicas diretamente dentro da pasta do workspace', () => {
+    const tree = mapWorkspaceTreeRow(workspaceRow);
+
+    expect(tree.workspace_folders[0].lists.map((list) => list.id)).toEqual([
+      'list-canonical',
     ]);
   });
 });

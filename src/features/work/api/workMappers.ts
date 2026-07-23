@@ -34,7 +34,7 @@ export type WorkTaskQueryRow = Tables<'tasks'> & {
 };
 
 export type WorkspaceTreeRow = WorkspaceRow & {
-  workspace_folders?: WorkspaceFolderRow[];
+  workspace_folders?: Array<WorkspaceFolderRow & { lists: ListRow[] }>;
   spaces: Array<
     SpaceRow & {
       folders: FolderRow[];
@@ -104,7 +104,7 @@ function mapFolder(row: FolderRow, lists: ListRow[]): FolderTree {
     ...row,
     custom_statuses: mapCustomStatuses(row.custom_statuses),
     lists: lists
-      .filter((list) => list.folder_id === row.id)
+      .filter((list) => list.folder_id === row.id && !list.workspace_folder_id)
       .map(mapList),
   };
 }
@@ -115,7 +115,9 @@ function mapSpace(row: WorkspaceTreeRow['spaces'][number]): SpaceTree {
   return {
     ...mapSpaceRow(space),
     folders: folders.map((folder) => mapFolder(folder, lists)),
-    lists: lists.filter((list) => list.folder_id === null).map(mapList),
+    lists: lists
+      .filter((list) => list.folder_id === null && !list.workspace_folder_id)
+      .map(mapList),
   };
 }
 
@@ -125,9 +127,10 @@ export function mapWorkspaceTreeRow(row: WorkspaceTreeRow): WorkspaceTree {
   const allSpaces = spaces.map(mapSpace);
   const rootSpaces = allSpaces.filter(s => !s.workspace_folder_id);
 
-  const mappedFolders = workspace_folders.map(folder => ({
+  const mappedFolders = workspace_folders.map(({ lists, ...folder }) => ({
     ...folder,
-    spaces: allSpaces.filter(s => s.workspace_folder_id === folder.id)
+    lists: lists.map(mapList),
+    spaces: allSpaces.filter(s => s.workspace_folder_id === folder.id),
   }));
 
   return {

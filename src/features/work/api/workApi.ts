@@ -62,9 +62,12 @@ export function normalizeWorkError(error: unknown): WorkDataError {
 const WORKSPACE_FIELDS =
   'id,name,description,icon,color,owner,created_at,updated_at';
 
-const WORKSPACE_TREE_FIELDS = `
+export const WORKSPACE_TREE_FIELDS = `
   ${WORKSPACE_FIELDS},
-  workspace_folders(id,workspace_id,name,description,icon,color,position,created_at,updated_at),
+  workspace_folders(
+    id,workspace_id,name,description,icon,color,position,created_at,updated_at,
+    lists(id,workspace_id,workspace_folder_id,space_id,folder_id,name,description,icon,color,custom_statuses,position,created_at,updated_at)
+  ),
   spaces(
     id,workspace_id,workspace_folder_id,name,description,status,icon,color,custom_statuses,position,created_at,updated_at,
     folders(id,space_id,name,description,icon,color,custom_statuses,position,created_at,updated_at),

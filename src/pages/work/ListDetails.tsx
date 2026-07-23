@@ -32,8 +32,8 @@ import type { ListTree, TaskFilters, WorkTaskItem } from '@/types/hierarchy';
 
 interface ListContext {
   list: ListTree;
-  projectId: string;
-  projectName: string;
+  projectId?: string;
+  projectName?: string;
   folderName?: string;
   workspaceFolderName?: string;
 }
@@ -51,6 +51,16 @@ export default function ListDetails() {
   const { view, setView } = useWorkViewMode('list', listId ?? 'none');
   const listContext = useMemo<ListContext | undefined>(() => {
     if (!treeQuery.data) return undefined;
+
+    for (const workspaceFolder of treeQuery.data.workspace_folders ?? []) {
+      const canonicalList = workspaceFolder.lists.find((list) => list.id === listId);
+      if (canonicalList) {
+        return {
+          list: canonicalList,
+          workspaceFolderName: workspaceFolder.name,
+        };
+      }
+    }
 
     // Anexa a informação de "workspaceFolderName" em todos os spaces
     const allSpaces = [
@@ -161,10 +171,10 @@ export default function ListDetails() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate(`/work/project/${projectId}`)}
+          onClick={() => navigate(projectId ? `/work/project/${projectId}` : '/work')}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          {projectName}
+          {projectName ?? 'Visão geral'}
         </Button>
 
         <WorkPageHeader

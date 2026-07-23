@@ -394,6 +394,7 @@ export interface WorkspaceTree extends Workspace {
 
 export interface WorkspaceFolderTree extends WorkspaceFolder {
   spaces: SpaceTree[];
+  lists: ListTree[];
 }
 
 export interface SpaceTree extends Space {

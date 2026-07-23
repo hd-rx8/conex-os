@@ -186,7 +186,7 @@ const WorkspaceFolderNode: React.FC<WorkspaceFolderNodeProps> = ({
   onDeleteFolder,
   onDeleteSpace,
 }) => {
-  const hasSpaces = folder.spaces.length > 0;
+  const hasContent = folder.spaces.length > 0 || folder.lists.length > 0;
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -206,11 +206,11 @@ const WorkspaceFolderNode: React.FC<WorkspaceFolderNodeProps> = ({
           title={folder.name}
           className={cn(
             'h-8 flex-1 min-w-0 justify-start gap-2 px-3 font-semibold text-foreground/80',
-            !hasSpaces && 'cursor-default'
+            !hasContent && 'cursor-default'
           )}
-          disabled={!hasSpaces}
+          disabled={!hasContent}
         >
-          {hasSpaces ? (
+          {hasContent ? (
             isExpanded ? (
               <ChevronDown className="h-3 w-3 shrink-0" />
             ) : (
@@ -257,8 +257,16 @@ const WorkspaceFolderNode: React.FC<WorkspaceFolderNodeProps> = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {isExpanded && hasSpaces && (
+      {isExpanded && hasContent && (
         <div className="ml-2 min-w-0 space-y-1 overflow-hidden mt-1 border-l pl-2 border-border/50">
+          {folder.lists.map((list) => (
+            <ListNode
+              key={list.id}
+              list={list}
+              onSelect={onSelectList}
+              isSelected={selectedListId === list.id}
+            />
+          ))}
           {folder.spaces.map((space) => (
             <SpaceNode
               key={space.id}
