@@ -3,6 +3,7 @@
 // ====================================
 
 export type WorkspaceRole = 'owner' | 'admin' | 'member' | 'viewer';
+export type SpaceStatus = 'Ativo' | 'Concluído' | 'Arquivado';
 export type TaskPriority = 'Baixa' | 'Média' | 'Alta' | 'Urgente';
 export type TaskStatus = 'Pendente' | 'Em Progresso' | 'Concluída';
 
@@ -10,6 +11,7 @@ export type TaskStatus = 'Pendente' | 'Em Progresso' | 'Concluída';
 // Custom Status Type
 // ====================================
 export interface CustomStatus {
+  [key: string]: string;
   name: string;
   color: string;
 }
@@ -78,6 +80,7 @@ export interface Space {
   workspace_id: string;
   name: string;
   description: string | null;
+  status: SpaceStatus;
   icon: string | null;
   color: string | null;
   custom_statuses: CustomStatus[];
@@ -92,6 +95,7 @@ export interface CreateSpaceData {
   workspace_id: string;
   name: string;
   description?: string;
+  status?: SpaceStatus;
   icon?: string;
   color?: string;
   custom_statuses?: CustomStatus[];
@@ -101,6 +105,7 @@ export interface CreateSpaceData {
 export interface UpdateSpaceData {
   name?: string;
   description?: string;
+  status?: SpaceStatus;
   icon?: string;
   color?: string;
   custom_statuses?: CustomStatus[];
@@ -176,6 +181,7 @@ export interface CreateListData {
 }
 
 export interface UpdateListData {
+  space_id?: string;
   name?: string;
   description?: string;
   icon?: string;
@@ -256,6 +262,7 @@ export interface Subtask {
   title: string;
   description: string | null;
   status: string;
+  priority: TaskPriority;
   assignee_id: string | null;
   creator_id: string;
   due_date: string | null;
@@ -264,7 +271,7 @@ export interface Subtask {
   updated_at: string;
   completed_at: string | null;
   // Relations
-  hierarchy_tasks?: HierarchyTask;
+  tasks?: HierarchyTask;
   parent_subtask?: Subtask;
   assignee?: {
     id: string;
@@ -286,6 +293,7 @@ export interface CreateSubtaskData {
   title: string;
   description?: string;
   status?: string;
+  priority?: TaskPriority;
   assignee_id?: string | null;
   creator_id: string;
   due_date?: string | null;
@@ -296,6 +304,7 @@ export interface UpdateSubtaskData {
   title?: string;
   description?: string;
   status?: string;
+  priority?: TaskPriority;
   assignee_id?: string | null;
   due_date?: string | null;
   position?: number;
