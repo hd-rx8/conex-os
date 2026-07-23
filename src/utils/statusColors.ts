@@ -1,11 +1,13 @@
+import type { ProposalStatus } from '@/features/crm/proposals/proposalStatus';
+
+export type { ProposalStatus } from '@/features/crm/proposals/proposalStatus';
+
 /**
  * Utilitário para padronizar as cores de status em todo o sistema
  * 
  * Este arquivo centraliza as definições de cores para os diferentes status de propostas,
  * garantindo consistência visual em todo o aplicativo, tanto no modo claro quanto no escuro.
  */
-
-export type ProposalStatus = 'Criada' | 'Enviada' | 'Negociando' | 'Aprovada' | 'Rejeitada' | 'Rascunho';
 
 /**
  * Retorna as classes Tailwind para o estilo do badge de status
