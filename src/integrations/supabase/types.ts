@@ -420,7 +420,6 @@ export type Database = {
           proposal_gradient_theme: string | null
           proposal_logo_url: string | null
           share_token: string | null
-          show_interest_rate: boolean
           status: string
           title: string
           updated_at: string
@@ -444,7 +443,6 @@ export type Database = {
           proposal_gradient_theme?: string | null
           proposal_logo_url?: string | null
           share_token?: string | null
-          show_interest_rate?: boolean
           status?: string
           title: string
           updated_at?: string
@@ -468,7 +466,6 @@ export type Database = {
           proposal_gradient_theme?: string | null
           proposal_logo_url?: string | null
           share_token?: string | null
-          show_interest_rate?: boolean
           status?: string
           title?: string
           updated_at?: string

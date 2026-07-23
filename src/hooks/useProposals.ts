@@ -42,7 +42,6 @@ export interface Proposal {
   share_token: string | null;
   notes: string | null; // Added notes field
   expected_close_date: string | null; // NEW: expected_close_date
-  show_interest_rate: boolean;
   app_users?: {
     name: string;
   };
@@ -76,7 +75,6 @@ export interface CreateProposalData {
   // Theme settings
   proposal_logo_url?: string | null;
   proposal_gradient_theme?: string | null;
-  show_interest_rate?: boolean;
 }
 
 export interface UpdateProposalData {
@@ -488,7 +486,6 @@ export const useProposals = () => {
         validity_days: safeNumber(originalProposal.validity_days),
         proposal_logo_url: originalProposal.proposal_logo_url || null,
         proposal_gradient_theme: originalProposal.proposal_gradient_theme || null,
-        show_interest_rate: originalProposal.show_interest_rate || false,
         services: originalServices?.map(s => ({
           service_id: s.service_id || '',
           name: s.name || '',
