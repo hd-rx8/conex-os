@@ -189,6 +189,7 @@ export const useFABActions = () => {
         isOpen: isTaskModalOpen,
         setIsOpen: setIsTaskModalOpen,
         onSubmit: handleCreateTask,
+        workspaceId: activeWorkspaceId,
         spaceId: selectedSpaceId,
         listId: context.listId,
       },

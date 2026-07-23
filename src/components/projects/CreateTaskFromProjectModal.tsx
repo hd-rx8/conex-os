@@ -58,6 +58,7 @@ interface CreateTaskFromProjectModalProps {
   children?: React.ReactNode;
   preselectedSpaceId?: string;
   preselectedListId?: string;
+  workspaceId?: string;
   isOpen?: boolean;
   onClose?: () => void;
 }
@@ -67,11 +68,12 @@ const CreateTaskFromProjectModal: React.FC<CreateTaskFromProjectModalProps> = ({
   children,
   preselectedSpaceId,
   preselectedListId,
+  workspaceId,
   isOpen: externalIsOpen,
   onClose: externalOnClose
 }) => {
   const { user } = useSession();
-  const { spaces } = useSpaces();
+  const { spaces } = useSpaces(workspaceId);
   const [internalOpen, setInternalOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [selectedSpaceId, setSelectedSpaceId] = React.useState(preselectedSpaceId || '');

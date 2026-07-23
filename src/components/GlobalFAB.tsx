@@ -366,6 +366,7 @@ const GlobalFAB: React.FC = () => {
       {modals.task.isOpen && (
         <CreateTaskFromProjectModal
           onCreateTask={handleTaskSubmit}
+          workspaceId={modals.task.workspaceId}
           preselectedSpaceId={modals.task.spaceId}
           preselectedListId={modals.task.listId}
           isOpen={modals.task.isOpen}
