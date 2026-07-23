@@ -37,7 +37,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useCurrency } from '@/context/CurrencyContext';
 import FloatingActionButton from '@/components/FloatingActionButton';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import EditableField from '@/components/EditableField';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -45,13 +45,10 @@ import DuplicateProposalModal from '@/components/DuplicateProposalModal';
 import { ContentCard } from '@/components/layout/ContentCard';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageToolbar } from '@/components/layout/PageToolbar';
-
-// Define os status possíveis para as propostas
-const PROPOSAL_STATUSES = ['Rascunho', 'Criada', 'Enviada', 'Negociando', 'Aprovada', 'Rejeitada'] as const;
-type ProposalStatus = typeof PROPOSAL_STATUSES[number];
+import { canEditProposal, PROPOSAL_STATUSES, type ProposalStatus } from '@/features/crm/proposals/proposalStatus';
 
 // Status do Kanban
-const KANBAN_STATUSES: ProposalStatus[] = ['Rascunho', 'Criada', 'Enviada', 'Negociando', 'Aprovada', 'Rejeitada'];
+const KANBAN_STATUSES = PROPOSAL_STATUSES;
 
 const getStatusColor = (status: ProposalStatus) => {
   switch (status) {
@@ -111,6 +108,7 @@ const Opportunities: React.FC = () => {
   const { allUsers } = useUsers();
   const { formatCurrency } = useCurrency();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // View state
   const [currentView, setCurrentView] = useState<ViewType>(() => {
@@ -341,6 +339,14 @@ const Opportunities: React.FC = () => {
     setDuplicatingProposal(proposal);
   };
 
+  const handleEditProposal = (proposal: Proposal) => {
+    if (!canEditProposal(proposal.status)) return;
+
+    navigate(`/generator/${proposal.id}/edit`, {
+      state: { returnTo: location.pathname },
+    });
+  };
+
   const handleDuplicateWithOptions = async (proposalId: string, newClientId: string | null, newTitle: string) => {
     if (!currentUser) return;
 
@@ -366,6 +372,8 @@ const Opportunities: React.FC = () => {
   };
 
   const handleStatusChange = async (proposal: Proposal, newStatus: Proposal['status']) => {
+    if (!canEditProposal(proposal.status)) return;
+
     await updateProposalStatus(proposal.id, newStatus);
   };
 
@@ -453,7 +461,7 @@ const Opportunities: React.FC = () => {
   // Kanban Card Component
   const KanbanCard: React.FC<{ proposal: Proposal }> = ({ proposal }) => (
     <Card
-      draggable
+      draggable={canEditProposal(proposal.status)}
       onDragStart={(e) => handleDragStart(e, proposal.id)}
       onClick={() => handleCardClick(proposal)}
       className="cursor-grab active:cursor-grabbing hover:shadow-lg transition-shadow duration-200 group border"
@@ -483,6 +491,24 @@ const Opportunities: React.FC = () => {
                 <Eye className="h-4 w-4 mr-2" />
                 Visualizar
               </DropdownMenuItem>
+              {canEditProposal(proposal.status) ? (
+                <DropdownMenuItem onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditProposal(proposal);
+                }}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  disabled
+                  aria-label="Editar indisponível. Proposta finalizada: duplique para editar"
+                  title="Proposta finalizada: duplique para editar"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar indisponível
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={(e) => {
                 e.stopPropagation();
                 handleDuplicateProposal(proposal);
@@ -570,14 +596,38 @@ const Opportunities: React.FC = () => {
               size="sm"
               onClick={() => handleCardClick(proposal)}
               title="Visualizar"
+              aria-label={`Visualizar ${proposal.title}`}
             >
               <Eye className="h-4 w-4" />
             </Button>
+            {canEditProposal(proposal.status) ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleEditProposal(proposal)}
+                title="Editar proposta"
+                aria-label={`Editar ${proposal.title}`}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            ) : (
+              <span title="Proposta finalizada: duplique para editar">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled
+                  aria-label={`Editar ${proposal.title}. Proposta finalizada: duplique para editar`}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </span>
+            )}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => handlePrintProposal(proposal.id)}
               title="Imprimir"
+              aria-label={`Imprimir ${proposal.title}`}
             >
               <Printer className="h-4 w-4" />
             </Button>
@@ -586,6 +636,7 @@ const Opportunities: React.FC = () => {
               size="sm"
               onClick={() => handleDuplicateProposal(proposal)}
               title="Duplicar"
+              aria-label={`Duplicar ${proposal.title}`}
             >
               <Copy className="h-4 w-4" />
             </Button>
@@ -594,6 +645,7 @@ const Opportunities: React.FC = () => {
               size="sm"
               onClick={() => handleDeleteProposal(proposal.id)}
               title="Excluir"
+              aria-label={`Excluir ${proposal.title}`}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -912,6 +964,7 @@ const Opportunities: React.FC = () => {
                             <Select
                               value={proposal.status}
                               onValueChange={(value) => handleStatusChange(proposal, value as Proposal['status'])}
+                              disabled={!canEditProposal(proposal.status)}
                             >
                               <SelectTrigger
                                 className={`w-full h-full justify-center rounded-none border-none bg-transparent py-1 px-2 text-xs font-semibold uppercase tracking-wider transition-colors focus:ring-0 focus:ring-offset-0 ${getStatusClasses(
@@ -937,14 +990,38 @@ const Opportunities: React.FC = () => {
                                 size="sm"
                                 onClick={() => handleCardClick(proposal)}
                                 title="Visualizar"
+                                aria-label={`Visualizar ${proposal.title}`}
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
+                              {canEditProposal(proposal.status) ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditProposal(proposal)}
+                                  title="Editar proposta"
+                                  aria-label={`Editar ${proposal.title}`}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              ) : (
+                                <span title="Proposta finalizada: duplique para editar">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    disabled
+                                    aria-label={`Editar ${proposal.title}. Proposta finalizada: duplique para editar`}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </span>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handlePrintProposal(proposal.id)}
                                 title="Imprimir"
+                                aria-label={`Imprimir ${proposal.title}`}
                               >
                                 <Printer className="h-4 w-4" />
                               </Button>
@@ -953,6 +1030,7 @@ const Opportunities: React.FC = () => {
                                 size="sm"
                                 onClick={() => handleDuplicateProposal(proposal)}
                                 title="Duplicar"
+                                aria-label={`Duplicar ${proposal.title}`}
                               >
                                 <Copy className="h-4 w-4" />
                               </Button>
@@ -961,6 +1039,7 @@ const Opportunities: React.FC = () => {
                                 size="sm"
                                 onClick={() => handleDeleteProposal(proposal.id)}
                                 title="Excluir"
+                                aria-label={`Excluir ${proposal.title}`}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -1012,6 +1091,21 @@ const Opportunities: React.FC = () => {
                     <SheetHeader className="text-left">
                       <SheetTitle className="sr-only">Detalhes da Proposta</SheetTitle>
                     </SheetHeader>
+                    {canEditProposal(selectedProposal.status) ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditProposal(selectedProposal)}
+                        aria-label={`Editar ${selectedProposal.title}`}
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        Editar proposta
+                      </Button>
+                    ) : (
+                      <p className="text-sm text-muted-foreground" role="status">
+                        Proposta finalizada: duplique para editar.
+                      </p>
+                    )}
 
                     <div className="space-y-1">
                       <EditableField
@@ -1020,7 +1114,7 @@ const Opportunities: React.FC = () => {
                         type="text"
                         placeholder="Título da Proposta"
                         isLoading={isSaving.title}
-                        disabled={selectedProposal.owner !== currentUser?.id}
+                        disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                         displayClassName="text-2xl font-bold gradient-text"
                         label="Título da Proposta"
                         required={true}
@@ -1046,7 +1140,7 @@ const Opportunities: React.FC = () => {
                           type="select"
                           selectOptions={PROPOSAL_STATUSES.map(s => ({ value: s, label: s }))}
                           isLoading={isSaving.status}
-                          disabled={selectedProposal.owner !== currentUser?.id}
+                          disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                           formatDisplayValue={(value) => (
                             <Badge className={getStatusColor(value as ProposalStatus)}>
                               {value}
@@ -1064,7 +1158,7 @@ const Opportunities: React.FC = () => {
                           type="number"
                           placeholder="0.00"
                           isLoading={isSaving.amount}
-                          disabled={selectedProposal.owner !== currentUser?.id}
+                          disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                           formatDisplayValue={(value) => (
                             <span className="font-semibold text-conexhub-green-600">
                               {formatCurrency(Number(value))}
@@ -1084,7 +1178,7 @@ const Opportunities: React.FC = () => {
                           type="date"
                           placeholder="Selecione a data"
                           isLoading={isSaving.created_at}
-                          disabled={selectedProposal.owner !== currentUser?.id}
+                          disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                           label="Data de Criação"
                         />
                       </div>
@@ -1097,7 +1191,7 @@ const Opportunities: React.FC = () => {
                           type="date"
                           placeholder="Selecione a data"
                           isLoading={isSaving.expected_close_date}
-                          disabled={selectedProposal.owner !== currentUser?.id}
+                          disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                           label="Previsão de Fechamento"
                         />
                       </div>
@@ -1143,7 +1237,7 @@ const Opportunities: React.FC = () => {
                             type="text"
                             placeholder="Nome do Cliente"
                             isLoading={isSaving.client_name}
-                            disabled={selectedProposal.owner !== currentUser?.id}
+                            disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                             displayClassName="font-medium"
                             label="Nome do Cliente"
                             required={true}
@@ -1158,7 +1252,7 @@ const Opportunities: React.FC = () => {
                             type="text"
                             placeholder="Nome da Empresa"
                             isLoading={isSaving.client_company}
-                            disabled={selectedProposal.owner !== currentUser?.id}
+                            disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                             label="Empresa do Cliente"
                           />
                         </div>
@@ -1171,7 +1265,7 @@ const Opportunities: React.FC = () => {
                             type="text"
                             placeholder="email@exemplo.com"
                             isLoading={isSaving.client_email}
-                            disabled={selectedProposal.owner !== currentUser?.id}
+                            disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                             label="E-mail do Cliente"
                           />
                         </div>
@@ -1184,7 +1278,7 @@ const Opportunities: React.FC = () => {
                             type="text"
                             placeholder="(00) 00000-0000"
                             isLoading={isSaving.client_phone}
-                            disabled={selectedProposal.owner !== currentUser?.id}
+                            disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                             label="Telefone do Cliente"
                           />
                         </div>
@@ -1194,7 +1288,7 @@ const Opportunities: React.FC = () => {
                           size="sm"
                           onClick={() => handleSelectClient(null)}
                           className="mt-2 w-full"
-                          disabled={selectedProposal.owner !== currentUser?.id}
+                          disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                         >
                           Desvincular Cliente
                         </Button>
@@ -1205,7 +1299,7 @@ const Opportunities: React.FC = () => {
                         <Select
                           value=""
                           onValueChange={handleSelectClient}
-                          disabled={selectedProposal.owner !== currentUser?.id || isSaving.client_id}
+                          disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status) || isSaving.client_id}
                         >
                           <SelectTrigger className="w-full placeholder:text-muted-foreground dark:placeholder:text-muted-foreground placeholder:opacity-80">
                             <SelectValue placeholder="Vincular cliente existente..." />
@@ -1239,7 +1333,7 @@ const Opportunities: React.FC = () => {
                         type="textarea"
                         placeholder="Adicione observações sobre a proposta..."
                         isLoading={isSaving.notes}
-                        disabled={selectedProposal.owner !== currentUser?.id}
+                        disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                         displayClassName="whitespace-pre-wrap"
                         label="Observações"
                       />

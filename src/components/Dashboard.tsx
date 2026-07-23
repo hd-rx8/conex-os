@@ -17,7 +17,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { useProposals, ProposalFilters } from '@/hooks/useProposals';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useCurrency } from '@/context/CurrencyContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
@@ -29,6 +29,7 @@ import { MetricCard } from './layout/MetricCard';
 import { PageHeader } from './layout/PageHeader';
 import { PageToolbar } from './layout/PageToolbar';
 import { deriveDashboardAnalytics } from '@/features/crm/dashboard/dashboardAnalytics';
+import { canEditProposal } from '@/features/crm/proposals/proposalStatus';
 
 interface DashboardProps {
   userId: string;
@@ -48,6 +49,7 @@ const ProposalSkeleton = () => (
 
 const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { formatCurrency } = useCurrency();
   
   const {
@@ -100,9 +102,12 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
     }
   };
 
-  const handleEditProposal = (proposalId: string) => {
-    navigate(`/generator?proposalId=${proposalId}`);
-    toast.info(`Redirecionando para editar proposta ${proposalId}.`);
+  const handleEditProposal = (proposalId: string, status: string) => {
+    if (!canEditProposal(status)) return;
+
+    navigate(`/generator/${proposalId}/edit`, {
+      state: { returnTo: location.pathname },
+    });
   };
 
   const handleDuplicateProposal = async (proposalId: string) => {
@@ -349,16 +354,30 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditProposal(proposal.id)}
-                          className="h-9 w-9"
-                          aria-label={`Editar ${proposal.title}`}
-                          title="Editar proposta"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        {canEditProposal(proposal.status) ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditProposal(proposal.id, proposal.status)}
+                            className="h-9 w-9"
+                            aria-label={`Editar ${proposal.title}`}
+                            title="Editar proposta"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <span title="Proposta finalizada: duplique para editar">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              disabled
+                              className="h-9 w-9"
+                              aria-label={`Editar ${proposal.title}. Proposta finalizada: duplique para editar`}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </span>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
