@@ -69,12 +69,6 @@ type OwnerProposalSnapshotRow = Omit<
   proposal_services: ProposalEditorSnapshot['services'] | null;
 };
 
-// Temporary boundary until Task 11 refreshes generated Database RPC types.
-const rpc = supabase.rpc.bind(supabase) as unknown as (
-  name: string,
-  args: Record<string, unknown>,
-) => PromiseLike<{ data: unknown; error: ProposalEditorRpcError | null }>;
-
 export const proposalQueryKeys = {
   ownerLists: (ownerId: string) => ['proposals', ownerId] as const,
   editor: (proposalId: string) => ['proposal-editor', proposalId] as const,
@@ -148,7 +142,7 @@ export async function saveProposalEdit(
   input: ProposalEditPayload,
 ): Promise<ProposalEditResult> {
   try {
-    const { data, error } = await rpc('update_editable_proposal', {
+    const { data, error } = await supabase.rpc('update_editable_proposal', {
       p_proposal_id: input.proposalId,
       p_expected_updated_at: input.expectedUpdatedAt,
       p_proposal: input.proposal,
@@ -175,7 +169,7 @@ export async function saveProposalEdit(
 
 export async function getPublicProposalByToken(token: string): Promise<unknown> {
   try {
-    const { data, error } = await rpc('get_public_proposal_by_token', {
+    const { data, error } = await supabase.rpc('get_public_proposal_by_token', {
       p_share_token: token,
     });
 

@@ -21,6 +21,7 @@ const workspaceRow: WorkspaceTreeRow = {
     {
       id: 'space-1',
       workspace_id: 'workspace-1',
+      workspace_folder_id: null,
       name: 'Projeto migrado',
       description: null,
       status: 'Ativo',

@@ -420,6 +420,7 @@ export type Database = {
           proposal_gradient_theme: string | null
           proposal_logo_url: string | null
           share_token: string | null
+          show_interest_rate: boolean
           status: string
           title: string
           updated_at: string
@@ -443,6 +444,7 @@ export type Database = {
           proposal_gradient_theme?: string | null
           proposal_logo_url?: string | null
           share_token?: string | null
+          show_interest_rate?: boolean
           status?: string
           title: string
           updated_at?: string
@@ -466,6 +468,7 @@ export type Database = {
           proposal_gradient_theme?: string | null
           proposal_logo_url?: string | null
           share_token?: string | null
+          show_interest_rate?: boolean
           status?: string
           title?: string
           updated_at?: string
@@ -500,6 +503,7 @@ export type Database = {
           position: number
           status: string
           updated_at: string
+          workspace_folder_id: string | null
           workspace_id: string
         }
         Insert: {
@@ -513,6 +517,7 @@ export type Database = {
           position?: number
           status?: string
           updated_at?: string
+          workspace_folder_id?: string | null
           workspace_id: string
         }
         Update: {
@@ -526,9 +531,17 @@ export type Database = {
           position?: number
           status?: string
           updated_at?: string
+          workspace_folder_id?: string | null
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "spaces_workspace_folder_id_fkey"
+            columns: ["workspace_folder_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_folders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "spaces_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -697,6 +710,50 @@ export type Database = {
           },
         ]
       }
+      workspace_folders: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          position: number
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          position?: number
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          position?: number
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_folders_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_members: {
         Row: {
           created_at: string
@@ -792,6 +849,10 @@ export type Database = {
           proposals_count: number
         }[]
       }
+      get_public_proposal_by_token: {
+        Args: { p_share_token: string }
+        Returns: Json
+      }
       proposals_aggregate: {
         Args: {
           p_from: string
@@ -805,6 +866,21 @@ export type Database = {
           bucket_start: string
           total_amount: number
           total_count: number
+        }[]
+      }
+      update_editable_proposal: {
+        Args: {
+          p_expected_updated_at: string
+          p_new_client?: Json
+          p_proposal: Json
+          p_proposal_id: string
+          p_services: Json
+        }
+        Returns: {
+          committed_share_token: string
+          committed_status: string
+          committed_updated_at: string
+          proposal_id: string
         }[]
       }
     }
