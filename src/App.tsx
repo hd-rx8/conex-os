@@ -21,6 +21,7 @@ import PublicProposalView from "./pages/crm/PublicProposalView";
 // Importar Work Management (hierarquia)
 import WorkManagement from "./pages/work/WorkManagement";
 import WorkOverview from "./pages/work/WorkOverview";
+import WorkTasks from "./pages/work/WorkTasks";
 import ProjectDetails from "./pages/work/ProjectDetails";
 import WorkspaceSettings from "./pages/work/WorkspaceSettings";
 import ListDetails from "./pages/work/ListDetails";
@@ -144,7 +145,7 @@ const AppContent = () => {
           element={
             user ? (
               <ModuleProtectedRoute requiredModule="work" redirectTo="/">
-                <WorkManagement />
+                <WorkTasks />
               </ModuleProtectedRoute>
             ) : <Navigate to="/login" replace />
           }
