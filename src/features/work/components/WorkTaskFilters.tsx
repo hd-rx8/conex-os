@@ -24,6 +24,10 @@ export function WorkTaskFilters({
   projects = [],
   lists = [],
 }: WorkTaskFiltersProps) {
+  const uniqueLists = Array.from(
+    new Map(lists.map((list) => [list.id, list])).values(),
+  );
+
   return (
     <PageToolbar>
       <label className="relative flex-1">
@@ -103,7 +107,7 @@ export function WorkTaskFilters({
             </SelectContent>
           </Select>
         )}
-        {lists.length > 0 && (
+        {uniqueLists.length > 0 && (
           <Select
             value={value.list_id ?? 'all'}
             onValueChange={(listId) =>
@@ -118,7 +122,7 @@ export function WorkTaskFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as listas</SelectItem>
-              {lists.map((list) => (
+              {uniqueLists.map((list) => (
                 <SelectItem key={list.id} value={list.id}>
                   {list.name}
                 </SelectItem>

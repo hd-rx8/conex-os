@@ -151,10 +151,12 @@ describe('mapWorkTaskRow', () => {
         id: 'list-1',
         name: 'Comercial',
         space_id: 'space-1',
+        workspace_id: 'workspace-canonical',
+        workspace_folder_id: 'workspace-folder-1',
         space: {
           id: 'space-1',
-          name: 'Website',
-          workspace_id: 'workspace-1',
+          name: 'Website legado',
+          workspace_id: 'workspace-legacy',
         },
       },
     };
@@ -163,9 +165,9 @@ describe('mapWorkTaskRow', () => {
       id: 'task-1',
       priority: 'Alta',
       context: {
-        workspace_id: 'workspace-1',
-        space_id: 'space-1',
-        space_name: 'Website',
+      workspace_id: 'workspace-canonical',
+      space_id: 'space-1',
+      space_name: 'Website legado',
         list_id: 'list-1',
         list_name: 'Comercial',
       },

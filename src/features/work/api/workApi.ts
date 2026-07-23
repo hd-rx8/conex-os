@@ -81,7 +81,7 @@ const WORK_TASK_FIELDS = `
   assignee:app_users!tasks_assignee_id_fkey(id,name,email),
   creator:app_users!tasks_creator_id_fkey(id,name,email),
   list:lists!inner(
-    id,name,space_id,
+    id,name,workspace_id,workspace_folder_id,space_id,
     space:spaces!inner(id,name,workspace_id)
   )
 `;
@@ -151,7 +151,7 @@ export async function fetchWorkspaceTasks(
   filters?: TaskFilters,
 ): Promise<WorkTaskItem[]> {
   const query = applyTaskFilters(
-    createTaskQuery().eq('list.space.workspace_id', workspaceId),
+    createTaskQuery().eq('list.workspace_id', workspaceId),
     filters,
   ).order('position');
 

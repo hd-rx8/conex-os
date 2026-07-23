@@ -25,6 +25,8 @@ export type WorkTaskQueryRow = Tables<'tasks'> & {
     id: string;
     name: string;
     space_id: string;
+    workspace_id: string | null;
+    workspace_folder_id: string | null;
     space: {
       id: string;
       name: string;
@@ -149,7 +151,7 @@ export function mapWorkTaskRow(row: WorkTaskQueryRow): WorkTaskItem {
     assignee: assignee ?? undefined,
     creator: creator ?? undefined,
     context: {
-      workspace_id: list.space.workspace_id,
+      workspace_id: list.workspace_id ?? list.space.workspace_id,
       space_id: list.space.id,
       space_name: list.space.name,
       list_id: list.id,
