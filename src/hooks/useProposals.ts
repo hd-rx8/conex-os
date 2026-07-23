@@ -6,6 +6,7 @@ import { startOfMonth, endOfMonth } from 'date-fns';
 import { Database } from '@/integrations/supabase/types';
 import { useSession } from './useSession';
 import type { ProposalStatus } from '@/features/crm/proposals/proposalStatus';
+import { proposalQueryKeys } from '@/features/crm/proposals/proposalEditorApi';
 
 type BillingType = Database['public']['Enums']['billing_type'];
 
@@ -418,8 +419,17 @@ export const useProposals = () => {
 
       if (fetchError) throw fetchError;
 
-      // Invalidate all proposal queries to refresh data everywhere
-      queryClient.invalidateQueries();
+      // Keep full proposal edits scoped to the owner and affected editor views.
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: proposalQueryKeys.ownerLists(user.id) });
+      }
+      queryClient.invalidateQueries({ queryKey: proposalQueryKeys.editor(id) });
+      queryClient.invalidateQueries({ queryKey: proposalQueryKeys.snapshot(id) });
+      if (fetchedProposal.share_token) {
+        queryClient.invalidateQueries({
+          queryKey: proposalQueryKeys.public(fetchedProposal.share_token),
+        });
+      }
       toast.success('Proposta atualizada com sucesso');
       return { data: fetchedProposal as Proposal, error: null };
     } catch (error: unknown) {
