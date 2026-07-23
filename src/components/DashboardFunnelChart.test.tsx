@@ -55,4 +55,39 @@ describe('DashboardFunnelChart', () => {
     expect(screen.getByTestId('conversion-funnel')).toBeInTheDocument();
     expect(screen.getByText('10 propostas no período')).toBeInTheDocument();
   });
+
+  it('shows an empty state instead of a fictitious funnel when every stage is zero', () => {
+    render(
+      <DashboardFunnelChart
+        isLoading={false}
+        data={[
+          {
+            stage: 'Total de Propostas',
+            status: 'all',
+            count: 0,
+            valueSum: 0,
+          },
+          {
+            stage: 'Enviadas ou posteriores',
+            status: 'advanced',
+            count: 0,
+            valueSum: 0,
+          },
+          {
+            stage: 'Aprovadas',
+            status: 'Aprovada',
+            count: 0,
+            valueSum: 0,
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        'Nenhuma proposta encontrada para os filtros selecionados.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('conversion-funnel')).not.toBeInTheDocument();
+  });
 });

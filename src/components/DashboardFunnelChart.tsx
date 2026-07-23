@@ -9,25 +9,34 @@ import {
   Cell
 } from 'recharts';
 import { useCurrency } from '@/context/CurrencyContext';
-
-interface FunnelStage {
-  stage: string;
-  status: string;
-  count: number;
-  valueSum: number;
-}
+import type { DashboardFunnelStage } from '@/features/crm/dashboard/dashboardAnalytics';
 
 interface FunnelData {
   name: string;
   value: number;
-  actualValue: number; // Real count for tooltip
+  actualValue: number;
   valueSum: number;
   color: string;
+  previousConversionRate: number;
+  totalConversionRate: number;
 }
 
 interface DashboardFunnelChartProps {
-  data: FunnelStage[];
+  data: Array<
+    Pick<DashboardFunnelStage, 'stage' | 'status' | 'count' | 'valueSum'> &
+      Partial<
+        Pick<
+          DashboardFunnelStage,
+          'previousConversionRate' | 'totalConversionRate'
+        >
+      >
+  >;
   isLoading: boolean;
+}
+
+interface FunnelTooltipProps {
+  active?: boolean;
+  payload?: Array<{ payload: FunnelData }>;
 }
 
 const DashboardFunnelChart: React.FC<DashboardFunnelChartProps> = ({ 
@@ -39,42 +48,28 @@ const DashboardFunnelChart: React.FC<DashboardFunnelChartProps> = ({
   const getStageColor = (stage: string): string => {
     switch (stage) {
       case 'Total de Propostas': return 'hsl(var(--primary))';
-      case 'Em Negociação': return 'hsl(38, 92%, 50%)';
+      case 'Em Negociação':
+      case 'Enviadas ou posteriores':
+        return 'hsl(38, 92%, 50%)';
       case 'Aprovadas': return 'hsl(142, 76%, 36%)';
       default: return 'hsl(var(--muted-foreground))';
     }
   };
 
-  // Normalize values to maintain funnel shape even with similar numbers
-  const normalizeValue = (value: number, index: number, total: number): number => {
-    if (total === 0) return 0;
-
-    // Calculate actual percentage
-    const percentage = (value / total) * 100;
-
-    // Apply minimum width based on funnel position to maintain shape
-    // Top stage: 100%, Middle: minimum 60%, Bottom: minimum 40%
-    const minPercentages = [100, 60, 40];
-    const minPercentage = minPercentages[index] || 40;
-
-    // Ensure visual distinction but maintain funnel shape
-    return Math.max(percentage, minPercentage);
-  };
-
-  const maxCount = Math.max(...data.map(d => d.count), 1);
-
-  const funnelData: FunnelData[] = data.map((stage, index) => ({
+  const funnelData: FunnelData[] = data.map((stage) => ({
     name: `${stage.stage} (${stage.count})`,
-    value: normalizeValue(stage.count, index, maxCount),
-    actualValue: stage.count, // Keep actual value for tooltip
+    value: stage.count,
+    actualValue: stage.count,
     valueSum: stage.valueSum,
-    color: getStageColor(stage.stage)
+    color: getStageColor(stage.stage),
+    previousConversionRate: stage.previousConversionRate ?? 0,
+    totalConversionRate: stage.totalConversionRate ?? 0,
   }));
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: FunnelTooltipProps) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const stageName = data.name.split(' (')[0]; // Extrair apenas o nome do estágio sem o contador
+      const tooltipData = payload[0].payload;
+      const stageName = tooltipData.name.split(' (')[0];
 
       return (
         <div className="bg-background border rounded-md shadow-md p-3">
@@ -82,17 +77,21 @@ const DashboardFunnelChart: React.FC<DashboardFunnelChartProps> = ({
           <div className="flex items-center gap-2 text-sm mb-1">
             <div
               className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: data.color }}
+              style={{ backgroundColor: tooltipData.color }}
             />
             <span className="text-muted-foreground">Propostas:</span>
-            <span className="font-medium">{data.actualValue}</span>
+            <span className="font-medium">{tooltipData.actualValue}</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <div
               className="w-3 h-3 rounded-full opacity-0"
             />
             <span className="text-muted-foreground">Valor Total:</span>
-            <span className="font-medium">{formatCurrency(data.valueSum)}</span>
+            <span className="font-medium">{formatCurrency(tooltipData.valueSum)}</span>
+          </div>
+          <div className="mt-2 border-t pt-2 text-xs text-muted-foreground">
+            {tooltipData.previousConversionRate.toFixed(1)}% da etapa anterior ·{' '}
+            {tooltipData.totalConversionRate.toFixed(1)}% do total
           </div>
         </div>
       );
@@ -100,8 +99,7 @@ const DashboardFunnelChart: React.FC<DashboardFunnelChartProps> = ({
     return null;
   };
 
-  // Verificar se há dados para mostrar
-  const hasData = funnelData.some(item => item.value > 0);
+  const hasData = data.some((stage) => stage.count > 0);
   const totalProposals = data[0]?.count ?? 0;
 
   return (
@@ -117,7 +115,7 @@ const DashboardFunnelChart: React.FC<DashboardFunnelChartProps> = ({
           <Skeleton className="h-[280px] w-full" />
         ) : !hasData ? (
           <div className="flex h-[280px] flex-col items-center justify-center text-center text-sm text-muted-foreground">
-            <p>Nenhuma proposta encontrada no período selecionado.</p>
+            <p>Nenhuma proposta encontrada para os filtros selecionados.</p>
           </div>
         ) : (
           <div className="h-[280px]">

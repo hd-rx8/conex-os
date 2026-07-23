@@ -13,10 +13,10 @@ import {
   TooltipProps
 } from 'recharts';
 import { useCurrency } from '@/context/CurrencyContext';
-import { DashboardChartData } from '@/hooks/useDashboardChart';
+import type { DashboardMonthlyData } from '@/features/crm/dashboard/dashboardAnalytics';
 
 interface DashboardBarChartProps {
-  data: DashboardChartData[];
+  data: DashboardMonthlyData[];
   isLoading: boolean;
   title?: string;
 }
@@ -52,6 +52,9 @@ const DashboardBarChart: React.FC<DashboardBarChartProps> = ({
   title = "Oportunidades por Mês (Valor Gerado vs. Fechado)"
 }) => {
   const { formatCurrency } = useCurrency();
+  const hasData = data.some(
+    (item) => item.generated_total > 0 || item.closed_total > 0,
+  );
 
   return (
     <Card className="h-full overflow-hidden shadow-sm">
@@ -64,6 +67,10 @@ const DashboardBarChart: React.FC<DashboardBarChartProps> = ({
       <CardContent>
         {isLoading ? (
           <Skeleton className="h-[280px] w-full" />
+        ) : !hasData ? (
+          <div className="flex h-[280px] items-center justify-center px-6 text-center text-sm text-muted-foreground">
+            Nenhuma proposta encontrada para os filtros selecionados.
+          </div>
         ) : (
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">

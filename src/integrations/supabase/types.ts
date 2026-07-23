@@ -404,6 +404,7 @@ export type Database = {
       proposals: {
         Row: {
           amount: number
+          approved_at: string | null
           cash_discount_percentage: number | null
           client_id: string | null
           created_at: string
@@ -426,6 +427,7 @@ export type Database = {
         }
         Insert: {
           amount?: number
+          approved_at?: string | null
           cash_discount_percentage?: number | null
           client_id?: string | null
           created_at?: string
@@ -448,6 +450,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          approved_at?: string | null
           cash_discount_percentage?: number | null
           client_id?: string | null
           created_at?: string

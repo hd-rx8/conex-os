@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { 
+import {
   Plus,
   FileText,
   DollarSign,
@@ -17,7 +17,6 @@ import {
   Filter,
 } from 'lucide-react';
 import { useProposals, ProposalFilters } from '@/hooks/useProposals';
-import { useDashboardChart, DashboardChartFilters } from '@/hooks/useDashboardChart';
 import { useNavigate } from 'react-router-dom';
 import { useCurrency } from '@/context/CurrencyContext';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,6 +28,7 @@ import { ContentCard } from './layout/ContentCard';
 import { MetricCard } from './layout/MetricCard';
 import { PageHeader } from './layout/PageHeader';
 import { PageToolbar } from './layout/PageToolbar';
+import { deriveDashboardAnalytics } from '@/features/crm/dashboard/dashboardAnalytics';
 
 interface DashboardProps {
   userId: string;
@@ -49,12 +49,10 @@ const ProposalSkeleton = () => (
 const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
   const navigate = useNavigate();
   const { formatCurrency } = useCurrency();
-  const [chartFilters, setChartFilters] = useState<DashboardChartFilters>({
-    period: 'last6months'
-  });
   
   const {
     proposals,
+    allProposals,
     loading,
     filters,
     setFilters,
@@ -63,40 +61,23 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
     totalPages,
     duplicateProposal,
     deleteProposal,
-    metrics,
   } = useProposals();
 
-  const { 
-    chartData, 
+  const {
+    metrics,
+    monthlyData: chartData,
     funnelData,
-    isLoading: chartLoading,
-    isFunnelLoading
-  } = useDashboardChart(chartFilters);
+  } = useMemo(
+    () =>
+      deriveDashboardAnalytics(allProposals, {
+        dateField: filters.dateField || 'created_at',
+      }),
+    [allProposals, filters.dateField],
+  );
 
   const handleFilterChange = (key: keyof ProposalFilters, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value, currentPage: 1 }));
-
-    // Automatically sync chart period with main filter
-    if (key === 'period') {
-      let chartPeriod: DashboardChartFilters['period'] = 'last6months';
-
-      switch (value) {
-        case 'today':
-        case '7days':
-          chartPeriod = 'last3months';
-          break;
-        case '30days':
-        case 'currentMonth':
-          chartPeriod = 'last6months';
-          break;
-        case 'custom':
-        case 'all':
-          chartPeriod = 'last12months';
-          break;
-      }
-
-      setChartFilters(prev => ({ ...prev, period: chartPeriod }));
-    }
+    setFilters((previous) => ({ ...previous, [key]: value }));
+    setCurrentPage(1);
   };
 
   const getStatusColor = (status: string) => {
@@ -211,6 +192,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="Criada">Criada</SelectItem>
                 <SelectItem value="Enviada">Enviada</SelectItem>
+                <SelectItem value="Negociando">Negociando</SelectItem>
                 <SelectItem value="Aprovada">Aprovada</SelectItem>
                 <SelectItem value="Rejeitada">Rejeitada</SelectItem>
                 <SelectItem value="Rascunho">Rascunho</SelectItem>
@@ -283,13 +265,13 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
         <div className="min-w-0 xl:col-span-8">
           <DashboardBarChart
             data={chartData}
-            isLoading={chartLoading}
+            isLoading={loading}
           />
         </div>
         <div className="min-w-0 xl:col-span-4">
           <DashboardFunnelChart
             data={funnelData}
-            isLoading={isFunnelLoading}
+            isLoading={loading}
           />
         </div>
       </section>
