@@ -430,13 +430,13 @@ const Settings = () => {
                   <CardDescription>Personalize a aparência da aplicação.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-2">
                     <p className="text-sm font-medium">Tema de gradiente</p>
                     <Select
                       value={currentGradientTheme}
                       onValueChange={(value) => setGradientTheme(value as 'conexhub' | 'alt1' | 'alt2')}
                     >
-                      <SelectTrigger className="w-full sm:w-44">
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Selecionar tema" />
                       </SelectTrigger>
                       <SelectContent>
@@ -486,7 +486,7 @@ const Settings = () => {
           </TabsContent>
 
           <TabsContent value="seguranca" className="space-y-6">
-            <div className="max-w-4xl space-y-6">
+            <div className="grid gap-6 lg:grid-cols-2">
               <SecuritySection />
               <ImportExportCard />
             </div>
