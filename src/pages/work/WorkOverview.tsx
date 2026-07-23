@@ -48,7 +48,10 @@ export default function WorkOverview() {
   const { selectedWorkspaceId, setSelectedWorkspaceId } = useWorkContext();
   const [search, setSearch] = useState('');
   const workspacesQuery = useWorkspacesQuery();
-  const workspaces = workspacesQuery.data ?? [];
+  const workspaces = useMemo(
+    () => workspacesQuery.data ?? [],
+    [workspacesQuery.data],
+  );
 
   useEffect(() => {
     const selectedExists = workspaces.some(
@@ -61,7 +64,10 @@ export default function WorkOverview() {
 
   const treeQuery = useWorkspaceTreeQuery(selectedWorkspaceId);
   const tasksQuery = useWorkspaceTasksQuery(selectedWorkspaceId);
-  const projects = treeQuery.data?.spaces ?? [];
+  const projects = useMemo(
+    () => treeQuery.data?.spaces ?? [],
+    [treeQuery.data?.spaces],
+  );
   const tasks = tasksQuery.data ?? [];
   const taskMetrics = deriveWorkTaskMetrics(tasks);
   const activeProjects = projects.filter(

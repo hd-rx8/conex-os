@@ -54,6 +54,8 @@ const METRIC_CARDS = [
   },
 ] as const;
 
+const EMPTY_TASKS: readonly WorkTaskItem[] = [];
+
 export default function WorkTasks() {
   const { user } = useSession();
   const { selectedWorkspaceId } = useWorkContext();
@@ -65,7 +67,7 @@ export default function WorkTasks() {
     'assigned',
     user?.id ?? 'anonymous',
   );
-  const tasks = tasksQuery.data ?? [];
+  const tasks = tasksQuery.data ?? EMPTY_TASKS;
   const metrics = deriveWorkTaskMetrics(tasks);
   const filteredTasks = useMemo(
     () => filterWorkTasks(tasks, filters),

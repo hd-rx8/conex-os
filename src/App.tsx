@@ -19,9 +19,9 @@ import Clients from "./pages/crm/Clients";
 import QuoteGeneratorPage from "./pages/crm/QuoteGeneratorPage";
 import PublicProposalView from "./pages/crm/PublicProposalView";
 // Importar Work Management (hierarquia)
-import WorkManagement from "./pages/work/WorkManagement";
 import WorkOverview from "./pages/work/WorkOverview";
 import WorkTasks from "./pages/work/WorkTasks";
+import WorkBoard from "./pages/work/WorkBoard";
 import ProjectDetails from "./pages/work/ProjectDetails";
 import WorkspaceSettings from "./pages/work/WorkspaceSettings";
 import ListDetails from "./pages/work/ListDetails";
@@ -125,7 +125,7 @@ const AppContent = () => {
           element={
             user ? (
               <ModuleProtectedRoute requiredModule="work" redirectTo="/">
-                <WorkManagement />
+                <WorkOverview />
               </ModuleProtectedRoute>
             ) : <Navigate to="/login" replace />
           }
@@ -135,7 +135,7 @@ const AppContent = () => {
           element={
             user ? (
               <ModuleProtectedRoute requiredModule="work" redirectTo="/">
-                <WorkOverview />
+                <WorkTasks />
               </ModuleProtectedRoute>
             ) : <Navigate to="/login" replace />
           }
@@ -145,7 +145,7 @@ const AppContent = () => {
           element={
             user ? (
               <ModuleProtectedRoute requiredModule="work" redirectTo="/">
-                <WorkTasks />
+                <WorkBoard />
               </ModuleProtectedRoute>
             ) : <Navigate to="/login" replace />
           }

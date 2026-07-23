@@ -156,7 +156,7 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
     if (activeModule === 'work' && workspaces.length > 0 && !selectedWorkspaceId) {
       setSelectedWorkspaceId(workspaces[0].id);
     }
-  }, [workspaces, selectedWorkspaceId, activeModule]);
+  }, [workspaces, selectedWorkspaceId, activeModule, setSelectedWorkspaceId]);
 
   // Carregar árvore do workspace selecionado
   useEffect(() => {
