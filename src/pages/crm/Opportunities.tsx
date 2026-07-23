@@ -828,12 +828,12 @@ const Opportunities: React.FC = () => {
                     <SelectValue placeholder="Ordenar por" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="updated_at-desc">Mais recente</SelectItem>
-                    <SelectItem value="updated_at-asc">Mais antigo</SelectItem>
-                    <SelectItem value="amount-desc">Maior valor</SelectItem>
-                    <SelectItem value="amount-asc">Menor valor</SelectItem>
-                    <SelectItem value="created_at-desc">Criado recente</SelectItem>
-                    <SelectItem value="created_at-asc">Criado antigo</SelectItem>
+                    <SelectItem value="updated_at-desc">Ordenar por: Mais recente</SelectItem>
+                    <SelectItem value="updated_at-asc">Ordenar por: Mais antigo</SelectItem>
+                    <SelectItem value="amount-desc">Ordenar por: Maior valor</SelectItem>
+                    <SelectItem value="amount-asc">Ordenar por: Menor valor</SelectItem>
+                    <SelectItem value="created_at-desc">Ordenar por: Criado recente</SelectItem>
+                    <SelectItem value="created_at-asc">Ordenar por: Criado antigo</SelectItem>
                   </SelectContent>
                 </Select>
                 </div>
