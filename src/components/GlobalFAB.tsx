@@ -363,7 +363,7 @@ const GlobalFAB: React.FC = () => {
       )}
 
       {/* Task Modal */}
-      {modals.task.isOpen && modals.task.spaceId && modals.task.listId && (
+      {modals.task.isOpen && (
         <CreateTaskFromProjectModal
           onCreateTask={handleTaskSubmit}
           preselectedSpaceId={modals.task.spaceId}

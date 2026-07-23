@@ -79,9 +79,6 @@ export const useFABActions = () => {
   };
 
   const handleCreateTask = async (data: CreateTaskData) => {
-    if (!context.listId || data.list_id !== context.listId) {
-      throw new Error('Selecione uma lista antes de criar uma tarefa.');
-    }
     const task = await createTaskMutation.mutateAsync(data);
     setIsTaskModalOpen(false);
     return { data: task, error: null };
@@ -151,8 +148,8 @@ export const useFABActions = () => {
           label: 'Nova tarefa',
           icon: CheckSquare,
           onClick: () => setIsTaskModalOpen(true),
-          disabled: !context.listId || !selectedSpaceId,
-          disabledReason: 'Selecione uma lista para criar uma tarefa.',
+          disabled: !activeWorkspaceId,
+          disabledReason: 'Crie ou carregue um workspace primeiro.',
           color: 'bg-purple-600 hover:bg-purple-700 text-white',
         },
       ];
