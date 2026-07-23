@@ -89,6 +89,9 @@ vi.mock('@/features/work/hooks/useWorkData', () => ({
   useListTasksQuery: () => queries.tasks,
   useUpdateTaskMutation: () => ({ mutateAsync: vi.fn() }),
 }));
+vi.mock('@/hooks/useLists', () => ({
+  useLists: () => ({ createList: vi.fn() }),
+}));
 
 import ListDetails from './ListDetails';
 import ProjectDetails from './ProjectDetails';

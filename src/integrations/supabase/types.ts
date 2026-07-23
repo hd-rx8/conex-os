@@ -149,6 +149,8 @@ export type Database = {
           position: number
           space_id: string
           updated_at: string
+          workspace_folder_id: string | null
+          workspace_id: string | null
         }
         Insert: {
           color?: string | null
@@ -161,6 +163,8 @@ export type Database = {
           position?: number
           space_id: string
           updated_at?: string
+          workspace_folder_id?: string | null
+          workspace_id?: string | null
         }
         Update: {
           color?: string | null
@@ -173,6 +177,8 @@ export type Database = {
           position?: number
           space_id?: string
           updated_at?: string
+          workspace_folder_id?: string | null
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -329,6 +335,20 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lists_workspace_folder_workspace_fkey"
+            columns: ["workspace_folder_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_folders"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "lists_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]

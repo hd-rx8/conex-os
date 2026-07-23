@@ -12,6 +12,22 @@ export type CreateListData = {
   description?: string | null;
 };
 
+type CanonicalListPath = Pick<
+  Tables<'spaces'>,
+  'workspace_id' | 'workspace_folder_id'
+>;
+
+export function buildCanonicalListInsert(
+  listData: CreateListData,
+  path: CanonicalListPath,
+) {
+  return {
+    ...listData,
+    workspace_id: path.workspace_id,
+    workspace_folder_id: path.workspace_folder_id,
+  };
+}
+
 export type UpdateListData = Partial<{
   name: string;
   description: string | null;
@@ -55,9 +71,17 @@ export const useLists = (spaceId?: string, folderId?: string) => {
   // Create a new list
   const createList = useCallback(async (listData: CreateListData) => {
     try {
+      const { data: space, error: spaceError } = await supabase
+        .from('spaces')
+        .select('workspace_id, workspace_folder_id')
+        .eq('id', listData.space_id)
+        .single();
+
+      if (spaceError) throw spaceError;
+
       const { data, error } = await supabase
         .from('lists')
-        .insert(listData)
+        .insert(buildCanonicalListInsert(listData, space))
         .select();
 
       if (error) throw error;
