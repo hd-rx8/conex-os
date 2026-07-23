@@ -31,7 +31,13 @@ import { GradientThemeProvider } from "./context/GradientThemeContext";
 import { CurrencyProvider } from "./context/CurrencyContext";
 import { QuoteWizardProvider } from "./context/QuoteWizardContext";
 import { ActiveProjectProvider } from "./context/ActiveProjectContext";
-import { WORK_HOME } from "./features/work/navigation/workRoutes";
+import {
+  WORK_BOARD,
+  WORK_HOME,
+  WORK_TASKS,
+  WORK_WORKSPACES,
+} from "./features/work/navigation/workRoutes";
+import { WorkContextProvider } from "./features/work/context/WorkContext";
 
 const queryClient = new QueryClient();
 
@@ -123,6 +129,26 @@ const AppContent = () => {
           }
         />
         <Route
+          path={WORK_TASKS}
+          element={
+            user ? (
+              <ModuleProtectedRoute requiredModule="work" redirectTo="/">
+                <WorkManagement />
+              </ModuleProtectedRoute>
+            ) : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path={WORK_BOARD}
+          element={
+            user ? (
+              <ModuleProtectedRoute requiredModule="work" redirectTo="/">
+                <WorkManagement />
+              </ModuleProtectedRoute>
+            ) : <Navigate to="/login" replace />
+          }
+        />
+        <Route
           path="/work/project/:projectId"
           element={
             user ? (
@@ -133,7 +159,7 @@ const AppContent = () => {
           }
         />
         <Route
-          path="/work/workspaces"
+          path={WORK_WORKSPACES}
           element={
             user ? (
               <ModuleProtectedRoute requiredModule="work" redirectTo="/">
@@ -154,8 +180,8 @@ const AppContent = () => {
         />
         <Route path="/projects" element={<Navigate to={WORK_HOME} replace />} />
         <Route path="/projects/list" element={<Navigate to={WORK_HOME} replace />} />
-        <Route path="/projects/tasks" element={<Navigate to={WORK_HOME} replace />} />
-        <Route path="/projects/board" element={<Navigate to={WORK_HOME} replace />} />
+        <Route path="/projects/tasks" element={<Navigate to={WORK_TASKS} replace />} />
+        <Route path="/projects/board" element={<Navigate to={WORK_BOARD} replace />} />
         <Route path="/projects/:projectId" element={<LegacyWorkProjectRedirect />} />
 
         {/* Rotas de autenticação */}
@@ -191,9 +217,11 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <AppModuleProvider>
-                <ActiveProjectProvider>
-                  <AppContent />
-                </ActiveProjectProvider>
+                <WorkContextProvider>
+                  <ActiveProjectProvider>
+                    <AppContent />
+                  </ActiveProjectProvider>
+                </WorkContextProvider>
               </AppModuleProvider>
             </BrowserRouter>
           </TooltipProvider>

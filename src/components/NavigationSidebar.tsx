@@ -33,7 +33,13 @@ import CreateProjectModal from './modals/CreateProjectModal';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import type { WorkspaceTree } from '@/types/hierarchy';
-import { WORK_HOME } from '@/features/work/navigation/workRoutes';
+import {
+  WORK_BOARD,
+  WORK_HOME,
+  WORK_TASKS,
+  WORK_WORKSPACES,
+} from '@/features/work/navigation/workRoutes';
+import { useWorkContext } from '@/features/work/context/WorkContext';
 
 interface NavigationItem {
   id: string;
@@ -86,27 +92,27 @@ const NAV_CRM: NavigationItem[] = [
 const NAV_WORK: NavigationItem[] = [
   {
     id: 'projects-overview',
-    label: 'Dashboard',
+    label: 'Visão geral',
     icon: LayoutDashboard,
     path: WORK_HOME
   },
   {
-    id: 'workspaces',
-    label: 'Gerenciar Workspaces',
-    icon: FolderOpen,
-    path: '/work/workspaces'
-  },
-  {
     id: 'my-tasks',
-    label: 'Minhas Tarefas',
+    label: 'Minhas tarefas',
     icon: ClipboardList,
-    path: WORK_HOME
+    path: WORK_TASKS
   },
   {
     id: 'tasks-board',
-    label: 'Quadro Kanban',
+    label: 'Quadro',
     icon: Kanban,
-    path: WORK_HOME
+    path: WORK_BOARD
+  },
+  {
+    id: 'workspaces',
+    label: 'Workspaces',
+    icon: FolderOpen,
+    path: WORK_WORKSPACES
   },
   {
     id: 'settings',
@@ -126,8 +132,8 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
   const isMobile = useIsMobile();
   const { activeModule } = useAppModule();
   const { workspaces, getWorkspaceTree } = useWorkspaces();
+  const { selectedWorkspaceId, setSelectedWorkspaceId } = useWorkContext();
 
-  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
   const [workspaceTree, setWorkspaceTree] = useState<WorkspaceTree | null>(null);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
@@ -205,6 +211,7 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
       return children.some(child => isActive(child.path));
     }
     if (path === '/' && location.pathname === '/') return true;
+    if (path === WORK_HOME) return location.pathname === WORK_HOME;
     if (path !== '/' && path && location.pathname.startsWith(path)) return true;
     return false;
   };
