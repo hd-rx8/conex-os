@@ -816,6 +816,11 @@ export type Database = {
         | "Aprovada"
         | "Rejeitada"
         | "Rascunho"
+        | "QUALIFICACAO"
+        | "EM_ELABORACAO"
+        | "EM_NEGOCIACAO"
+        | "FECHADO_GANHO"
+        | "FECHADO_PERDIDO"
       task_priority: "Baixa" | "Media" | "Alta" | "Urgente"
     }
     CompositeTypes: {
@@ -951,6 +956,11 @@ export const Constants = {
         "Aprovada",
         "Rejeitada",
         "Rascunho",
+        "QUALIFICACAO",
+        "EM_ELABORACAO",
+        "EM_NEGOCIACAO",
+        "FECHADO_GANHO",
+        "FECHADO_PERDIDO",
       ],
       task_priority: ["Baixa", "Media", "Alta", "Urgente"],
     },

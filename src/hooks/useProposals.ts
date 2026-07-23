@@ -102,6 +102,8 @@ export interface ProposalFilters {
   customEndDate?: string; // NEW: custom date range end
 }
 
+const EMPTY_PROPOSALS: Proposal[] = [];
+
 export const useProposals = () => {
   const queryClient = useQueryClient();
   const { user } = useSession();
@@ -121,7 +123,7 @@ export const useProposals = () => {
 
   // Use React Query to fetch and cache proposals
   const { 
-    data: proposals = [], 
+    data: proposals = EMPTY_PROPOSALS, 
     isLoading: loading,
     refetch: refetchProposals
   } = useQuery({

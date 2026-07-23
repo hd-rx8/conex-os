@@ -24,37 +24,26 @@ import { ptBR } from 'date-fns/locale';
 import { Separator } from '@/components/ui/separator';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import DuplicateProposalModal from '@/components/DuplicateProposalModal';
+import { ProposalStatus, getStatusLabel, getStatusClasses, normalizeStatus } from '@/utils/statusColors';
 
 // Define os status possíveis para as propostas
-const PROPOSAL_STATUSES = ['Rascunho', 'Criada', 'Enviada', 'Negociando', 'Aprovada', 'Rejeitada'] as const;
-type ProposalStatus = typeof PROPOSAL_STATUSES[number];
+const PROPOSAL_STATUSES: ProposalStatus[] = ['QUALIFICACAO', 'EM_ELABORACAO', 'ENVIADA', 'EM_NEGOCIACAO', 'FECHADO_GANHO', 'FECHADO_PERDIDO'];
 
 // Status ativos (que aparecem no board)
-const ACTIVE_STATUSES: ProposalStatus[] = ['Rascunho', 'Criada', 'Enviada', 'Negociando'];
+const ACTIVE_STATUSES: ProposalStatus[] = ['QUALIFICACAO', 'EM_ELABORACAO', 'ENVIADA', 'EM_NEGOCIACAO'];
 
 // Status fechados (que aparecem na aba Closed)
-const CLOSED_STATUSES: ProposalStatus[] = ['Aprovada', 'Rejeitada'];
+const CLOSED_STATUSES: ProposalStatus[] = ['FECHADO_GANHO', 'FECHADO_PERDIDO'];
 
-const getStatusColor = (status: ProposalStatus) => {
-  switch (status) {
-    case 'Rascunho': return 'bg-purple-100 text-purple-800 border-purple-200';
-    case 'Criada': return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'Enviada': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    case 'Negociando': return 'bg-orange-100 text-orange-800 border-orange-200';
-    case 'Aprovada': return 'bg-green-100 text-green-800 border-green-200';
-    case 'Rejeitada': return 'bg-red-100 text-red-800 border-red-200';
-    default: return 'bg-gray-100 text-gray-800 border-gray-200';
-  }
-};
-
-const getStatusIcon = (status: ProposalStatus) => {
-  switch (status) {
-    case 'Rascunho': return '📝';
-    case 'Criada': return '📋';
-    case 'Enviada': return '📤';
-    case 'Negociando': return '🤝';
-    case 'Aprovada': return '✅';
-    case 'Rejeitada': return '❌';
+const getStatusIcon = (status: ProposalStatus | string) => {
+  const normalized = normalizeStatus(status);
+  switch (normalized) {
+    case 'QUALIFICACAO': return '🔍';
+    case 'EM_ELABORACAO': return '📝';
+    case 'ENVIADA': return '📤';
+    case 'EM_NEGOCIACAO': return '🤝';
+    case 'FECHADO_GANHO': return '✅';
+    case 'FECHADO_PERDIDO': return '❌';
     default: return '📄';
   }
 };
@@ -185,10 +174,11 @@ const Pipeline: React.FC = () => {
       });
 
       sortedProposals.forEach(proposal => {
-        if (PROPOSAL_STATUSES.includes(proposal.status as ProposalStatus)) {
-          newGroupedProposals[proposal.status as ProposalStatus].push(proposal);
+        const normalizedStatus = normalizeStatus(proposal.status) as ProposalStatus;
+        if (PROPOSAL_STATUSES.includes(normalizedStatus)) {
+          newGroupedProposals[normalizedStatus].push(proposal);
         } else {
-          newGroupedProposals['Criada'].push(proposal);
+          newGroupedProposals['EM_ELABORACAO'].push(proposal);
         }
       });
       setGroupedProposals(newGroupedProposals);
@@ -436,8 +426,8 @@ const Pipeline: React.FC = () => {
               <DollarSign className="h-3 w-3" />
               {formatCurrency(Number(proposal.amount))}
             </span>
-            <Badge variant="outline" className={cn("text-xs", getStatusColor(proposal.status as ProposalStatus))}>
-              {getStatusIcon(proposal.status as ProposalStatus)} {proposal.status}
+            <Badge variant="outline" className={cn("text-xs", getStatusClasses(proposal.status as ProposalStatus))}>
+              {getStatusIcon(proposal.status as ProposalStatus)} {getStatusLabel(proposal.status)}
             </Badge>
           </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -574,7 +564,7 @@ const Pipeline: React.FC = () => {
                 <div className="flex space-x-4 p-4 min-h-[600px] items-start">
                   {ACTIVE_STATUSES.map(status => (
                     <div
-                      key={status}
+                      key={getStatusLabel(status)}
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, status)}
                       className={cn(
@@ -585,9 +575,9 @@ const Pipeline: React.FC = () => {
                       <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center justify-between">
                         <span className="flex items-center gap-2">
                           <span className="text-base sm:text-lg">{getStatusIcon(status)}</span>
-                          <span className="truncate">{status}</span>
+                          <span className="truncate">{getStatusLabel(status)}</span>
                         </span>
-                        <Badge variant="secondary" className={cn("text-xs", getStatusColor(status))}>
+                        <Badge variant="secondary" className={cn("text-xs", getStatusClasses(status))}>
                           {groupedProposals[status]?.length || 0}
                         </Badge>
                       </h3>
@@ -632,12 +622,12 @@ const Pipeline: React.FC = () => {
                 if (proposals.length === 0) return null;
 
                 return (
-                  <Card key={status}>
+                  <Card key={getStatusLabel(status)}>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <span className="text-lg">{getStatusIcon(status)}</span>
-                        {status}
-                        <Badge variant="secondary" className={getStatusColor(status)}>
+                        {getStatusLabel(status)}
+                        <Badge variant="secondary" className={getStatusClasses(status)}>
                           {proposals.length}
                         </Badge>
                       </CardTitle>
@@ -710,11 +700,11 @@ const Pipeline: React.FC = () => {
                           value={selectedProposal.status}
                           onSave={(newValue) => handleUpdateProposalField('status', newValue)}
                           type="select"
-                          selectOptions={PROPOSAL_STATUSES.map(s => ({ value: s, label: s }))}
+                          selectOptions={PROPOSAL_STATUSES.map(s => ({ value: s, label: getStatusLabel(s) }))}
                           isLoading={isSaving.status}
                           disabled={selectedProposal.owner !== currentUser?.id}
                           formatDisplayValue={(value) => (
-                            <Badge className={getStatusColor(value as ProposalStatus)}>
+                            <Badge className={getStatusClasses(value as ProposalStatus)}>
                               {value}
                             </Badge>
                           )}

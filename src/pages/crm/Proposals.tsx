@@ -18,6 +18,9 @@ import { useForm } from 'react-hook-form';
 import MainLayout from '@/components/MainLayout';
 import { useCurrency } from '@/context/CurrencyContext'; // Import useCurrency
 import DuplicateProposalModal from '@/components/DuplicateProposalModal';
+import { ProposalStatus, getStatusLabel, getStatusClasses, normalizeStatus } from '@/utils/statusColors';
+
+const PROPOSAL_STATUSES: ProposalStatus[] = ['QUALIFICACAO', 'EM_ELABORACAO', 'ENVIADA', 'EM_NEGOCIACAO', 'FECHADO_GANHO', 'FECHADO_PERDIDO'];
 
 interface ProposalFormData {
   title: string;
@@ -151,18 +154,6 @@ const ProposalSkeleton = () => (
   </TableRow>
 );
 
-const getStatusClasses = (status: Proposal['status']) => {
-  switch (status) {
-    case 'Rascunho': return 'bg-purple-200/50 text-purple-700 hover:bg-purple-200/80 dark:bg-purple-900/50 dark:text-purple-300 dark:hover:bg-purple-800/70';
-    case 'Criada': return 'bg-gray-200/50 text-gray-700 hover:bg-gray-200/80 dark:bg-gray-700/50 dark:text-gray-300 dark:hover:bg-gray-600/70';
-    case 'Enviada': return 'bg-yellow-200/50 text-yellow-700 hover:bg-yellow-200/80 dark:bg-yellow-900/50 dark:text-yellow-300 dark:hover:bg-yellow-800/70';
-    case 'Negociando': return 'bg-orange-200/50 text-orange-700 hover:bg-orange-200/80 dark:bg-orange-900/50 dark:text-orange-300 dark:hover:bg-orange-800/70';
-    case 'Aprovada': return 'bg-green-200/50 text-green-700 hover:bg-green-200/80 dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-800/70';
-    case 'Rejeitada': return 'bg-red-200/50 text-red-700 hover:bg-red-200/80 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-800/70';
-    default: return 'bg-gray-200/50 text-gray-700 hover:bg-gray-200/80 dark:bg-gray-700/50 dark:text-gray-300 dark:hover:bg-gray-600/70';
-  }
-};
-
 export default function Proposals() {
   const { user: currentUser } = useSession();
   const { allUsers } = useUsers();
@@ -271,12 +262,11 @@ export default function Proposals() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="Criada">Criada</SelectItem>
-                    <SelectItem value="Enviada">Enviada</SelectItem>
-                    <SelectItem value="Negociando">Negociando</SelectItem>
-                    <SelectItem value="Aprovada">Aprovada</SelectItem>
-                    <SelectItem value="Rejeitada">Rejeitada</SelectItem>
-                    <SelectItem value="Rascunho">Rascunho</SelectItem>
+                    {PROPOSAL_STATUSES.map(status => (
+                      <SelectItem key={status} value={status}>
+                        {getStatusLabel(status)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
 
@@ -350,23 +340,22 @@ export default function Proposals() {
                         </TableCell>
                         <TableCell className="border-r p-0 align-middle h-[40px]">
                           <Select
-                            value={proposal.status}
-                            onValueChange={(value) => handleStatusChange(proposal, value as Proposal['status'])}
+                            value={normalizeStatus(proposal.status)}
+                            onValueChange={(value) => updateProposalStatus(proposal.id, value as Proposal['status'])}
                           >
-                            <SelectTrigger
-                              className={`w-full h-full justify-center rounded-none border-none bg-transparent py-1 px-2 text-xs font-semibold uppercase tracking-wider transition-colors focus:ring-0 focus:ring-offset-0 ${getStatusClasses(
+                            <SelectTrigger 
+                              className={`h-8 w-[130px] border-none text-xs font-medium uppercase tracking-wider ${getStatusClasses(
                                 proposal.status
                               )}`}
                             >
-                              <span className="flex items-center">{proposal.status}</span>
+                              <span className="flex items-center">{getStatusLabel(proposal.status)}</span>
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Criada">Criada</SelectItem>
-                              <SelectItem value="Enviada">Enviada</SelectItem>
-                              <SelectItem value="Negociando">Negociando</SelectItem>
-                              <SelectItem value="Aprovada">Aprovada</SelectItem>
-                              <SelectItem value="Rejeitada">Rejeitada</SelectItem>
-                              <SelectItem value="Rascunho">Rascunho</SelectItem>
+                              {PROPOSAL_STATUSES.map(status => (
+                                <SelectItem key={status} value={status}>
+                                  {getStatusLabel(status)}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </TableCell>

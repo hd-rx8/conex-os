@@ -1,10 +1,6 @@
-export type DashboardProposalStatus =
-  | 'Rascunho'
-  | 'Criada'
-  | 'Enviada'
-  | 'Negociando'
-  | 'Aprovada'
-  | 'Rejeitada';
+import { ProposalStatus, normalizeStatus } from '@/utils/statusColors';
+
+export type DashboardProposalStatus = ProposalStatus;
 
 export interface DashboardProposal {
   id: string;
@@ -44,11 +40,11 @@ interface DashboardAnalyticsOptions {
   now?: Date;
 }
 
-const ADVANCED_STATUSES = new Set<DashboardProposalStatus>([
-  'Enviada',
-  'Negociando',
-  'Aprovada',
-  'Rejeitada',
+const ADVANCED_STATUSES = new Set<string>([
+  'ENVIADA',
+  'EM_NEGOCIACAO',
+  'FECHADO_GANHO',
+  'FECHADO_PERDIDO',
 ]);
 
 const toAmount = (value: number) => {
@@ -96,10 +92,10 @@ export function deriveDashboardAnalytics(
     0,
   );
   const approved = proposals.filter(
-    (proposal) => proposal.status === 'Aprovada',
+    (proposal) => normalizeStatus(proposal.status) === 'FECHADO_GANHO',
   );
   const advanced = proposals.filter((proposal) =>
-    ADVANCED_STATUSES.has(proposal.status),
+    ADVANCED_STATUSES.has(normalizeStatus(proposal.status)),
   );
   const approvedThisMonth = approved
     .filter((proposal) =>
@@ -130,7 +126,7 @@ export function deriveDashboardAnalytics(
 
     current.generated_total += amount;
     current.proposals_count += 1;
-    if (proposal.status === 'Aprovada') {
+    if (normalizeStatus(proposal.status) === 'FECHADO_GANHO') {
       current.closed_total += amount;
     }
 
@@ -172,8 +168,8 @@ export function deriveDashboardAnalytics(
       totalConversionRate: percentage(advanced.length, totalCount),
     },
     {
-      stage: 'Aprovadas',
-      status: 'Aprovada',
+      stage: 'Ganho',
+      status: 'FECHADO_GANHO',
       count: approved.length,
       valueSum: approvedValue,
       previousConversionRate: percentage(approved.length, advanced.length),

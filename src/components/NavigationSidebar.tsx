@@ -64,13 +64,13 @@ const NAV_CRM: NavigationItem[] = [
   },
   {
     id: 'generator',
-    label: 'Gerador de Propostas',
+    label: 'Nova Proposta',
     icon: Calculator,
     path: '/generator'
   },
   {
     id: 'opportunities',
-    label: 'Oportunidades',
+    label: 'Pipeline',
     icon: Kanban,
     path: '/opportunities'
   },

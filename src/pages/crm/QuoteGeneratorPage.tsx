@@ -54,11 +54,11 @@ const QuoteGeneratorPage: React.FC<QuoteGeneratorPageProps> = ({ userId }) => {
       <div className="app-page">
         <PageHeader
           eyebrow="CRM"
-          title="Gerador de propostas"
+          title="Nova Proposta"
           description={`Etapa ${currentStep + 1} de ${steps.length}: ${steps[currentStep]?.name || 'Configuração'}.`}
         />
 
-        <div className="mx-auto w-full max-w-6xl">
+        <div className="mx-auto w-full">
           <ContentCard
             className="overflow-visible"
             contentClassName="space-y-6 p-4 sm:p-6"
