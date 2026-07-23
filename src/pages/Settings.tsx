@@ -15,6 +15,7 @@ import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { useSession } from '@/hooks/useSession';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 // ─── Seção: Dados da Empresa ─────────────────────────────────────────────────
 
@@ -360,6 +361,7 @@ const SecuritySection = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(v => !v)}
+                  aria-label={showPassword ? 'Ocultar senhas' : 'Mostrar senhas'}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -400,74 +402,82 @@ const Settings = () => {
 
   return (
     <MainLayout module={activeModule}>
-      <div className="space-y-6 mt-6">
+      <div className="app-page">
+        <PageHeader
+          eyebrow={activeModule === 'work' ? 'WORK MANAGEMENT' : 'CRM'}
+          title="Configurações"
+          description="Gerencie identidade, preferências regionais, aparência e segurança da conta."
+        />
 
-        {/* Aparência */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <SettingsIcon className="h-5 w-5 text-primary" />
-              <CardTitle>Aparência</CardTitle>
-            </div>
-            <CardDescription>Personalize a aparência da aplicação.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium">Modo (Claro/Escuro)</p>
-              <ThemeToggle />
-            </div>
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium">Tema de Gradiente</p>
-              <Select
-                value={currentGradientTheme}
-                onValueChange={(value) => setGradientTheme(value as 'conexhub' | 'alt1' | 'alt2')}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Selecionar tema" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="conexhub">Andromeda</SelectItem>
-                  <SelectItem value="alt1">Nebula</SelectItem>
-                  <SelectItem value="alt2">Quasar</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="grid gap-6 xl:grid-cols-3">
+          <aside className="space-y-6">
+            {/* Aparência */}
+            <Card className="shadow-sm">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <SettingsIcon className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-xl">Aparência</CardTitle>
+                </div>
+                <CardDescription>Personalize a aparência da aplicação.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-sm font-medium">Modo claro ou escuro</p>
+                  <ThemeToggle />
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm font-medium">Tema de gradiente</p>
+                  <Select
+                    value={currentGradientTheme}
+                    onValueChange={(value) => setGradientTheme(value as 'conexhub' | 'alt1' | 'alt2')}
+                  >
+                    <SelectTrigger className="w-full sm:w-44">
+                      <SelectValue placeholder="Selecionar tema" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="conexhub">Andromeda</SelectItem>
+                      <SelectItem value="alt1">Nebula</SelectItem>
+                      <SelectItem value="alt2">Quasar</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Preferências Regionais */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Preferências Regionais</CardTitle>
-            <CardDescription>Ajuste as configurações de moeda.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium">Moeda Padrão</p>
-              <Select
-                value={selectedCurrency.code}
-                onValueChange={(value) => setSelectedCurrencyCode(value as CurrencyCode)}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Selecionar moeda" />
-                </SelectTrigger>
-                <SelectContent>
-                  {currencies.map((currency) => (
-                    <SelectItem key={currency.code} value={currency.code}>
-                      {currency.symbol} {currency.name} ({currency.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+            {/* Preferências Regionais */}
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-xl">Preferências regionais</CardTitle>
+                <CardDescription>Ajuste a moeda usada nos módulos comerciais.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm font-medium">Moeda padrão</p>
+                  <Select
+                    value={selectedCurrency.code}
+                    onValueChange={(value) => setSelectedCurrencyCode(value as CurrencyCode)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecionar moeda" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {currencies.map((currency) => (
+                        <SelectItem key={currency.code} value={currency.code}>
+                          {currency.symbol} {currency.name} ({currency.code})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          </aside>
 
-        {/* Dados da Empresa */}
-        <CompanySettingsSection />
-
-        {/* Segurança */}
-        <SecuritySection />
+          <section className="space-y-6 xl:col-span-2">
+            <CompanySettingsSection />
+            <SecuritySection />
+          </section>
+        </div>
 
       </div>
     </MainLayout>

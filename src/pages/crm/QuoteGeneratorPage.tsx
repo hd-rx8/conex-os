@@ -8,6 +8,8 @@ import StepSettings from '@/components/quote-wizard/StepSettings';
 import StepClient from '@/components/quote-wizard/StepClient';
 import StepReview from '@/components/quote-wizard/StepReview';
 import MainLayout from '@/components/MainLayout';
+import { ContentCard } from '@/components/layout/ContentCard';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 interface QuoteGeneratorPageProps {
   userId: string;
@@ -49,16 +51,25 @@ const QuoteGeneratorPage: React.FC<QuoteGeneratorPageProps> = ({ userId }) => {
 
   return (
     <MainLayout module="crm">
-      <div className="flex flex-col min-h-[calc(100vh-64px)]">
-        <Stepper />
+      <div className="app-page">
+        <PageHeader
+          eyebrow="CRM"
+          title="Gerador de propostas"
+          description={`Etapa ${currentStep + 1} de ${steps.length}: ${steps[currentStep]?.name || 'Configuração'}.`}
+        />
 
-        <div className="flex-1 pb-20">
-          {renderStepContent()}
-        </div>
+        <div className="mx-auto w-full max-w-6xl">
+          <ContentCard
+            className="overflow-visible"
+            contentClassName="space-y-6 p-4 sm:p-6"
+          >
+            <Stepper />
 
-        {/* Fixed Navigation Footer */}
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t z-40 no-print">
-          <div className="container mx-auto px-4 py-3 flex justify-between">
+            <div className="min-h-[360px]">
+              {renderStepContent()}
+            </div>
+
+            <div className="sticky bottom-0 z-20 -mx-4 flex items-center justify-between border-t bg-background/95 px-4 py-4 backdrop-blur no-print sm:-mx-6 sm:px-6">
             <Button
               variant="outline"
               onClick={goToPreviousStep}
@@ -77,9 +88,10 @@ const QuoteGeneratorPage: React.FC<QuoteGeneratorPageProps> = ({ userId }) => {
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             ) : (
-              <div /> 
+              <div />
             )}
-          </div>
+            </div>
+          </ContentCard>
         </div>
       </div>
     </MainLayout>
