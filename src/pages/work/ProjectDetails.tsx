@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft, CheckCircle2, CircleDot, ListChecks, Rows3 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, CircleDot, ListChecks, Rows3, Plus } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
+import CreateListModal from '@/components/modals/CreateListModal';
 import MainLayout from '@/components/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,6 +30,7 @@ import {
   deriveWorkTaskMetrics,
   filterWorkTasks,
 } from '@/features/work/view/workTaskSelectors';
+import { useLists } from '@/hooks/useLists';
 import type { TaskFilters, WorkTaskItem } from '@/types/hierarchy';
 
 export default function ProjectDetails() {
@@ -40,6 +42,9 @@ export default function ProjectDetails() {
   const tasksQuery = useWorkspaceTasksQuery(selectedWorkspaceId);
   const updateTask = useUpdateTaskMutation();
   const { view, setView } = useWorkViewMode('project', projectId ?? 'none');
+  const { createList } = useLists(projectId);
+  const [isCreateListModalOpen, setIsCreateListModalOpen] = useState(false);
+  
   const { project, folderName } = useMemo(() => {
     if (!treeQuery.data) return { project: undefined, folderName: undefined };
     const rootSpace = treeQuery.data.spaces.find((space) => space.id === projectId);
@@ -191,8 +196,14 @@ export default function ProjectDetails() {
 
         {projectLists.length > 0 && (
           <section className="space-y-3">
-            <h2 className="text-sm font-semibold">Listas do projeto</h2>
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold">Listas do projeto</h2>
+        <Button variant="outline" size="sm" onClick={() => setIsCreateListModalOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nova Lista
+        </Button>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {projectLists.map((list) => {
                 const count = projectTasks.filter(
                   (task) => task.context.list_id === list.id,
@@ -224,6 +235,13 @@ export default function ProjectDetails() {
           <WorkEmptyState
             title="Projeto sem tarefas"
             description="As tarefas das listas deste projeto aparecerão aqui."
+            action={
+              projectLists.length === 0 ? (
+                <Button onClick={() => setIsCreateListModalOpen(true)}>
+                  Criar lista
+                </Button>
+              ) : undefined
+            }
           />
         ) : filteredTasks.length === 0 ? (
           <WorkEmptyState
@@ -243,6 +261,17 @@ export default function ProjectDetails() {
           <TaskListView tasks={filteredTasks} />
         )}
       </div>
+
+      {projectId && (
+        <CreateListModal
+          isOpen={isCreateListModalOpen}
+          onClose={() => setIsCreateListModalOpen(false)}
+          spaceId={projectId}
+          onCreateList={async (data) => {
+            await createList(data);
+          }}
+        />
+      )}
     </MainLayout>
   );
 }
