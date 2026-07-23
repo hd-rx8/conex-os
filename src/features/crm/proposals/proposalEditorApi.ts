@@ -51,6 +51,16 @@ type ProposalEditorRpcError = {
   message: string;
 };
 
+export class ProposalEditorDomainError extends Error {
+  readonly code: ProposalEditorErrorCode;
+
+  constructor(code: ProposalEditorErrorCode) {
+    super(code);
+    this.name = 'ProposalEditorDomainError';
+    this.code = code;
+  }
+}
+
 type OwnerProposalSnapshotRow = Omit<
   ProposalEditorSnapshot,
   'client' | 'services'
@@ -72,18 +82,26 @@ export const proposalQueryKeys = {
   public: (token: string) => ['public-proposal', token] as const,
 };
 
-export function mapProposalEditorError(
-  error: Pick<ProposalEditorRpcError, 'code' | 'message'> | null | undefined,
-): ProposalEditorErrorCode {
-  if (!error) return 'unknown';
+function isProposalEditorRpcError(error: unknown): error is ProposalEditorRpcError {
+  return typeof error === 'object'
+    && error !== null
+    && 'code' in error
+    && typeof error.code === 'string'
+    && 'message' in error
+    && typeof error.message === 'string';
+}
 
-  if (error.code === '40001' || error.message === 'proposal_conflict') {
+export function mapProposalEditorError(error: unknown): ProposalEditorErrorCode {
+  if (!isProposalEditorRpcError(error)) return 'unknown';
+
+  if (error.code === '40001') {
     return 'conflict';
   }
-  if (error.code === 'P0001' || error.message === 'proposal_locked') {
+  if (error.code === 'P0001') {
     return 'locked';
   }
-  if (error.code === 'P0002' || error.message.endsWith('_not_found')) {
+  if (error.code === 'P0002'
+    || error.code === 'PGRST116') {
     return 'not_found';
   }
   if (error.code === '42501') {
@@ -96,58 +114,76 @@ export function mapProposalEditorError(
   return 'unknown';
 }
 
+function toProposalEditorDomainError(error: unknown): ProposalEditorDomainError {
+  if (error instanceof ProposalEditorDomainError) return error;
+
+  return new ProposalEditorDomainError(mapProposalEditorError(error));
+}
+
 export async function getProposalEditorSnapshot(
   proposalId: string,
 ): Promise<ProposalEditorSnapshot> {
-  const { data: proposal, error } = await supabase
-    .from('proposals')
-    .select(OWNER_SNAPSHOT_FIELDS)
-    .eq('id', proposalId)
-    .single()
-    .overrideTypes<OwnerProposalSnapshotRow, { merge: false }>();
+  try {
+    const { data: proposal, error } = await supabase
+      .from('proposals')
+      .select(OWNER_SNAPSHOT_FIELDS)
+      .eq('id', proposalId)
+      .single()
+      .overrideTypes<OwnerProposalSnapshotRow, { merge: false }>();
 
-  if (error) throw error;
-  if (!proposal) throw new Error('proposal_not_found');
+    if (error) throw error;
+    if (!proposal) throw new ProposalEditorDomainError('not_found');
 
-  return {
-    ...proposal,
-    client: proposal.clients,
-    services: proposal.proposal_services ?? [],
-  };
+    return {
+      ...proposal,
+      client: proposal.clients,
+      services: proposal.proposal_services ?? [],
+    };
+  } catch (error) {
+    throw toProposalEditorDomainError(error);
+  }
 }
 
 export async function saveProposalEdit(
   input: ProposalEditPayload,
 ): Promise<ProposalEditResult> {
-  const { data, error } = await rpc('update_editable_proposal', {
-    p_proposal_id: input.proposalId,
-    p_expected_updated_at: input.expectedUpdatedAt,
-    p_proposal: input.proposal,
-    p_services: input.services,
-    p_new_client: input.newClient,
-  });
+  try {
+    const { data, error } = await rpc('update_editable_proposal', {
+      p_proposal_id: input.proposalId,
+      p_expected_updated_at: input.expectedUpdatedAt,
+      p_proposal: input.proposal,
+      p_services: input.services,
+      p_new_client: input.newClient,
+    });
 
-  if (error) {
-    return {
-      success: false,
-      errorCode: mapProposalEditorError(error),
-    };
-  }
+    if (error) {
+      return {
+        success: false,
+        errorCode: mapProposalEditorError(error),
+      };
+    }
 
-  if (!Array.isArray(data) || data.length !== 1 || !data[0]) {
+    if (!Array.isArray(data) || data.length !== 1 || !data[0]) {
+      return { success: false, errorCode: 'unknown' };
+    }
+
+    return { success: true };
+  } catch {
     return { success: false, errorCode: 'unknown' };
   }
-
-  return { success: true };
 }
 
 export async function getPublicProposalByToken(token: string): Promise<unknown> {
-  const { data, error } = await rpc('get_public_proposal_by_token', {
-    p_share_token: token,
-  });
+  try {
+    const { data, error } = await rpc('get_public_proposal_by_token', {
+      p_share_token: token,
+    });
 
-  if (error) throw error;
-  if (!data) throw new Error('proposal_not_found');
+    if (error) throw error;
+    if (!data) throw new ProposalEditorDomainError('not_found');
 
-  return data;
+    return data;
+  } catch (error) {
+    throw toProposalEditorDomainError(error);
+  }
 }

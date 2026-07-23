@@ -18,7 +18,6 @@ vi.mock('@/integrations/supabase/client', () => ({
 import {
   getProposalEditorSnapshot,
   getPublicProposalByToken,
-  mapProposalEditorError,
   saveProposalEdit,
 } from './proposalEditorApi';
 
@@ -59,6 +58,52 @@ const input: ProposalEditPayload = {
   newClient: null,
 };
 
+const ownerSnapshot = {
+  id: 'proposal-1',
+  owner: 'owner-1',
+  title: 'Proposta',
+  amount: 100,
+  status: 'Negociando',
+  created_at: '2026-07-23T10:00:00.000Z',
+  updated_at: '2026-07-23T11:00:00.000Z',
+  share_token: 'share-1',
+  notes: null,
+  payment_type: 'cash',
+  cash_discount_percentage: 0,
+  installment_number: 2,
+  installment_value: 0,
+  manual_installment_total: null,
+  is_validity_enabled: false,
+  validity_days: 0,
+  proposal_logo_url: null,
+  proposal_gradient_theme: 'conexhub',
+  show_interest_rate: true,
+  clients: {
+    id: 'client-1',
+    name: 'Cliente',
+    email: 'cliente@example.com',
+    company: 'Empresa',
+    phone: '11999999999',
+  },
+  proposal_services: [{
+    id: 'proposal-service-1',
+    service_id: 'service-1',
+    name: 'Serviço',
+    description: null,
+    base_price: 100,
+    quantity: 1,
+    custom_price: null,
+    discount: 0,
+    discount_percentage: 0,
+    discount_type: 'percentage',
+    features: [],
+    category: null,
+    icon: null,
+    is_custom: false,
+    billing_type: 'one_time',
+  }],
+};
+
 describe('proposal editor API', () => {
   it('sends the edit payload to the transactional RPC', async () => {
     rpc.mockResolvedValue({
@@ -77,8 +122,20 @@ describe('proposal editor API', () => {
     });
   });
 
-  it('requires exactly one committed RPC result row', async () => {
-    rpc.mockResolvedValue({ data: [], error: null });
+  it('returns a domain conflict when the save RPC reports one', async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: { code: '40001', message: 'proposal_conflict' },
+    });
+
+    await expect(saveProposalEdit(input)).resolves.toEqual({
+      success: false,
+      errorCode: 'conflict',
+    });
+  });
+
+  it('returns unknown when the save RPC rejects because the network is unavailable', async () => {
+    rpc.mockRejectedValue(new Error('network unavailable'));
 
     await expect(saveProposalEdit(input)).resolves.toEqual({
       success: false,
@@ -86,38 +143,67 @@ describe('proposal editor API', () => {
     });
   });
 
-  it('maps backend editing errors to UI-safe codes', () => {
-    expect(mapProposalEditorError({ code: '40001', message: 'proposal_conflict' }))
-      .toBe('conflict');
-    expect(mapProposalEditorError({ code: 'P0001', message: 'proposal_locked' }))
-      .toBe('locked');
-    expect(mapProposalEditorError({ code: 'P0002', message: 'proposal_not_found' }))
-      .toBe('not_found');
-    expect(mapProposalEditorError({ code: '42501', message: 'denied' }))
-      .toBe('forbidden');
-    expect(mapProposalEditorError({ code: '22023', message: 'invalid_service' }))
-      .toBe('validation');
-  });
-
   it('normalizes the owner snapshot associations after the RLS-protected query', async () => {
-    overrideTypes.mockResolvedValue({
-      data: {
-        id: 'proposal-1',
-        clients: { id: 'client-1', name: 'Cliente' },
-        proposal_services: [{ id: 'proposal-service-1' }],
-      },
-      error: null,
-    });
+    overrideTypes.mockResolvedValue({ data: ownerSnapshot, error: null });
 
-    await expect(getProposalEditorSnapshot('proposal-1')).resolves.toEqual({
-      id: 'proposal-1',
-      clients: { id: 'client-1', name: 'Cliente' },
-      proposal_services: [{ id: 'proposal-service-1' }],
-      client: { id: 'client-1', name: 'Cliente' },
-      services: [{ id: 'proposal-service-1' }],
+    await expect(getProposalEditorSnapshot('proposal-1')).resolves.toMatchObject({
+      ...ownerSnapshot,
+      client: ownerSnapshot.clients,
+      services: ownerSnapshot.proposal_services,
     });
     expect(from).toHaveBeenCalledWith('proposals');
     expect(eq).toHaveBeenCalledWith('id', 'proposal-1');
+  });
+
+  it('preserves a missing owner client as null in the Task 2 snapshot contract', async () => {
+    overrideTypes.mockResolvedValue({
+      data: { ...ownerSnapshot, clients: null },
+      error: null,
+    });
+
+    await expect(getProposalEditorSnapshot('proposal-1')).resolves.toMatchObject({
+      client: null,
+      services: ownerSnapshot.proposal_services,
+    });
+  });
+
+  it('converts a PostgREST missing-row owner error into a not_found domain error', async () => {
+    overrideTypes.mockResolvedValue({
+      data: null,
+      error: { code: 'PGRST116', message: 'JSON object requested, multiple (or no) rows returned' },
+    });
+
+    await expect(getProposalEditorSnapshot('missing')).rejects.toMatchObject({
+      code: 'not_found',
+      message: 'not_found',
+    });
+  });
+
+  it('converts an absent owner snapshot response into a not_found domain error', async () => {
+    overrideTypes.mockResolvedValue({ data: null, error: null });
+
+    await expect(getProposalEditorSnapshot('missing')).rejects.toMatchObject({
+      code: 'not_found',
+      message: 'not_found',
+    });
+  });
+
+  it('converts an unknown owner query rejection into an unknown domain error', async () => {
+    overrideTypes.mockRejectedValue(new Error('network unavailable'));
+
+    await expect(getProposalEditorSnapshot('proposal-1')).rejects.toMatchObject({
+      code: 'unknown',
+      message: 'unknown',
+    });
+  });
+
+  it('does not infer a domain code from a generic Error message', async () => {
+    overrideTypes.mockRejectedValue(new Error('proposal_not_found'));
+
+    await expect(getProposalEditorSnapshot('proposal-1')).rejects.toMatchObject({
+      code: 'unknown',
+      message: 'unknown',
+    });
   });
 
   it('fetches public documents exclusively through the public token RPC', async () => {
@@ -132,10 +218,45 @@ describe('proposal editor API', () => {
     expect(from).not.toHaveBeenCalled();
   });
 
-  it('preserves the backend error for callers that need a safe load state', async () => {
-    const error = { code: 'P0002', message: 'proposal_not_found' };
-    rpc.mockResolvedValue({ data: null, error });
+  it('converts an absent public RPC payload into a not_found domain error', async () => {
+    rpc.mockResolvedValue({ data: null, error: null });
 
-    await expect(getPublicProposalByToken('missing-token')).rejects.toBe(error);
+    await expect(getPublicProposalByToken('missing-token')).rejects.toMatchObject({
+      code: 'not_found',
+      message: 'not_found',
+    });
+  });
+
+  it('converts an unknown PostgREST public error into an unknown domain error', async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: { code: 'XX000', message: 'internal database error' },
+    });
+
+    await expect(getPublicProposalByToken('token-1')).rejects.toMatchObject({
+      code: 'unknown',
+      message: 'unknown',
+    });
+  });
+
+  it('does not infer a domain code from an unknown PostgREST error message', async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: { code: 'XX000', message: 'proposal_not_found' },
+    });
+
+    await expect(getPublicProposalByToken('token-1')).rejects.toMatchObject({
+      code: 'unknown',
+      message: 'unknown',
+    });
+  });
+
+  it('converts a public RPC network rejection into an unknown domain error', async () => {
+    rpc.mockRejectedValue(new Error('network unavailable'));
+
+    await expect(getPublicProposalByToken('token-1')).rejects.toMatchObject({
+      code: 'unknown',
+      message: 'unknown',
+    });
   });
 });
