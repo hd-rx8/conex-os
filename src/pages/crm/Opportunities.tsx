@@ -768,12 +768,12 @@ const Opportunities: React.FC = () => {
               </div>
               {showFilters && (
                 <div className="grid grid-cols-1 gap-2 border-t pt-3 sm:grid-cols-2 xl:grid-cols-5">
-                <Select value={filterOwner} onValueChange={setFilterOwner}>
+                <Select value={filterOwner === 'all' ? "" : filterOwner} onValueChange={(val) => setFilterOwner(val || 'all')}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Responsável" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Responsável</SelectItem>
+                    <SelectItem value="all">Todos</SelectItem>
                     {allUsers.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.name}
@@ -781,12 +781,12 @@ const Opportunities: React.FC = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={filterClient} onValueChange={setFilterClient}>
+                <Select value={filterClient === 'all' ? "" : filterClient} onValueChange={(val) => setFilterClient(val || 'all')}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Cliente" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Cliente</SelectItem>
+                    <SelectItem value="all">Todos</SelectItem>
                     {allClients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.name}
@@ -794,12 +794,12 @@ const Opportunities: React.FC = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <Select value={filterStatus === 'all' ? "" : filterStatus} onValueChange={(val) => setFilterStatus(val || 'all')}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Status</SelectItem>
+                    <SelectItem value="all">Todos</SelectItem>
                     {PROPOSAL_STATUSES.map(status => (
                       <SelectItem key={status} value={status}>
                         {getCompatibleStatusLabel(status)}
@@ -807,12 +807,12 @@ const Opportunities: React.FC = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={filterPeriod} onValueChange={setFilterPeriod}>
+                <Select value={filterPeriod === 'all' ? "" : filterPeriod} onValueChange={(val) => setFilterPeriod(val || 'all')}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Período" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Período</SelectItem>
+                    <SelectItem value="all">Todos</SelectItem>
                     <SelectItem value="today">Hoje</SelectItem>
                     <SelectItem value="7days">7 dias</SelectItem>
                     <SelectItem value="30days">30 dias</SelectItem>
