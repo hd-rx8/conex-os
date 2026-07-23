@@ -9,6 +9,10 @@ const migrationSql = readFileSync(
   ),
   'utf8',
 );
+const generatedTypes = readFileSync(
+  resolve(process.cwd(), 'src/integrations/supabase/types.ts'),
+  'utf8',
+);
 
 const normalizedSql = migrationSql
   .replace(/--.*$/gm, ' ')
@@ -17,6 +21,21 @@ const normalizedSql = migrationSql
   .toLowerCase();
 
 describe('workspace folders migration contract', () => {
+  it('keeps generated relationship metadata aligned with the composite foreign key', () => {
+    expect(generatedTypes).toContain(
+      'foreignKeyName: "spaces_workspace_folder_workspace_fkey"',
+    );
+    expect(generatedTypes).toContain(
+      'columns: ["workspace_folder_id", "workspace_id"]',
+    );
+    expect(generatedTypes).toContain(
+      'referencedColumns: ["id", "workspace_id"]',
+    );
+    expect(generatedTypes).not.toContain(
+      'foreignKeyName: "spaces_workspace_folder_id_fkey"',
+    );
+  });
+
   it('binds a space folder to the same workspace with a composite foreign key', () => {
     expect(normalizedSql).toContain(
       'constraint workspace_folders_id_workspace_key unique (id, workspace_id)',

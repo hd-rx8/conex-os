@@ -6,6 +6,11 @@ alter table public.proposals
 alter table public.proposals
   drop constraint if exists proposals_status_check;
 
+-- The legacy trigger clears approved_at when Aprovada changes to another
+-- status, so disable it before translating that status to FECHADO_GANHO.
+drop trigger if exists trigger_update_approved_at
+  on public.proposals;
+
 update public.proposals
 set status = case status
   when 'Rascunho' then 'EM_ELABORACAO'
@@ -312,9 +317,6 @@ update public.proposals
 set approved_at = coalesce(updated_at, created_at)
 where status in ('Aprovada', 'FECHADO_GANHO')
   and approved_at is null;
-
-drop trigger if exists trigger_update_approved_at
-  on public.proposals;
 
 create trigger trigger_update_approved_at
 before insert or update of status

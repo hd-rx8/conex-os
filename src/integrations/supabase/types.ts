@@ -536,11 +536,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "spaces_workspace_folder_id_fkey"
-            columns: ["workspace_folder_id"]
+            foreignKeyName: "spaces_workspace_folder_workspace_fkey"
+            columns: ["workspace_folder_id", "workspace_id"]
             isOneToOne: false
             referencedRelation: "workspace_folders"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "workspace_id"]
           },
           {
             foreignKeyName: "spaces_workspace_id_fkey"

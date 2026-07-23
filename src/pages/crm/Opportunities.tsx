@@ -45,41 +45,66 @@ import DuplicateProposalModal from '@/components/DuplicateProposalModal';
 import { ContentCard } from '@/components/layout/ContentCard';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageToolbar } from '@/components/layout/PageToolbar';
-import { canEditProposal as canEditLegacyProposal } from '@/features/crm/proposals/proposalStatus';
-import { type ProposalStatus, getStatusLabel, getStatusClasses, normalizeStatus } from '@/utils/statusColors';
+import {
+  canEditProposal,
+  getProposalStatusLabel,
+  normalizeProposalStatus,
+  type CanonicalProposalStatus,
+} from '@/features/crm/proposals/proposalStatus';
+import { getStatusClasses, getStatusLabel } from '@/utils/statusColors';
 
 // Define os status possíveis para as propostas
-const PROPOSAL_STATUSES: ProposalStatus[] = ['QUALIFICACAO', 'EM_ELABORACAO', 'ENVIADA', 'EM_NEGOCIACAO', 'FECHADO_GANHO', 'FECHADO_PERDIDO'];
+const PROPOSAL_STATUSES = [
+  'QUALIFICACAO',
+  'EM_ELABORACAO',
+  'ENVIADA',
+  'NEGOCIACAO',
+  'FECHADO_GANHO',
+  'FECHADO_PERDIDO',
+] as const satisfies readonly CanonicalProposalStatus[];
+type OpportunityStatus = (typeof PROPOSAL_STATUSES)[number];
 
 // Status do Kanban
-const KANBAN_STATUSES: ProposalStatus[] = ['QUALIFICACAO', 'EM_ELABORACAO', 'ENVIADA', 'EM_NEGOCIACAO', 'FECHADO_GANHO', 'FECHADO_PERDIDO'];
+const KANBAN_STATUSES = PROPOSAL_STATUSES;
 
-const LEGACY_STATUS_BY_PIPELINE_STATUS: Record<string, string> = {
-  QUALIFICACAO: 'Criada',
-  EM_ELABORACAO: 'Rascunho',
-  ENVIADA: 'Enviada',
-  EM_NEGOCIACAO: 'Negociando',
-  FECHADO_GANHO: 'Aprovada',
-  FECHADO_PERDIDO: 'Rejeitada',
+const normalizeOpportunityStatus = (status: string): OpportunityStatus | null => {
+  const normalized = normalizeProposalStatus(status);
+  if (normalized === 'EM_REVISAO') return 'EM_ELABORACAO';
+  return PROPOSAL_STATUSES.find(candidate => candidate === normalized) ?? null;
 };
 
-const canEditProposal = (status: string) => {
-  const normalizedStatus = normalizeStatus(status);
-  return canEditLegacyProposal(LEGACY_STATUS_BY_PIPELINE_STATUS[normalizedStatus] ?? status);
-};
-
-const getStatusIcon = (status: ProposalStatus | string) => {
-  const normalized = normalizeStatus(status);
+const getStatusIcon = (status: string) => {
+  const normalized = normalizeProposalStatus(status);
   switch (normalized) {
     case 'QUALIFICACAO': return '🔍';
     case 'EM_ELABORACAO': return '📝';
+    case 'EM_REVISAO': return '🔎';
     case 'ENVIADA': return '📤';
-    case 'EM_NEGOCIACAO': return '🤝';
+    case 'NEGOCIACAO': return '🤝';
     case 'FECHADO_GANHO': return '✅';
     case 'FECHADO_PERDIDO': return '❌';
     default: return '📄';
   }
 };
+
+const getVisualStatus = (status: string) => {
+  const normalized = normalizeProposalStatus(status);
+  return (
+    normalized === 'EM_REVISAO'
+      ? 'EM_ELABORACAO'
+      : normalized === 'NEGOCIACAO'
+        ? 'EM_NEGOCIACAO'
+        : normalized ?? status
+  );
+};
+
+const getCompatibleStatusLabel = (status: string) =>
+  normalizeProposalStatus(status) === 'EM_REVISAO'
+    ? getProposalStatusLabel(status)
+    : getStatusLabel(getVisualStatus(status));
+
+const getCompatibleStatusClasses = (status: string) =>
+  getStatusClasses(getVisualStatus(status));
 
 const Opportunities: React.FC = () => {
   const { user: currentUser } = useSession();
@@ -112,8 +137,8 @@ const Opportunities: React.FC = () => {
   });
 
   // Kanban states
-  const [groupedProposals, setGroupedProposals] = useState<Record<ProposalStatus, Proposal[]>>(() => {
-    const initialGroups: Record<ProposalStatus, Proposal[]> = {} as Record<ProposalStatus, Proposal[]>;
+  const [groupedProposals, setGroupedProposals] = useState<Record<OpportunityStatus, Proposal[]>>(() => {
+    const initialGroups = {} as Record<OpportunityStatus, Proposal[]>;
     PROPOSAL_STATUSES.forEach(status => {
       initialGroups[status] = [];
     });
@@ -171,7 +196,7 @@ const Opportunities: React.FC = () => {
       }
 
       // Status filter
-      if (filterStatus !== 'all' && normalizeStatus(proposal.status) !== filterStatus) {
+      if (filterStatus !== 'all' && normalizeOpportunityStatus(proposal.status) !== filterStatus) {
         return false;
       }
 
@@ -238,14 +263,14 @@ const Opportunities: React.FC = () => {
       const filteredProposals = filterProposals(allProposals);
       const sortedProposals = sortProposals(filteredProposals);
 
-      const newGroupedProposals: Record<ProposalStatus, Proposal[]> = {} as Record<ProposalStatus, Proposal[]>;
+      const newGroupedProposals = {} as Record<OpportunityStatus, Proposal[]>;
       PROPOSAL_STATUSES.forEach(status => {
         newGroupedProposals[status] = [];
       });
 
       sortedProposals.forEach(proposal => {
-        const normalizedStatus = normalizeStatus(proposal.status) as ProposalStatus;
-        if (PROPOSAL_STATUSES.includes(normalizedStatus)) {
+        const normalizedStatus = normalizeOpportunityStatus(proposal.status);
+        if (normalizedStatus) {
           newGroupedProposals[normalizedStatus].push(proposal);
         } else {
           newGroupedProposals['EM_ELABORACAO'].push(proposal);
@@ -283,7 +308,7 @@ const Opportunities: React.FC = () => {
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = async (e: React.DragEvent<HTMLDivElement>, newStatus: ProposalStatus) => {
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>, newStatus: OpportunityStatus) => {
     e.preventDefault();
     if (!draggingProposalId) return;
 
@@ -560,8 +585,8 @@ const Opportunities: React.FC = () => {
               <DollarSign className="h-3 w-3" />
               {formatCurrency(Number(proposal.amount))}
             </span>
-            <Badge variant="outline" className={cn("text-xs", getStatusClasses(proposal.status as ProposalStatus))}>
-              {getStatusIcon(proposal.status as ProposalStatus)} {getStatusLabel(proposal.status)}
+            <Badge variant="outline" className={cn("text-xs", getCompatibleStatusClasses(proposal.status))}>
+              {getStatusIcon(proposal.status)} {getCompatibleStatusLabel(proposal.status)}
             </Badge>
           </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -608,8 +633,8 @@ const Opportunities: React.FC = () => {
               <span className="text-lg font-semibold text-conexhub-green-600">
                 {formatCurrency(Number(proposal.amount))}
               </span>
-              <Badge className={cn("text-xs", getStatusClasses(proposal.status as ProposalStatus))}>
-                {getStatusLabel(proposal.status)}
+              <Badge className={cn("text-xs", getCompatibleStatusClasses(proposal.status))}>
+                {getCompatibleStatusLabel(proposal.status)}
               </Badge>
             </div>
           </div>
@@ -780,7 +805,7 @@ const Opportunities: React.FC = () => {
                     <SelectItem value="all">Todos</SelectItem>
                     {PROPOSAL_STATUSES.map(status => (
                       <SelectItem key={status} value={status}>
-                        {getStatusLabel(status)}
+                        {getCompatibleStatusLabel(status)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -826,7 +851,7 @@ const Opportunities: React.FC = () => {
               <div className="flex min-h-[600px] items-start gap-4 p-4">
                 {KANBAN_STATUSES.map(status => (
                   <div
-                    key={getStatusLabel(status)}
+                    key={status}
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, status)}
                     className={cn(
@@ -837,9 +862,9 @@ const Opportunities: React.FC = () => {
                     <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center justify-between">
                       <span className="flex items-center gap-2">
                         <span className="text-base sm:text-lg">{getStatusIcon(status)}</span>
-                        <span className="truncate">{getStatusLabel(status)}</span>
+                        <span className="truncate">{getCompatibleStatusLabel(status)}</span>
                       </span>
-                      <Badge variant="secondary" className={cn("text-xs", getStatusClasses(status))}>
+                      <Badge variant="secondary" className={cn("text-xs", getCompatibleStatusClasses(status))}>
                         {groupedProposals[status]?.length || 0}
                       </Badge>
                     </h3>
@@ -858,14 +883,14 @@ const Opportunities: React.FC = () => {
                 <div className="flex justify-center gap-2 p-2">
                   <div
                     onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, 'Aprovada')}
+                    onDrop={(e) => handleDrop(e, 'FECHADO_GANHO')}
                     className="flex-1 py-2 px-4 rounded-md bg-green-600 text-white text-sm font-semibold flex items-center justify-center transition-colors duration-300 hover:bg-green-700 cursor-pointer border-2 border-transparent hover:border-white"
                   >
                     ✅ APROVADA
                   </div>
                   <div
                     onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, 'Rejeitada')}
+                    onDrop={(e) => handleDrop(e, 'FECHADO_PERDIDO')}
                     className="flex-1 py-2 px-4 rounded-md bg-red-600 text-white text-sm font-semibold flex items-center justify-center transition-colors duration-300 hover:bg-red-700 cursor-pointer border-2 border-transparent hover:border-white"
                   >
                     ❌ REJEITADA
@@ -984,22 +1009,22 @@ const Opportunities: React.FC = () => {
                           </TableCell>
                           <TableCell className="p-0">
                             <Select
-                              value={normalizeStatus(proposal.status)}
+                              value={normalizeOpportunityStatus(proposal.status) ?? proposal.status}
                               onValueChange={(value) => handleStatusChange(proposal, value as Proposal['status'])}
                               disabled={!canEditProposal(proposal.status)}
                             >
                               <SelectTrigger
                                 aria-label={`Status ${proposal.title}`}
-                                className={`w-full h-full justify-center rounded-none border-none bg-transparent py-1 px-2 text-xs font-semibold uppercase tracking-wider transition-colors focus:ring-0 focus:ring-offset-0 ${getStatusClasses(
+                                className={`w-full h-full justify-center rounded-none border-none bg-transparent py-1 px-2 text-xs font-semibold uppercase tracking-wider transition-colors focus:ring-0 focus:ring-offset-0 ${getCompatibleStatusClasses(
                                   proposal.status
                                 )}`}
                               >
-                                <span className="flex items-center">{getStatusLabel(proposal.status)}</span>
+                                <span className="flex items-center">{getCompatibleStatusLabel(proposal.status)}</span>
                               </SelectTrigger>
                               <SelectContent>
                                 {PROPOSAL_STATUSES.map(status => (
                                   <SelectItem key={status} value={status}>
-                                    {getStatusLabel(status)}
+                                    {getCompatibleStatusLabel(status)}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -1173,15 +1198,15 @@ const Opportunities: React.FC = () => {
                       <div className="space-y-1">
                         <p className="text-sm font-medium text-muted-foreground">Status:</p>
                         <EditableField
-                          value={selectedProposal.status}
+                          value={normalizeOpportunityStatus(selectedProposal.status) ?? selectedProposal.status}
                           onSave={(newValue) => handleUpdateProposalField('status', newValue)}
                           type="select"
-                          selectOptions={PROPOSAL_STATUSES.map(s => ({ value: s, label: getStatusLabel(s) }))}
+                          selectOptions={PROPOSAL_STATUSES.map(s => ({ value: s, label: getCompatibleStatusLabel(s) }))}
                           isLoading={isSaving.status}
                           disabled={selectedProposal.owner !== currentUser?.id || !canEditProposal(selectedProposal.status)}
                           formatDisplayValue={(value) => (
-                            <Badge className={getStatusClasses(value as ProposalStatus)}>
-                              {value}
+                            <Badge className={getCompatibleStatusClasses(String(value))}>
+                              {getCompatibleStatusLabel(String(value))}
                             </Badge>
                           )}
                           label="Status"

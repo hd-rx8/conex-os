@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import Opportunities from './Opportunities';
@@ -78,12 +78,31 @@ const openKanbanActions = (title: string) => {
 };
 
 afterEach(() => {
+  proposals.splice(2);
   localStorage.clear();
   proposalsApi.duplicateProposal.mockReset();
   proposalsApi.updateProposalStatus.mockReset();
 });
 
 describe('Opportunities proposal actions', () => {
+  it('groups the canonical NEGOCIACAO status in the negotiation Kanban column', () => {
+    proposals.push(proposal({
+      id: 'proposal-negotiation',
+      title: 'Proposta em negociação',
+      status: 'NEGOCIACAO',
+    }));
+
+    renderOpportunities('kanban');
+
+    const negotiationColumn = screen.getByRole('heading', { name: /Em Negociação/ }).parentElement;
+    const elaborationColumn = screen.getByRole('heading', { name: /Em Elaboração/ }).parentElement;
+
+    expect(negotiationColumn).not.toBeNull();
+    expect(elaborationColumn).not.toBeNull();
+    expect(within(negotiationColumn!).getByRole('heading', { name: 'Proposta em negociação' })).toBeInTheDocument();
+    expect(within(elaborationColumn!).queryByRole('heading', { name: 'Proposta em negociação' })).not.toBeInTheDocument();
+  });
+
   it('routes editable proposals from the list to their canonical edit route with a return location', () => {
     renderOpportunities('list');
 

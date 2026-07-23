@@ -248,6 +248,33 @@ describe('proposal status migration contract', () => {
     );
   });
 
+  it('disables the legacy approved_at trigger before status backfill and reinstalls the canonical trigger afterward', () => {
+    const legacyTriggerDrop = normalizedStatusMigrationSql.indexOf(
+      'drop trigger if exists trigger_update_approved_at on public.proposals',
+    );
+    const statusBackfill = normalizedStatusMigrationSql.indexOf(
+      'update public.proposals set status = case status',
+    );
+    const statusBackfillEnd = normalizedStatusMigrationSql.indexOf(
+      ';',
+      statusBackfill,
+    );
+    const canonicalFunction = normalizedStatusMigrationSql.indexOf(
+      'create or replace function public.update_approved_at()',
+    );
+    const canonicalTrigger = normalizedStatusMigrationSql.indexOf(
+      'create trigger trigger_update_approved_at',
+    );
+
+    expect(legacyTriggerDrop).toBeGreaterThanOrEqual(0);
+    expect(legacyTriggerDrop).toBeLessThan(statusBackfill);
+    expect(
+      normalizedStatusMigrationSql.slice(statusBackfill, statusBackfillEnd),
+    ).not.toContain('approved_at');
+    expect(canonicalFunction).toBeGreaterThan(statusBackfill);
+    expect(canonicalTrigger).toBeGreaterThan(canonicalFunction);
+  });
+
   it('keeps workspace folder types without publishing a proposal enum for a text column', () => {
     expect(supabaseTypes).toContain('workspace_folders: {');
     expect(supabaseTypes).not.toMatch(/^\s+proposal_status:/m);
