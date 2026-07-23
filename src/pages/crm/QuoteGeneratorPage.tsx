@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +22,8 @@ interface QuoteGeneratorPageProps {
 const QuoteGeneratorPage: React.FC<QuoteGeneratorPageProps> = ({ userId }) => {
   const navigate = useNavigate();
   const { duplicateProposal } = useProposals();
+  const [isDuplicating, setIsDuplicating] = React.useState(false);
+  const isDuplicatingRef = React.useRef(false);
   const {
     mode,
     proposalMeta,
@@ -72,11 +74,18 @@ const QuoteGeneratorPage: React.FC<QuoteGeneratorPageProps> = ({ userId }) => {
   };
 
   const handleDuplicateProposal = async () => {
-    if (!proposalMeta) return;
+    if (!proposalMeta || isDuplicatingRef.current) return;
 
-    const { data, error } = await duplicateProposal(proposalMeta.id, userId);
-    if (!error && data?.id) {
-      navigate(`/generator/${data.id}/edit`);
+    isDuplicatingRef.current = true;
+    setIsDuplicating(true);
+    try {
+      const { data, error } = await duplicateProposal(proposalMeta.id, userId);
+      if (!error && data?.id) {
+        navigate(`/generator/${data.id}/edit`);
+      }
+    } finally {
+      isDuplicatingRef.current = false;
+      setIsDuplicating(false);
     }
   };
 
@@ -160,8 +169,10 @@ const QuoteGeneratorPage: React.FC<QuoteGeneratorPageProps> = ({ userId }) => {
               <Button
                 variant="outline"
                 onClick={() => void handleDuplicateProposal()}
+                disabled={isDuplicating}
               >
-                Duplicar proposta
+                {isDuplicating && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isDuplicating ? 'Duplicando proposta...' : 'Duplicar proposta'}
               </Button>
             </ContentCard>
           </div>

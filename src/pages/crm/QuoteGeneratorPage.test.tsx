@@ -1,12 +1,12 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 
 const wizard = vi.hoisted(() => ({
   state: {
     mode: 'create',
-    proposalMeta: null as { id: string; title: string; status: string } | null,
+    proposalMeta: null as { id: string; title: string; status: string; shareToken?: string | null } | null,
     isHydrating: false,
     loadError: null as string | null,
     isLocked: false,
@@ -58,11 +58,16 @@ vi.mock('@/hooks/useProposals', () => ({
 import QuoteGeneratorPage from './QuoteGeneratorPage';
 
 describe('QuoteGeneratorPage', () => {
+  const CurrentLocation = () => <output data-testid="current-location">{useLocation().pathname}</output>;
+
   const renderPage = () => render(
     <MemoryRouter>
       <QuoteGeneratorPage userId="user-1" />
+      <CurrentLocation />
     </MemoryRouter>,
   );
+
+  afterEach(() => vi.restoreAllMocks());
 
   const resetWizard = () => {
     Object.assign(wizard.state, {
@@ -106,19 +111,42 @@ describe('QuoteGeneratorPage', () => {
     expect(screen.getByRole('button', { name: 'Voltar para oportunidades' })).toBeInTheDocument();
   });
 
-  it('keeps a locked proposal out of the wizard and offers view and duplicate actions', () => {
+  it('views a locked proposal and opens its editable copy after duplication', async () => {
     resetWizard();
     wizard.state.mode = 'edit';
     wizard.state.isLocked = true;
-    wizard.state.proposalMeta = { id: 'proposal-1', title: 'Proposta final', status: 'Aprovada' };
+    wizard.state.proposalMeta = {
+      id: 'proposal-1', title: 'Proposta final', status: 'Aprovada', shareToken: 'share-token',
+    };
+    proposalActions.duplicateProposal.mockResolvedValue({ data: { id: 'proposal-copy-1' }, error: null });
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
 
     renderPage();
 
     expect(screen.getByText('Esta proposta está Aprovada e não pode mais ser alterada. Você ainda pode visualizá-la ou criar uma cópia editável.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Visualizar proposta' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Visualizar proposta' }));
+    expect(open).toHaveBeenCalledWith('/p/share-token', '_blank', 'noopener,noreferrer');
     fireEvent.click(screen.getByRole('button', { name: 'Duplicar proposta' }));
     expect(proposalActions.duplicateProposal).toHaveBeenCalledWith('proposal-1', 'user-1');
+    await waitFor(() => expect(screen.getByTestId('current-location')).toHaveTextContent('/generator/proposal-copy-1/edit'));
     expect(screen.queryByRole('button', { name: 'Próximo' })).not.toBeInTheDocument();
+  });
+
+  it('accepts only one duplicate request while the first request is still pending', () => {
+    resetWizard();
+    wizard.state.mode = 'edit';
+    wizard.state.isLocked = true;
+    wizard.state.proposalMeta = { id: 'proposal-1', title: 'Proposta final', status: 'Aprovada', shareToken: 'share-token' };
+    proposalActions.duplicateProposal.mockReturnValue(new Promise(() => undefined));
+
+    renderPage();
+    const duplicateButton = screen.getByRole('button', { name: 'Duplicar proposta' });
+    fireEvent.click(duplicateButton);
+    fireEvent.click(duplicateButton);
+
+    expect(proposalActions.duplicateProposal).toHaveBeenCalledOnce();
+    expect(duplicateButton).toBeDisabled();
+    expect(duplicateButton).toHaveTextContent('Duplicando proposta...');
   });
 
   it('shows the editing header with title, status and only a dirty-state badge when changed', () => {
