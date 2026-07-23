@@ -133,7 +133,8 @@ begin
      or coalesce(p_proposal->>'proposal_gradient_theme', 'conexhub')
         not in ('conexhub', 'alt1', 'alt2')
      or (v_payment_type = 'installment' and (
-       v_installment_number not between 2 and 12
+       v_cash_discount <> 0
+       or v_installment_number not between 2 and 12
        or (v_installment_value <= 0 and coalesce(v_manual_total, 0) <= 0)
      ))
      or (v_validity_enabled and v_validity_days < 1) then
@@ -210,7 +211,16 @@ begin
     discount numeric
   );
 
-  v_amount := round(v_subtotal * (1 - v_cash_discount / 100), 2);
+  v_amount := round(
+    case
+      when v_payment_type = 'cash'
+        then v_subtotal * (1 - v_cash_discount / 100)
+      when coalesce(v_manual_total, 0) > 0
+        then v_manual_total
+      else v_installment_value * v_installment_number
+    end,
+    2
+  );
 
   update public.proposals
   set title = btrim(p_proposal->>'title'),
