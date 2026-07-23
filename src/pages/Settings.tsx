@@ -16,6 +16,8 @@ import { useSession } from '@/hooks/useSession';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ImportExportCard } from '@/features/work/components/ImportExportCard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // ─── Seção: Dados da Empresa ─────────────────────────────────────────────────
 
@@ -409,75 +411,91 @@ const Settings = () => {
           description="Gerencie identidade, preferências regionais, aparência e segurança da conta."
         />
 
-        <div className="grid gap-6 xl:grid-cols-3">
-          <aside className="space-y-6">
-            {/* Aparência */}
-            <Card className="shadow-sm">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <SettingsIcon className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-xl">Aparência</CardTitle>
-                </div>
-                <CardDescription>Personalize a aparência da aplicação.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="flex items-center justify-between gap-4">
-                  <p className="text-sm font-medium">Modo claro ou escuro</p>
-                  <ThemeToggle />
-                </div>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm font-medium">Tema de gradiente</p>
-                  <Select
-                    value={currentGradientTheme}
-                    onValueChange={(value) => setGradientTheme(value as 'conexhub' | 'alt1' | 'alt2')}
-                  >
-                    <SelectTrigger className="w-full sm:w-44">
-                      <SelectValue placeholder="Selecionar tema" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="conexhub">Andromeda</SelectItem>
-                      <SelectItem value="alt1">Nebula</SelectItem>
-                      <SelectItem value="alt2">Quasar</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
+        <Tabs defaultValue="geral" className="space-y-6">
+          <TabsList className="bg-muted/50">
+            <TabsTrigger value="geral">Geral</TabsTrigger>
+            <TabsTrigger value="empresa">Dados da Empresa</TabsTrigger>
+            <TabsTrigger value="seguranca">Segurança e Backup</TabsTrigger>
+          </TabsList>
 
-            {/* Preferências Regionais */}
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-xl">Preferências regionais</CardTitle>
-                <CardDescription>Ajuste a moeda usada nos módulos comerciais.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-2">
-                  <p className="text-sm font-medium">Moeda padrão</p>
-                  <Select
-                    value={selectedCurrency.code}
-                    onValueChange={(value) => setSelectedCurrencyCode(value as CurrencyCode)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Selecionar moeda" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {currencies.map((currency) => (
-                        <SelectItem key={currency.code} value={currency.code}>
-                          {currency.symbol} {currency.name} ({currency.code})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-          </aside>
+          <TabsContent value="geral" className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Aparência */}
+              <Card className="shadow-sm">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <SettingsIcon className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-xl">Aparência</CardTitle>
+                  </div>
+                  <CardDescription>Personalize a aparência da aplicação.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="text-sm font-medium">Modo claro ou escuro</p>
+                    <ThemeToggle />
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm font-medium">Tema de gradiente</p>
+                    <Select
+                      value={currentGradientTheme}
+                      onValueChange={(value) => setGradientTheme(value as 'conexhub' | 'alt1' | 'alt2')}
+                    >
+                      <SelectTrigger className="w-full sm:w-44">
+                        <SelectValue placeholder="Selecionar tema" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="conexhub">Andromeda</SelectItem>
+                        <SelectItem value="alt1">Nebula</SelectItem>
+                        <SelectItem value="alt2">Quasar</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
 
-          <section className="space-y-6 xl:col-span-2">
-            <CompanySettingsSection />
-            <SecuritySection />
-          </section>
-        </div>
+              {/* Preferências Regionais */}
+              <Card className="shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-xl">Preferências regionais</CardTitle>
+                  <CardDescription>Ajuste a moeda usada nos módulos comerciais.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm font-medium">Moeda padrão</p>
+                    <Select
+                      value={selectedCurrency.code}
+                      onValueChange={(value) => setSelectedCurrencyCode(value as CurrencyCode)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecionar moeda" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {currencies.map((currency) => (
+                          <SelectItem key={currency.code} value={currency.code}>
+                            {currency.symbol} {currency.name} ({currency.code})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="empresa" className="space-y-6">
+            <div className="max-w-4xl">
+              <CompanySettingsSection />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="seguranca" className="space-y-6">
+            <div className="max-w-4xl space-y-6">
+              <SecuritySection />
+              <ImportExportCard />
+            </div>
+          </TabsContent>
+        </Tabs>
 
       </div>
     </MainLayout>

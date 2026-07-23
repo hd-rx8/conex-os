@@ -185,6 +185,7 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
 
   const handleCreateProject = async (data: {
     workspace_id: string;
+    workspace_folder_id: string | null;
     name: string;
     description: string | null;
     icon: string | null;
@@ -374,6 +375,7 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
                       </h3>
                     </div>
                     <SpacesTreeNav
+                      workspaceFolders={workspaceTree.workspace_folders}
                       spaces={workspaceTree.spaces}
                       onSelectSpace={handleSpaceSelect}
                       selectedListId={selectedListId || undefined}
@@ -480,6 +482,7 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
                       </h3>
                     </div>
                     <SpacesTreeNav
+                      workspaceFolders={workspaceTree.workspace_folders}
                       spaces={workspaceTree.spaces}
                       onSelectSpace={handleSpaceSelect}
                       selectedListId={selectedListId || undefined}
@@ -516,6 +519,7 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
           isOpen={isCreateProjectOpen}
           onClose={() => setIsCreateProjectOpen(false)}
           workspaceId={selectedWorkspaceId}
+          workspaceFolders={workspaceTree?.workspace_folders || []}
           onCreateProject={handleCreateProject}
         />
       )}

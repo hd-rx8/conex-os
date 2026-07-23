@@ -46,6 +46,39 @@ export interface UpdateWorkspaceData {
 }
 
 // ====================================
+// WORKSPACE FOLDERS
+// ====================================
+export interface WorkspaceFolder {
+  id: string;
+  workspace_id: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  color: string | null;
+  position: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateWorkspaceFolderData {
+  workspace_id: string;
+  name: string;
+  description?: string | null;
+  icon?: string | null;
+  color?: string | null;
+  position?: number;
+}
+
+export interface UpdateWorkspaceFolderData {
+  name?: string;
+  description?: string | null;
+  icon?: string | null;
+  color?: string | null;
+  position?: number;
+}
+
+
+// ====================================
 // WORKSPACE MEMBERS
 // ====================================
 export interface WorkspaceMember {
@@ -85,10 +118,12 @@ export interface Space {
   color: string | null;
   custom_statuses: CustomStatus[];
   position: number;
+  workspace_folder_id: string | null;
   created_at: string;
   updated_at: string;
   // Relations
   workspaces?: Workspace;
+  workspace_folders?: WorkspaceFolder;
 }
 
 export interface CreateSpaceData {
@@ -100,6 +135,7 @@ export interface CreateSpaceData {
   color?: string;
   custom_statuses?: CustomStatus[];
   position?: number;
+  workspace_folder_id?: string | null;
 }
 
 export interface UpdateSpaceData {
@@ -110,6 +146,7 @@ export interface UpdateSpaceData {
   color?: string;
   custom_statuses?: CustomStatus[];
   position?: number;
+  workspace_folder_id?: string | null;
 }
 
 // ====================================
@@ -350,8 +387,13 @@ export interface ListTaskCount {
 // ESTRUTURA EM ÁRVORE PARA NAVEGAÇÃO
 // ====================================
 export interface WorkspaceTree extends Workspace {
-  spaces: SpaceTree[];
+  workspace_folders: WorkspaceFolderTree[];
+  spaces: SpaceTree[]; // spaces na raiz do workspace
   members?: WorkspaceMember[];
+}
+
+export interface WorkspaceFolderTree extends WorkspaceFolder {
+  spaces: SpaceTree[];
 }
 
 export interface SpaceTree extends Space {
@@ -380,7 +422,7 @@ export interface SubtaskTree extends Subtask {
 // BREADCRUMB PARA NAVEGAÇÃO
 // ====================================
 export interface HierarchyBreadcrumb {
-  type: 'workspace' | 'space' | 'folder' | 'list' | 'task';
+  type: 'workspace' | 'workspace_folder' | 'space' | 'folder' | 'list' | 'task';
   id: string;
   name: string;
 }

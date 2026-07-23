@@ -88,7 +88,7 @@ export default function WorkTasks() {
 
   if (!user || !selectedWorkspaceId) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <WorkEmptyState
           title="Selecione um workspace"
           description="Escolha um workspace na barra lateral para visualizar suas tarefas."
@@ -99,7 +99,7 @@ export default function WorkTasks() {
 
   if (tasksQuery.isLoading) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <WorkLoadingState label="Carregando suas tarefas…" />
       </MainLayout>
     );
@@ -107,14 +107,14 @@ export default function WorkTasks() {
 
   if (tasksQuery.error) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <WorkErrorState onRetry={() => void tasksQuery.refetch()} />
       </MainLayout>
     );
   }
 
   return (
-    <MainLayout module="work" showGlobalFab={false}>
+    <MainLayout module="work" >
       <div className="app-page">
         <WorkPageHeader
           eyebrow={treeQuery.data?.name ?? 'Work Management'}

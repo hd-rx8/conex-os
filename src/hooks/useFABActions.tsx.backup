@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { CheckSquare, FileText, FolderPlus, UserPlus, Building2, Folder } from 'lucide-react';
+﻿import { useMemo, useState } from 'react';
+import { CheckSquare, FileText, FolderPlus, UserPlus } from 'lucide-react';
 
 import type { FABAction } from '@/components/ContextualFAB';
 import {
@@ -8,13 +8,11 @@ import {
   useWorkspacesQuery,
   useWorkspaceTreeQuery,
 } from '@/features/work/hooks/useWorkData';
-import type { CreateSpaceData, CreateTaskData, CreateWorkspaceData, CreateWorkspaceFolderData } from '@/types/hierarchy';
+import type { CreateSpaceData, CreateTaskData } from '@/types/hierarchy';
 import { useClients, type CreateClientData } from '@/hooks/useClients';
 import { useProposals, type CreateProposalData } from '@/hooks/useProposals';
 import { useSession } from '@/hooks/useSession';
 import { useUsers } from '@/hooks/useUsers';
-import { useWorkspaces } from '@/hooks/useWorkspaces';
-import { useWorkspaceFolders } from '@/hooks/useWorkspaceFolders';
 
 import { useFABContext } from './useFABContext';
 
@@ -24,8 +22,6 @@ export const useFABActions = () => {
   const { allUsers } = useUsers();
   const { clients, createClient, fetchClients } = useClients();
   const { createProposal } = useProposals();
-  const { createWorkspace } = useWorkspaces();
-  const { createWorkspaceFolder } = useWorkspaceFolders(undefined);
 
   const isWork = context.module === 'work';
   const workspacesQuery = useWorkspacesQuery(isWork);
@@ -54,8 +50,6 @@ export const useFABActions = () => {
   const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-  const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
-  const [isWorkspaceFolderModalOpen, setIsWorkspaceFolderModalOpen] = useState(false);
 
   const handleCreateClient = async (data: CreateClientData) => {
     const result = await createClient(data);
@@ -87,18 +81,6 @@ export const useFABActions = () => {
     return { data: task, error: null };
   };
 
-  const handleCreateWorkspace = async (data: CreateWorkspaceData) => {
-    const result = await createWorkspace(data);
-    if (!result.error) setIsWorkspaceModalOpen(false);
-    return result;
-  };
-
-  const handleCreateWorkspaceFolder = async (data: CreateWorkspaceFolderData) => {
-    const result = await createWorkspaceFolder(data);
-    if (!result.error) setIsWorkspaceFolderModalOpen(false);
-    return result;
-  };
-
   const actions = useMemo((): FABAction[] => {
     if (context.module === 'crm') {
       return [
@@ -122,24 +104,8 @@ export const useFABActions = () => {
     if (context.module === 'work') {
       return [
         {
-          id: 'new-workspace',
-          label: 'Novo Workspace',
-          icon: Building2,
-          onClick: () => setIsWorkspaceModalOpen(true),
-          color: 'bg-emerald-600 hover:bg-emerald-700 text-white',
-        },
-        {
-          id: 'new-workspace-folder',
-          label: 'Nova Pasta',
-          icon: Folder,
-          onClick: () => setIsWorkspaceFolderModalOpen(true),
-          disabled: !activeWorkspaceId,
-          disabledReason: 'Crie ou carregue um workspace primeiro.',
-          color: 'bg-amber-600 hover:bg-amber-700 text-white',
-        },
-        {
           id: 'new-project',
-          label: 'Novo Projeto',
+          label: 'Novo projeto',
           icon: FolderPlus,
           onClick: () => setIsProjectModalOpen(true),
           disabled: !activeWorkspaceId,
@@ -195,24 +161,12 @@ export const useFABActions = () => {
         spaceId: selectedSpaceId,
         listId: context.listId,
       },
-      workspace: {
-        isOpen: isWorkspaceModalOpen,
-        setIsOpen: setIsWorkspaceModalOpen,
-        onSubmit: handleCreateWorkspace,
-      },
-      workspaceFolder: {
-        isOpen: isWorkspaceFolderModalOpen,
-        setIsOpen: setIsWorkspaceFolderModalOpen,
-        onSubmit: handleCreateWorkspaceFolder,
-        workspaceId: activeWorkspaceId,
-      },
     },
     context,
     data: {
       currentUser,
       allUsers,
       clients,
-      workspaceFolders: treeQuery.data?.workspace_folders || [],
     },
   };
 };

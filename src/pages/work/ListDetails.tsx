@@ -35,6 +35,7 @@ interface ListContext {
   projectId: string;
   projectName: string;
   folderName?: string;
+  workspaceFolderName?: string;
 }
 
 const EMPTY_TASKS: readonly WorkTaskItem[] = [];
@@ -49,13 +50,22 @@ export default function ListDetails() {
   const updateTask = useUpdateTaskMutation(listId);
   const { view, setView } = useWorkViewMode('list', listId ?? 'none');
   const listContext = useMemo<ListContext | undefined>(() => {
-    for (const project of treeQuery.data?.spaces ?? []) {
+    if (!treeQuery.data) return undefined;
+    
+    // Anexa a informação de "workspaceFolderName" em todos os spaces
+    const allSpaces = [
+      ...treeQuery.data.spaces.map(s => ({ ...s, workspaceFolderName: undefined })),
+      ...(treeQuery.data.workspace_folders?.flatMap(f => f.spaces.map(s => ({ ...s, workspaceFolderName: f.name }))) || [])
+    ];
+    
+    for (const project of allSpaces) {
       const directList = project.lists.find((list) => list.id === listId);
       if (directList) {
         return {
           list: directList,
           projectId: project.id,
           projectName: project.name,
+          workspaceFolderName: project.workspaceFolderName,
         };
       }
 
@@ -67,6 +77,7 @@ export default function ListDetails() {
             projectId: project.id,
             projectName: project.name,
             folderName: folder.name,
+            workspaceFolderName: project.workspaceFolderName,
           };
         }
       }
@@ -94,7 +105,7 @@ export default function ListDetails() {
 
   if (!selectedWorkspaceId) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <WorkEmptyState
           title="Selecione um workspace"
           description="Escolha o workspace que contém esta lista."
@@ -105,7 +116,7 @@ export default function ListDetails() {
 
   if (treeQuery.isLoading || tasksQuery.isLoading) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <WorkLoadingState label="Carregando lista…" />
       </MainLayout>
     );
@@ -113,7 +124,7 @@ export default function ListDetails() {
 
   if (treeQuery.error || tasksQuery.error) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <WorkErrorState
           onRetry={() => {
             void treeQuery.refetch();
@@ -126,7 +137,7 @@ export default function ListDetails() {
 
   if (!listContext) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <WorkEmptyState
           title="Lista não encontrada"
           description="A lista pode ter sido movida ou não pertencer ao workspace selecionado."
@@ -141,11 +152,11 @@ export default function ListDetails() {
     );
   }
 
-  const { list, projectId, projectName, folderName } = listContext;
-  const path = [projectName, folderName].filter(Boolean).join(' / ');
+  const { list, projectId, projectName, folderName, workspaceFolderName } = listContext;
+  const path = [treeQuery.data?.name ?? 'Workspace', workspaceFolderName, projectName, folderName].filter(Boolean).join(' / ');
 
   return (
-    <MainLayout module="work" showGlobalFab={false}>
+    <MainLayout module="work" >
       <div className="space-y-6 pb-10">
         <Button
           variant="ghost"

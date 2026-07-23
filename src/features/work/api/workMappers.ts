@@ -12,6 +12,7 @@ import type {
 } from '@/types/hierarchy';
 
 type WorkspaceRow = Tables<'workspaces'>;
+type WorkspaceFolderRow = Tables<'workspace_folders'>;
 type SpaceRow = Tables<'spaces'>;
 type FolderRow = Tables<'folders'>;
 type ListRow = Tables<'lists'>;
@@ -33,6 +34,7 @@ export type WorkTaskQueryRow = Tables<'tasks'> & {
 };
 
 export type WorkspaceTreeRow = WorkspaceRow & {
+  workspace_folders?: WorkspaceFolderRow[];
   spaces: Array<
     SpaceRow & {
       folders: FolderRow[];
@@ -118,10 +120,20 @@ function mapSpace(row: WorkspaceTreeRow['spaces'][number]): SpaceTree {
 }
 
 export function mapWorkspaceTreeRow(row: WorkspaceTreeRow): WorkspaceTree {
-  const { spaces, ...workspace } = row;
+  const { spaces, workspace_folders = [], ...workspace } = row;
+  
+  const allSpaces = spaces.map(mapSpace);
+  const rootSpaces = allSpaces.filter(s => !s.workspace_folder_id);
+  
+  const mappedFolders = workspace_folders.map(folder => ({
+    ...folder,
+    spaces: allSpaces.filter(s => s.workspace_folder_id === folder.id)
+  }));
+
   return {
     ...workspace,
-    spaces: spaces.map(mapSpace),
+    workspace_folders: mappedFolders,
+    spaces: rootSpaces,
   };
 }
 

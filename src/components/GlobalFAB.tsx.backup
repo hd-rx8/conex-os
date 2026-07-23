@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import ContextualFAB from './ContextualFAB';
 import { useFABActions } from '@/hooks/useFABActions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -11,8 +11,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import CreateProjectModal from '@/components/modals/CreateProjectModal';
 import CreateTaskFromProjectModal from '@/components/projects/CreateTaskFromProjectModal';
-import CreateWorkspaceModal from '@/components/modals/CreateWorkspaceModal';
-import CreateWorkspaceFolderModal from '@/components/modals/CreateWorkspaceFolderModal';
 import type { CreateClientData } from '@/hooks/useClients';
 import type { CreateProposalData } from '@/hooks/useProposals';
 import type { Tables } from '@/integrations/supabase/types';
@@ -21,10 +19,10 @@ import type { CreateSpaceData, CreateTaskData } from '@/types/hierarchy';
 const errorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 
-// Schema para validação de cliente
+// Schema para validaÃ§Ã£o de cliente
 const clientSchema = z.object({
-  name: z.string().min(1, 'Nome é obrigatório'),
-  email: z.string().email('E-mail inválido').optional().or(z.literal('')),
+  name: z.string().min(1, 'Nome Ã© obrigatÃ³rio'),
+  email: z.string().email('E-mail invÃ¡lido').optional().or(z.literal('')),
   company: z.string().optional(),
   phone: z.string().optional(),
   document: z.string().optional(),
@@ -32,17 +30,17 @@ const clientSchema = z.object({
 
 type ClientFormData = z.infer<typeof clientSchema>;
 
-// Schema para validação de proposta
+// Schema para validaÃ§Ã£o de proposta
 const proposalSchema = z.object({
-  title: z.string().min(1, 'Título é obrigatório'),
+  title: z.string().min(1, 'TÃ­tulo Ã© obrigatÃ³rio'),
   amount: z.number().min(0, 'Valor deve ser positivo'),
   client_id: z.string().nullable(),
-  owner: z.string().min(1, 'Responsável é obrigatório')
+  owner: z.string().min(1, 'ResponsÃ¡vel Ã© obrigatÃ³rio')
 });
 
 type ProposalFormData = z.infer<typeof proposalSchema>;
 
-// Componente de formulário de cliente
+// Componente de formulÃ¡rio de cliente
 const ClientForm = ({
   onSubmit,
   onCancel,
@@ -139,7 +137,7 @@ const ClientForm = ({
   );
 };
 
-// Componente de formulário de proposta
+// Componente de formulÃ¡rio de proposta
 const ProposalForm = ({
   onSubmit,
   onCancel,
@@ -175,8 +173,8 @@ const ProposalForm = ({
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
       <div>
-        <label className="text-sm font-medium">Título *</label>
-        <Input {...register('title')} placeholder="Digite o título da proposta" />
+        <label className="text-sm font-medium">TÃ­tulo *</label>
+        <Input {...register('title')} placeholder="Digite o tÃ­tulo da proposta" />
         {errors.title && <p className="text-sm text-destructive mt-1">{errors.title.message}</p>}
       </div>
 
@@ -203,10 +201,10 @@ const ProposalForm = ({
       </div>
 
       <div>
-        <label className="text-sm font-medium">Responsável *</label>
+        <label className="text-sm font-medium">ResponsÃ¡vel *</label>
         <Select value={watch('owner')} onValueChange={(value) => setValue('owner', value)}>
           <SelectTrigger>
-            <SelectValue placeholder="Selecione o responsável" />
+            <SelectValue placeholder="Selecione o responsÃ¡vel" />
           </SelectTrigger>
           <SelectContent>
             {allUsers.map((user) => (
@@ -228,8 +226,8 @@ const ProposalForm = ({
 };
 
 /**
- * Componente Global FAB - Gerencia o FAB contextual e todos os modais de criação
- * Este componente deve ser incluído no MainLayout para estar disponível globalmente
+ * Componente Global FAB - Gerencia o FAB contextual e todos os modais de criaÃ§Ã£o
+ * Este componente deve ser incluÃ­do no MainLayout para estar disponÃ­vel globalmente
  */
 const GlobalFAB: React.FC = () => {
   const { actions, modals, data } = useFABActions();
@@ -291,30 +289,6 @@ const GlobalFAB: React.FC = () => {
     }
   };
 
-  const handleWorkspaceSubmit = async (data: any) => {
-    setIsSubmitting(true);
-    try {
-      await modals.workspace.onSubmit(data);
-      toast.success('Workspace criado com sucesso!');
-    } catch (error: unknown) {
-      toast.error(errorMessage(error, 'Erro ao criar workspace'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleWorkspaceFolderSubmit = async (data: any) => {
-    setIsSubmitting(true);
-    try {
-      await modals.workspaceFolder.onSubmit(data);
-      toast.success('Pasta criada com sucesso!');
-    } catch (error: unknown) {
-      toast.error(errorMessage(error, 'Erro ao criar pasta'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <>
       {/* FAB Button */}
@@ -357,7 +331,6 @@ const GlobalFAB: React.FC = () => {
           isOpen={modals.project.isOpen}
           onClose={() => modals.project.setIsOpen(false)}
           workspaceId={modals.project.workspaceId}
-          workspaceFolders={data.workspaceFolders || []}
           onCreateProject={handleProjectSubmit}
         />
       )}
@@ -370,25 +343,6 @@ const GlobalFAB: React.FC = () => {
           preselectedListId={modals.task.listId}
           isOpen={modals.task.isOpen}
           onClose={() => modals.task.setIsOpen(false)}
-        />
-      )}
-
-      {/* Workspace Modal */}
-      {modals.workspace.isOpen && (
-        <CreateWorkspaceModal
-          isOpen={modals.workspace.isOpen}
-          onClose={() => modals.workspace.setIsOpen(false)}
-          onSuccess={() => toast.success('Workspace criado com sucesso!')}
-        />
-      )}
-
-      {/* Workspace Folder Modal */}
-      {modals.workspaceFolder.isOpen && modals.workspaceFolder.workspaceId && (
-        <CreateWorkspaceFolderModal
-          isOpen={modals.workspaceFolder.isOpen}
-          onClose={() => modals.workspaceFolder.setIsOpen(false)}
-          workspaceId={modals.workspaceFolder.workspaceId}
-          onCreateFolder={handleWorkspaceFolderSubmit}
         />
       )}
     </>

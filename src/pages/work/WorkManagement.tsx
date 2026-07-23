@@ -121,7 +121,7 @@ const WorkManagement = () => {
 
   if (workspacesQuery.isLoading) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <div className="flex h-[calc(100vh-200px)] items-center justify-center">
           <p className="text-muted-foreground">Carregando workspaces…</p>
         </div>
@@ -135,7 +135,7 @@ const WorkManagement = () => {
       : treeQuery.refetch;
 
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <div className="flex h-[calc(100vh-200px)] items-center justify-center">
           <Card className="w-full max-w-md">
             <CardHeader>
@@ -152,7 +152,7 @@ const WorkManagement = () => {
 
   if (workspaces.length === 0) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <div className="flex h-[calc(100vh-200px)] items-center justify-center">
           <Card className="w-full max-w-md">
             <CardHeader>
@@ -185,7 +185,7 @@ const WorkManagement = () => {
 
   if (treeQuery.isLoading || !selectedWorkspace) {
     return (
-      <MainLayout module="work" showGlobalFab={false}>
+      <MainLayout module="work" >
         <div className="flex h-[calc(100vh-200px)] items-center justify-center">
           <p className="text-muted-foreground">Carregando projetos…</p>
         </div>
@@ -194,7 +194,7 @@ const WorkManagement = () => {
   }
 
   return (
-    <MainLayout module="work" showGlobalFab={false}>
+    <MainLayout module="work" >
       <div className="app-page">
         <WorkPageHeader
           eyebrow={selectedWorkspace.name}
