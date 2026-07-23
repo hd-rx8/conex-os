@@ -239,8 +239,8 @@ begin
       show_interest_rate = coalesce((p_proposal->>'show_interest_rate')::boolean, true)
   where id = p_proposal_id;
 
-  delete from public.proposal_services
-  where proposal_id = p_proposal_id;
+  delete from public.proposal_services as ps
+  where ps.proposal_id = p_proposal_id;
 
   insert into public.proposal_services(
     proposal_id, service_id, name, description, base_price, quantity,

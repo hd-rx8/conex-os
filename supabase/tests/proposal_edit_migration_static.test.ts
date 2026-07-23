@@ -53,6 +53,15 @@ const amountAssignments = [...editFunctionSql.matchAll(/v_amount := .*?;/g)]
   .map(([assignment]) => assignment);
 
 describe('secure proposal editing migration payment contract', () => {
+  it('qualifies the deleted proposal_services proposal_id against the output column', () => {
+    expect(editFunctionSql).toContain(
+      'delete from public.proposal_services as ps where ps.proposal_id = p_proposal_id;',
+    );
+    expect(editFunctionSql).not.toContain(
+      'delete from public.proposal_services where proposal_id = p_proposal_id;',
+    );
+  });
+
   it('rejects cash discounts inside the installment validation branch', () => {
     expect(paymentValidationSql).toContain(
       "or (v_payment_type = 'installment' and ( " +
