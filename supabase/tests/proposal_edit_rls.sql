@@ -1,5 +1,16 @@
 begin;
 
+insert into auth.users(id, email)
+values
+  (
+    '10000000-0000-0000-0000-000000000001',
+    'proposal-user-a@invalid.example'
+  ),
+  (
+    '10000000-0000-0000-0000-000000000002',
+    'proposal-user-b@invalid.example'
+  );
+
 insert into public.app_users(id, name, email)
 values
   (

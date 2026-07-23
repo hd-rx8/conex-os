@@ -10,6 +10,11 @@ const migrationSql = readFileSync(
   'utf8',
 );
 
+const fixtureSql = readFileSync(
+  resolve(process.cwd(), 'supabase/tests/proposal_edit_rls.sql'),
+  'utf8',
+);
+
 const normalizedSql = migrationSql
   .replace(/--.*$/gm, ' ')
   .replace(/\s+/g, ' ')
@@ -64,5 +69,25 @@ describe('secure proposal editing migration payment contract', () => {
       'when coalesce(v_manual_total, 0) > 0 then v_manual_total ' +
       'else v_installment_value * v_installment_number end, 2 );',
     ]);
+  });
+});
+
+describe('proposal edit RLS fixture bootstrap', () => {
+  it('creates matching auth users before app users and clients inside a rollback-only transaction', () => {
+    const authUsersStart = fixtureSql.indexOf('insert into auth.users');
+    const appUsersStart = fixtureSql.indexOf('insert into public.app_users');
+    const clientsStart = fixtureSql.indexOf('insert into public.clients');
+    const authUsersSql = fixtureSql.slice(authUsersStart, appUsersStart);
+
+    expect(authUsersStart).toBeGreaterThanOrEqual(0);
+    expect(authUsersStart).toBeLessThan(appUsersStart);
+    expect(appUsersStart).toBeLessThan(clientsStart);
+    expect(authUsersSql).toContain("'10000000-0000-0000-0000-000000000001'");
+    expect(authUsersSql).toContain("'10000000-0000-0000-0000-000000000002'");
+    expect(authUsersSql).toContain('proposal-user-a@invalid.example');
+    expect(authUsersSql).toContain('proposal-user-b@invalid.example');
+    expect(fixtureSql).toMatch(/^begin;/i);
+    expect(fixtureSql).not.toMatch(/\bcommit\s*;/i);
+    expect(fixtureSql.trim()).toMatch(/rollback;$/i);
   });
 });
