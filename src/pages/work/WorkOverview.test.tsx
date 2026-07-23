@@ -17,16 +17,24 @@ const queries = vi.hoisted(() => ({
     data: {
       id: 'workspace-1',
       name: 'Principal',
-      spaces: [
+      spaces: [],
+      workspace_folders: [
         {
-          id: 'space-1',
-          name: 'Website',
-          status: 'Ativo',
-          description: null,
-          folders: [],
+          id: 'workspace-folder-1',
+          name: 'Clientes ativos',
           lists: [],
-          created_at: '2026-07-01T00:00:00Z',
-          updated_at: '2026-07-22T00:00:00Z',
+          spaces: [
+            {
+              id: 'space-1',
+              name: 'Website',
+              status: 'Ativo',
+              description: null,
+              folders: [],
+              lists: [],
+              created_at: '2026-07-01T00:00:00Z',
+              updated_at: '2026-07-22T00:00:00Z',
+            },
+          ],
         },
       ],
     },

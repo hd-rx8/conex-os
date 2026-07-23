@@ -65,8 +65,11 @@ export default function WorkOverview() {
   const treeQuery = useWorkspaceTreeQuery(selectedWorkspaceId);
   const tasksQuery = useWorkspaceTasksQuery(selectedWorkspaceId);
   const projects = useMemo(
-    () => treeQuery.data?.spaces ?? [],
-    [treeQuery.data?.spaces],
+    () => [
+      ...(treeQuery.data?.spaces ?? []),
+      ...(treeQuery.data?.workspace_folders?.flatMap((folder) => folder.spaces) ?? []),
+    ],
+    [treeQuery.data?.spaces, treeQuery.data?.workspace_folders],
   );
   const tasks = tasksQuery.data ?? [];
   const taskMetrics = deriveWorkTaskMetrics(tasks);
