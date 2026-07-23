@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { CustomService } from './useCustomServices'; // Import CustomService type
 import { useCurrency } from '@/context/CurrencyContext'; // Import useCurrency
 import { Database } from '@/integrations/supabase/types'; // Import Database types
+import type { ProposalEditorDraft } from '@/features/crm/proposals/proposalEditorTypes';
 
 type BillingType = Database['public']['Enums']['billing_type'];
 
@@ -443,6 +444,7 @@ export const useQuoteGenerator = (userId: string, customServices: CustomService[
   const [proposalTitle, setProposalTitle] = useState(''); // New: Proposal Title
   const [proposalLogoUrl, setProposalLogoUrl] = useState('/lovable-uploads/7ef1a887-0fe7-4cc3-bfc3-2d24e0251f8e.png'); // New: Proposal Logo URL
   const [proposalGradientTheme, setProposalGradientTheme] = useState<'conexhub' | 'alt1' | 'alt2'>('conexhub'); // New: Proposal Gradient Theme
+  const [showInterestRate, setShowInterestRate] = useState(true);
 
 
   // Combine static and custom services
@@ -516,7 +518,7 @@ export const useQuoteGenerator = (userId: string, customServices: CustomService[
     setSelectedServices(prev =>
       prev.map(s => {
         if (s.id === serviceId) {
-          const basePrice = s.customPrice || s.base_price; // Usar base_price aqui
+          const basePrice = s.customPrice ?? s.base_price; // Usar base_price aqui
           const totalPrice = basePrice * s.quantity;
           
           if (discountType === 'percentage') {
@@ -573,7 +575,7 @@ export const useQuoteGenerator = (userId: string, customServices: CustomService[
 
   const calculateSubtotal = () => {
     return selectedServices.reduce((total, service) => {
-      const price = service.customPrice || service.base_price; // Usar base_price aqui
+      const price = service.customPrice ?? service.base_price; // Usar base_price aqui
       const serviceTotal = price * service.quantity;
       const serviceDiscount = service.discount || 0;
       return total + (serviceTotal - serviceDiscount);
@@ -582,7 +584,7 @@ export const useQuoteGenerator = (userId: string, customServices: CustomService[
 
   const calculateOriginalSubtotal = () => {
     return selectedServices.reduce((total, service) => {
-      const price = service.customPrice || service.base_price; // Usar base_price aqui
+      const price = service.customPrice ?? service.base_price; // Usar base_price aqui
       return total + (price * service.quantity);
     }, 0);
   };
@@ -595,7 +597,7 @@ export const useQuoteGenerator = (userId: string, customServices: CustomService[
     return selectedServices
       .filter(service => service.billing_type === 'one_time')
       .reduce((total, service) => {
-        const price = service.customPrice || service.base_price; // Usar base_price aqui
+        const price = service.customPrice ?? service.base_price; // Usar base_price aqui
         const serviceTotal = price * service.quantity;
         const serviceDiscount = service.discount || 0;
         return total + (serviceTotal - serviceDiscount);
@@ -606,7 +608,7 @@ export const useQuoteGenerator = (userId: string, customServices: CustomService[
     return selectedServices
       .filter(service => service.billing_type === 'monthly')
       .reduce((total, service) => {
-        const price = service.customPrice || service.base_price; // Usar base_price aqui
+        const price = service.customPrice ?? service.base_price; // Usar base_price aqui
         const serviceTotal = price * service.quantity;
         const serviceDiscount = service.discount || 0;
         return total + (serviceTotal - serviceDiscount);
@@ -670,6 +672,56 @@ export const useQuoteGenerator = (userId: string, customServices: CustomService[
     }
   };
 
+  const hydrateQuote = useCallback((draft: ProposalEditorDraft) => {
+    setSelectedServices(draft.selectedServices);
+    setClientInfo(draft.clientInfo);
+    setSelectedPayment(draft.paymentType);
+    setPaymentType(draft.paymentType);
+    setInstallmentNumber(draft.installmentNumber);
+    setInstallmentValue(draft.installmentValue);
+    setManualInstallmentTotal(draft.manualInstallmentTotal);
+    setCashDiscountPercentage(draft.cashDiscountPercentage);
+    setNotes(draft.notes);
+    setIsValidityEnabled(draft.isValidityEnabled);
+    setValidityDays(draft.validityDays);
+    setProposalTitle(draft.proposalTitle);
+    setProposalLogoUrl(draft.proposalLogoUrl);
+    setProposalGradientTheme(draft.proposalGradientTheme);
+    setShowInterestRate(draft.showInterestRate);
+  }, []);
+
+  const getQuoteDraft = useCallback((): Omit<ProposalEditorDraft, 'selectedClientId' | 'isNewClient'> => ({
+    selectedServices,
+    clientInfo,
+    paymentType,
+    installmentNumber,
+    installmentValue,
+    manualInstallmentTotal,
+    cashDiscountPercentage,
+    notes,
+    isValidityEnabled,
+    validityDays,
+    proposalTitle,
+    proposalLogoUrl,
+    proposalGradientTheme,
+    showInterestRate,
+  }), [
+    cashDiscountPercentage,
+    clientInfo,
+    installmentNumber,
+    installmentValue,
+    isValidityEnabled,
+    manualInstallmentTotal,
+    notes,
+    paymentType,
+    proposalGradientTheme,
+    proposalLogoUrl,
+    proposalTitle,
+    selectedServices,
+    showInterestRate,
+    validityDays,
+  ]);
+
   const clearQuote = () => {
     setSelectedServices([]);
     setClientInfo({
@@ -690,6 +742,7 @@ export const useQuoteGenerator = (userId: string, customServices: CustomService[
     setProposalTitle(''); // Clear proposal title
     setProposalLogoUrl('/lovable-uploads/7ef1a887-0fe7-4cc3-bfc3-2d24e0251f8e.png'); // Reset logo
     setProposalGradientTheme('conexhub'); // Reset gradient theme
+    setShowInterestRate(true);
   };
 
   return {
@@ -707,6 +760,7 @@ export const useQuoteGenerator = (userId: string, customServices: CustomService[
     proposalTitle, // New
     proposalLogoUrl, // New
     proposalGradientTheme, // New
+    showInterestRate,
     addService,
     removeService,
     updateServiceQuantity,
@@ -727,6 +781,7 @@ export const useQuoteGenerator = (userId: string, customServices: CustomService[
     setProposalTitle, // New
     setProposalLogoUrl, // New
     setProposalGradientTheme, // New
+    setShowInterestRate,
     calculateSubtotal,
     calculateOriginalSubtotal,
     calculateTotal,
@@ -738,6 +793,8 @@ export const useQuoteGenerator = (userId: string, customServices: CustomService[
     calculateInstallmentInterestRate,
     getTotalInstallmentValue,
     getSelectedPayment,
+    hydrateQuote,
+    getQuoteDraft,
     clearQuote,
     services: allAvailableServices, // Export combined services
     paymentOptions
