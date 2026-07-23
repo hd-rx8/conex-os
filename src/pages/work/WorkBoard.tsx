@@ -40,6 +40,22 @@ export default function WorkBoard() {
     ],
     [treeQuery.data?.spaces, treeQuery.data?.workspace_folders],
   );
+  const lists = useMemo(
+    () => [
+      ...(treeQuery.data?.workspace_folders?.flatMap((folder) => folder.lists) ?? []),
+      ...(treeQuery.data?.spaces?.flatMap((space) => [
+        ...space.lists,
+        ...space.folders.flatMap((folder) => folder.lists),
+      ]) ?? []),
+      ...(treeQuery.data?.workspace_folders?.flatMap((folder) =>
+        folder.spaces.flatMap((space) => [
+          ...space.lists,
+          ...space.folders.flatMap((nestedFolder) => nestedFolder.lists),
+        ]),
+      ) ?? []),
+    ],
+    [treeQuery.data?.spaces, treeQuery.data?.workspace_folders],
+  );
   const filteredTasks = useMemo(
     () => filterWorkTasks(tasks, filters),
     [filters, tasks],
@@ -124,6 +140,7 @@ export default function WorkBoard() {
           value={filters}
           onChange={setFilters}
           projects={projects}
+          lists={lists}
         />
 
         {tasks.length === 0 ? (

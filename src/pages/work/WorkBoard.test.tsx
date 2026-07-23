@@ -12,7 +12,7 @@ const queries = vi.hoisted(() => ({
         {
           id: 'workspace-folder-1',
           name: 'Clientes ativos',
-          lists: [],
+          lists: [{ id: 'list-1', name: 'Comercial' }],
           spaces: [{ id: 'space-1', name: 'Website', folders: [], lists: [] }],
         },
       ],
@@ -78,6 +78,7 @@ describe('WorkBoard', () => {
 
     expect(screen.getByRole('heading', { name: 'Quadro' })).toBeInTheDocument();
     expect(screen.getByLabelText('Projeto')).toBeInTheDocument();
+    expect(screen.getByLabelText('Lista')).toBeInTheDocument();
     expect(screen.getByTestId('work-board-view')).toBeInTheDocument();
     expect(screen.getByText('Preparar proposta')).toBeInTheDocument();
   });

@@ -9,18 +9,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { SpaceTree, TaskFilters } from '@/types/hierarchy';
+import type { ListTree, SpaceTree, TaskFilters } from '@/types/hierarchy';
 
 interface WorkTaskFiltersProps {
   value: TaskFilters;
   onChange: (filters: TaskFilters) => void;
   projects?: readonly SpaceTree[];
+  lists?: readonly ListTree[];
 }
 
 export function WorkTaskFilters({
   value,
   onChange,
   projects = [],
+  lists = [],
 }: WorkTaskFiltersProps) {
   return (
     <PageToolbar>
@@ -96,6 +98,29 @@ export function WorkTaskFilters({
               {projects.map((project) => (
                 <SelectItem key={project.id} value={project.id}>
                   {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {lists.length > 0 && (
+          <Select
+            value={value.list_id ?? 'all'}
+            onValueChange={(listId) =>
+              onChange({
+                ...value,
+                list_id: listId === 'all' ? undefined : listId,
+              })
+            }
+          >
+            <SelectTrigger className="w-full lg:w-44" aria-label="Lista">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as listas</SelectItem>
+              {lists.map((list) => (
+                <SelectItem key={list.id} value={list.id}>
+                  {list.name}
                 </SelectItem>
               ))}
             </SelectContent>

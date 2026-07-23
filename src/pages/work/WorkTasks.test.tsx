@@ -59,7 +59,7 @@ vi.mock('@/features/work/hooks/useWorkData', async () => {
           {
             id: 'workspace-folder-1',
             name: 'Clientes ativos',
-            lists: [],
+            lists: [{ id: 'list-1', name: 'Comercial' }],
             spaces: [{ id: 'space-1', name: 'Website', folders: [], lists: [] }],
           },
         ],
@@ -88,6 +88,7 @@ describe('WorkTasks', () => {
     expect(screen.getByText('Atrasadas')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Lista' })).toBeInTheDocument();
     expect(screen.getByLabelText('Projeto')).toBeInTheDocument();
+    expect(screen.getByLabelText('Lista')).toBeInTheDocument();
     expect(screen.getByText('Preparar proposta')).toBeInTheDocument();
   });
 });
