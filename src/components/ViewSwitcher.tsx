@@ -49,22 +49,30 @@ const ViewSwitcher: React.FC<ViewSwitcherProps> = ({
   return (
     <div className={cn("flex items-center gap-2", className)}>
       {/* Desktop: Icon buttons */}
-      <div className="hidden sm:flex items-center gap-1 border rounded-md p-1">
+      <div
+        className="hidden items-center gap-1 rounded-lg border bg-muted/40 p-1 sm:flex"
+        aria-label="Modo de visualização"
+      >
         {views.map((view) => {
           const Icon = view.icon;
+          const isSelected = currentView === view.id;
           return (
             <Button
               key={view.id}
-              variant={currentView === view.id ? "default" : "ghost"}
+              type="button"
+              variant="ghost"
               size="sm"
               onClick={() => onViewChange(view.id)}
+              aria-label={view.label}
+              aria-pressed={isSelected}
               className={cn(
-                "h-8 w-8 p-0",
-                currentView === view.id && "shadow-sm"
+                "h-9 gap-2 px-3 text-xs",
+                isSelected && "bg-background text-foreground shadow-sm"
               )}
               title={view.description}
             >
               <Icon className="h-4 w-4" />
+              <span>{view.label}</span>
             </Button>
           );
         })}
@@ -74,7 +82,12 @@ const ViewSwitcher: React.FC<ViewSwitcherProps> = ({
       <div className="sm:hidden">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              aria-label={`Visualização atual: ${currentViewData?.label}`}
+            >
               <CurrentIcon className="h-4 w-4" />
               <span className="text-sm">{currentViewData?.label}</span>
             </Button>

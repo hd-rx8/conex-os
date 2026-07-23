@@ -42,6 +42,9 @@ import EditableField from '@/components/EditableField';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import DuplicateProposalModal from '@/components/DuplicateProposalModal';
+import { ContentCard } from '@/components/layout/ContentCard';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { PageToolbar } from '@/components/layout/PageToolbar';
 
 // Define os status possíveis para as propostas
 const PROPOSAL_STATUSES = ['Rascunho', 'Criada', 'Enviada', 'Negociando', 'Aprovada', 'Rejeitada'] as const;
@@ -613,7 +616,7 @@ const Opportunities: React.FC = () => {
 
   return (
     <MainLayout module="crm">
-      <div className="space-y-4 relative pb-20">
+      <div className="app-page relative pb-20">
         {/* Floating Action Button */}
         <FloatingActionButton
           onClick={() => navigate('/generator')}
@@ -621,27 +624,55 @@ const Opportunities: React.FC = () => {
           icon={Plus}
         />
 
+        <PageHeader
+          eyebrow="CRM"
+          title="Oportunidades"
+          description="Acompanhe o pipeline comercial e alterne entre Kanban, Lista ou Tabela."
+          actions={(
+            <>
+              <ViewSwitcher currentView={currentView} onViewChange={setCurrentView} />
+              <Button onClick={() => navigate('/generator')} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Nova proposta
+              </Button>
+            </>
+          )}
+        />
+
         {/* Filters */}
-        <Card>
-          <CardContent className="p-4">
+        <PageToolbar className="block">
             <div className="flex flex-col gap-3">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="relative min-w-0 flex-1">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
+                      aria-label="Buscar oportunidades"
                       placeholder="Buscar por título, cliente ou responsável..."
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      className="pl-9"
                     />
-                  </div>
                 </div>
-                <ViewSwitcher currentView={currentView} onViewChange={setCurrentView} />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => setShowFilters((current) => !current)}
+                  aria-expanded={showFilters}
+                >
+                  <Filter className="h-4 w-4" />
+                  Filtros
+                  {showFilters ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
-              <div className="flex flex-wrap gap-2">
+              {showFilters && (
+                <div className="grid grid-cols-1 gap-2 border-t pt-3 sm:grid-cols-2 xl:grid-cols-5">
                 <Select value={filterOwner} onValueChange={setFilterOwner}>
-                  <SelectTrigger className="w-full sm:w-40">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Responsável" />
                   </SelectTrigger>
                   <SelectContent>
@@ -654,7 +685,7 @@ const Opportunities: React.FC = () => {
                   </SelectContent>
                 </Select>
                 <Select value={filterClient} onValueChange={setFilterClient}>
-                  <SelectTrigger className="w-full sm:w-40">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Cliente" />
                   </SelectTrigger>
                   <SelectContent>
@@ -667,7 +698,7 @@ const Opportunities: React.FC = () => {
                   </SelectContent>
                 </Select>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-full sm:w-36">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -681,7 +712,7 @@ const Opportunities: React.FC = () => {
                   </SelectContent>
                 </Select>
                 <Select value={filterPeriod} onValueChange={setFilterPeriod}>
-                  <SelectTrigger className="w-full sm:w-32">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Período" />
                   </SelectTrigger>
                   <SelectContent>
@@ -697,7 +728,7 @@ const Opportunities: React.FC = () => {
                   setSortBy(field as 'created_at' | 'amount' | 'updated_at');
                   setSortOrder(order as 'asc' | 'desc');
                 }}>
-                  <SelectTrigger className="w-full sm:w-40">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Ordenar por" />
                   </SelectTrigger>
                   <SelectContent>
@@ -709,23 +740,23 @@ const Opportunities: React.FC = () => {
                     <SelectItem value="created_at-asc">Criado antigo</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+                </div>
+              )}
             </div>
-          </CardContent>
-        </Card>
+        </PageToolbar>
 
         {/* Kanban View */}
         {currentView === 'kanban' && (
           <div className="relative">
-            <ScrollArea className="w-full whitespace-nowrap rounded-md border">
-              <div className="flex space-x-4 p-4 min-h-[600px] items-start">
+            <ScrollArea className="w-full whitespace-nowrap rounded-xl border bg-card shadow-sm">
+              <div className="flex min-h-[600px] items-start gap-4 p-4">
                 {KANBAN_STATUSES.map(status => (
                   <div
                     key={status}
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, status)}
                     className={cn(
-                      "flex-shrink-0 w-72 sm:w-80 bg-muted/40 rounded-lg p-4 shadow-sm border",
+                      "w-[300px] min-w-[300px] flex-shrink-0 rounded-xl border bg-muted/30 p-4",
                       draggingProposalId && "border-dashed border-primary"
                     )}
                   >
@@ -773,16 +804,15 @@ const Opportunities: React.FC = () => {
 
         {/* List View */}
         {currentView === 'list' && (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Lista de Propostas</CardTitle>
-                <Badge variant="secondary">
-                  {totalItems} proposta{totalItems !== 1 ? 's' : ''}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
+          <ContentCard
+            title="Lista de propostas"
+            description="Uma leitura detalhada das oportunidades em andamento."
+            action={(
+              <Badge variant="secondary">
+                {totalItems} proposta{totalItems !== 1 ? 's' : ''}
+              </Badge>
+            )}
+          >
               <div className="space-y-3">
                 {loading ? (
                   <div className="flex items-center justify-center py-8">
@@ -800,7 +830,7 @@ const Opportunities: React.FC = () => {
               </div>
 
               {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                <div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm text-muted-foreground">
                     Página {currentPage} de {totalPages}
                   </p>
@@ -824,32 +854,30 @@ const Opportunities: React.FC = () => {
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+          </ContentCard>
         )}
 
         {/* Table View */}
         {currentView === 'table' && (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Tabela de Propostas</CardTitle>
-                <Badge variant="secondary">
-                  {totalItems} proposta{totalItems !== 1 ? 's' : ''}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border overflow-x-auto">
+          <ContentCard
+            title="Tabela de propostas"
+            description="Visualização compacta para comparação e ações rápidas."
+            action={(
+              <Badge variant="secondary">
+                {totalItems} proposta{totalItems !== 1 ? 's' : ''}
+              </Badge>
+            )}
+          >
+              <div className="overflow-x-auto rounded-xl border">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead className="border-r min-w-[100px]">Data</TableHead>
-                      <TableHead className="border-r min-w-[200px]">Título</TableHead>
-                      <TableHead className="border-r min-w-[150px]">Cliente</TableHead>
-                      <TableHead className="border-r min-w-[120px]">Valor</TableHead>
-                      <TableHead className="border-r min-w-[120px]">Status</TableHead>
-                      <TableHead className="text-right min-w-[150px]">Ações</TableHead>
+                    <TableRow className="bg-muted/40 hover:bg-muted/40">
+                      <TableHead className="min-w-[110px]">Data</TableHead>
+                      <TableHead className="min-w-[220px]">Título</TableHead>
+                      <TableHead className="min-w-[180px]">Cliente</TableHead>
+                      <TableHead className="min-w-[130px]">Valor</TableHead>
+                      <TableHead className="min-w-[130px]">Status</TableHead>
+                      <TableHead className="min-w-[150px] text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -867,20 +895,20 @@ const Opportunities: React.FC = () => {
                       </TableRow>
                     ) : (
                       proposals.map((proposal) => (
-                        <TableRow key={proposal.id} className="h-12">
-                          <TableCell className="border-r py-2">
+                        <TableRow key={proposal.id} className="h-16 hover:bg-muted/30">
+                          <TableCell>
                             {new Date(proposal.created_at).toLocaleDateString('pt-BR')}
                           </TableCell>
-                          <TableCell className="font-medium border-r py-2">
+                          <TableCell className="font-medium">
                             {proposal.title}
                           </TableCell>
-                          <TableCell className="border-r py-2">
+                          <TableCell>
                             {proposal.clients?.name || '-'}
                           </TableCell>
-                          <TableCell className="border-r py-2">
+                          <TableCell>
                             {formatCurrency(Number(proposal.amount))}
                           </TableCell>
-                          <TableCell className="border-r p-0">
+                          <TableCell className="p-0">
                             <Select
                               value={proposal.status}
                               onValueChange={(value) => handleStatusChange(proposal, value as Proposal['status'])}
@@ -946,7 +974,7 @@ const Opportunities: React.FC = () => {
               </div>
 
               {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm text-muted-foreground">
                     Página {currentPage} de {totalPages}
                   </p>
@@ -970,8 +998,7 @@ const Opportunities: React.FC = () => {
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+          </ContentCard>
         )}
 
         {/* Side Panel for Proposal Details */}

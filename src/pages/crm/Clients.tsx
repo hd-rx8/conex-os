@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,6 +22,9 @@ import { ptBR } from 'date-fns/locale'; // Import ptBR locale
 import { useCurrency } from '@/context/CurrencyContext';
 import EditableField from '@/components/EditableField';
 import { useNavigate } from 'react-router-dom';
+import { ContentCard } from '@/components/layout/ContentCard';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { PageToolbar } from '@/components/layout/PageToolbar';
 
 // Zod schema for client form validation
 const clientSchema = z.object({
@@ -305,124 +308,164 @@ export default function Clients() {
 
   return (
     <MainLayout module="crm">
-      <div className="space-y-6 relative pb-20">
+      <div className="app-page relative">
+        <PageHeader
+          eyebrow="CRM"
+          title="Clientes"
+          description="Centralize contatos, empresas e o histórico comercial de cada cliente."
+          actions={(
+            <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Novo cliente
+            </Button>
+          )}
+        />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Lista de Clientes</CardTitle>
-            <div className="flex items-center space-x-2">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome, e-mail ou empresa..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-              <Badge variant="secondary">
-                {filteredClients.length} cliente{filteredClients.length !== 1 ? 's' : ''}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
+        <PageToolbar>
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              aria-label="Buscar clientes"
+              placeholder="Buscar por nome, e-mail ou empresa..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Badge variant="secondary" className="w-fit shrink-0">
+            {filteredClients.length} cliente{filteredClients.length !== 1 ? 's' : ''}
+          </Badge>
+        </PageToolbar>
+
+        <ContentCard
+          title="Todos os clientes"
+          description="Selecione uma linha para visualizar propostas ou use as ações rápidas."
+          contentClassName="p-0"
+        >
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/40 hover:bg-muted/40">
+                  <TableHead className="min-w-[180px]">Nome</TableHead>
+                  <TableHead className="min-w-[220px]">E-mail</TableHead>
+                  <TableHead className="min-w-[170px]">Empresa</TableHead>
+                  <TableHead className="min-w-[160px]">CPF / CNPJ</TableHead>
+                  <TableHead className="min-w-[150px]">Telefone</TableHead>
+                  <TableHead className="min-w-[140px] text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <ClientSkeleton key={index} />
+                  ))
+                ) : filteredClients.length === 0 ? (
                   <TableRow>
-                    <TableHead className="border-r">Nome</TableHead>
-                    <TableHead className="border-r">E-mail</TableHead>
-                    <TableHead className="border-r">Empresa</TableHead>
-                    <TableHead className="border-r">CPF / CNPJ</TableHead>
-                    <TableHead className="border-r">Telefone</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                      {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    Array.from({ length: 5 }).map((_, i) => (
-                      <ClientSkeleton key={i} />
-                    ))
-                  ) : filteredClients.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
+                ) : (
+                  paginatedClients.map((client) => (
+                    <TableRow
+                      key={client.id}
+                      onClick={() => handleViewClientProposals(client)}
+                      className="h-16 cursor-pointer hover:bg-muted/30"
+                    >
+                      <TableCell className="font-medium">{client.name}</TableCell>
+                      <TableCell>{client.email || '-'}</TableCell>
+                      <TableCell>{client.company || '-'}</TableCell>
+                      <TableCell className="font-mono text-sm">{client.document || '-'}</TableCell>
+                      <TableCell>{client.phone || '-'}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleViewClientDetails(client);
+                            }}
+                            aria-label={`Visualizar detalhes de ${client.name}`}
+                            title="Visualizar detalhes"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setEditingClient(client);
+                            }}
+                            aria-label={`Editar ${client.name}`}
+                            title="Editar cliente"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 text-destructive hover:text-destructive"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleDeleteClient(client);
+                            }}
+                            aria-label={`Excluir ${client.name}`}
+                            title="Excluir cliente"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
-                  ) : (
-                    paginatedClients.map((client) => (
-                      <TableRow 
-                        key={client.id} 
-                        onClick={() => handleViewClientProposals(client)}
-                        className="cursor-pointer hover:bg-muted/50"
-                      >
-                        <TableCell className="font-medium border-r align-middle h-[40px]">{client.name}</TableCell>
-                        <TableCell className="border-r align-middle h-[40px]">{client.email || '-'}</TableCell>
-                        <TableCell className="border-r align-middle h-[40px]">{client.company || '-'}</TableCell>
-                        <TableCell className="border-r align-middle h-[40px] font-mono text-sm">{client.document || '-'}</TableCell>
-                        <TableCell className="border-r align-middle h-[40px]">{client.phone || '-'}</TableCell>
-                        <TableCell className="text-right align-middle h-[40px]">
-                          <div className="flex justify-end space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => { e.stopPropagation(); handleViewClientDetails(client); }}
-                              title="Visualizar detalhes"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => { e.stopPropagation(); setEditingClient(client); }}
-                              title="Editar cliente"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => { e.stopPropagation(); handleDeleteClient(client); }}
-                              title="Excluir cliente"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
 
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4">
-                <p className="text-sm text-muted-foreground">
-                  Página {currentPage} de {totalPages}
-                </p>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    Anterior
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    Próxima
-                  </Button>
-                </div>
+          {totalPages > 1 && (
+            <div className="flex flex-col gap-3 border-t p-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((previous) => Math.max(1, previous - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((previous) => Math.min(totalPages, previous + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Próxima
+                </Button>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          )}
+        </ContentCard>
+
+        {/* Create Client Dialog */}
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Novo cliente</DialogTitle>
+            </DialogHeader>
+            <ClientForm
+              onSubmit={handleCreateClient}
+              onCancel={() => setIsCreateDialogOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
 
         {/* Edit Client Dialog */}
         <Dialog open={!!editingClient} onOpenChange={() => setEditingClient(null)}>
