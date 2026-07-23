@@ -773,7 +773,7 @@ const Opportunities: React.FC = () => {
                     <SelectValue placeholder="Responsável" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="all">Responsável</SelectItem>
                     {allUsers.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.name}
@@ -786,7 +786,7 @@ const Opportunities: React.FC = () => {
                     <SelectValue placeholder="Cliente" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="all">Cliente</SelectItem>
                     {allClients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.name}
@@ -799,7 +799,7 @@ const Opportunities: React.FC = () => {
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="all">Status</SelectItem>
                     {PROPOSAL_STATUSES.map(status => (
                       <SelectItem key={status} value={status}>
                         {getCompatibleStatusLabel(status)}
@@ -812,7 +812,7 @@ const Opportunities: React.FC = () => {
                     <SelectValue placeholder="Período" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="all">Período</SelectItem>
                     <SelectItem value="today">Hoje</SelectItem>
                     <SelectItem value="7days">7 dias</SelectItem>
                     <SelectItem value="30days">30 dias</SelectItem>
