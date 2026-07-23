@@ -22,7 +22,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   module,
   showGlobalFab = true,
 }) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('sidebar-collapsed') === 'true';
+  });
   const isMobile = useIsMobile();
   const location = useLocation();
   const { activeModule, setActiveModule } = useAppModule();
@@ -48,16 +51,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
       setSidebarCollapsed(true);
     }
   }, [location.pathname, isMobile]);
-
-  // Load sidebar state from localStorage on desktop
-  useEffect(() => {
-    if (!isMobile) {
-      const saved = localStorage.getItem('sidebar-collapsed');
-      if (saved !== null) {
-        setSidebarCollapsed(JSON.parse(saved));
-      }
-    }
-  }, [isMobile]);
 
   const toggleSidebar = () => {
     const newState = !sidebarCollapsed;
