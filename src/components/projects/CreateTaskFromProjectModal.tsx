@@ -275,10 +275,10 @@ const CreateTaskFromProjectModal: React.FC<CreateTaskFromProjectModalProps> = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Baixa">Baixa</SelectItem>
-                      <SelectItem value="Média">Média</SelectItem>
-                      <SelectItem value="Alta">Alta</SelectItem>
-                      <SelectItem value="Urgente">Urgente</SelectItem>
+                      <SelectItem value="Baixa">🟢 Baixa</SelectItem>
+                      <SelectItem value="Média">🟡 Média</SelectItem>
+                      <SelectItem value="Alta">🟠 Alta</SelectItem>
+                      <SelectItem value="Urgente">🔴 Urgente</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

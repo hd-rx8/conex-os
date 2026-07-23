@@ -79,12 +79,6 @@ const NAV_CRM: NavigationItem[] = [
     label: 'Clientes',
     icon: Users,
     path: '/clients'
-  },
-  {
-    id: 'settings',
-    label: 'Configurações',
-    icon: Settings,
-    path: '/settings'
   }
 ];
 
@@ -98,27 +92,21 @@ const NAV_WORK: NavigationItem[] = [
   },
   {
     id: 'my-tasks',
-    label: 'Minhas tarefas',
+    label: 'Tarefas',
     icon: ClipboardList,
     path: WORK_TASKS
   },
   {
     id: 'tasks-board',
-    label: 'Quadro',
+    label: 'Kanban',
     icon: Kanban,
     path: WORK_BOARD
   },
   {
     id: 'workspaces',
-    label: 'Workspaces',
+    label: 'Espaços',
     icon: FolderOpen,
     path: WORK_WORKSPACES
-  },
-  {
-    id: 'settings',
-    label: 'Configurações',
-    icon: Settings,
-    path: '/settings'
   }
 ];
 
@@ -413,8 +401,8 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
     >
       {/* Desktop Header */}
       <div className={cn(
-        "flex border-b p-3",
-        isCollapsed ? "flex-col items-center gap-2" : "flex-row items-center justify-between px-4 py-3"
+        "flex border-b",
+        isCollapsed ? "justify-center p-4" : "items-center justify-start px-4 py-4"
       )}>
         {/* Logo */}
         <div className="flex items-center justify-center">
@@ -427,26 +415,6 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
             )}
           />
         </div>
-
-        {/* Toggle Button */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onToggleCollapse}
-                className={cn("h-8 w-8 shrink-0", !isCollapsed && "ml-auto")}
-                aria-label="Colapsar menu"
-              >
-                {isCollapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              {isCollapsed ? "Expandir menu" : "Colapsar menu"}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
       </div>
 
 
@@ -500,16 +468,43 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
       {/* Desktop Footer */}
       <div className={cn("shrink-0 border-t", isCollapsed ? "p-3" : "p-4")}>
         <div className={cn(
-          "flex min-w-0 items-center gap-2",
-          isCollapsed && "justify-center"
+          "flex min-w-0 items-center",
+          isCollapsed ? "flex-col justify-center gap-4" : "justify-between gap-2"
         )}>
-          <UserNav 
-            userName={user?.user_metadata?.full_name} 
-            userEmail={user?.email} 
-            avatarUrl={user?.user_metadata?.avatar_url}
-            collapsed={isCollapsed}
-          />
-          {!isCollapsed && <SettingsButton />}
+          <div className="flex items-center min-w-0">
+            <UserNav 
+              userName={user?.user_metadata?.full_name} 
+              userEmail={user?.email} 
+              avatarUrl={user?.user_metadata?.avatar_url}
+              collapsed={isCollapsed}
+            />
+          </div>
+          
+          <div className={cn(
+            "flex shrink-0 items-center",
+            isCollapsed ? "flex-col gap-2" : "gap-1"
+          )}>
+            {!isCollapsed && <SettingsButton />}
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onToggleCollapse}
+                    className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+                    aria-label="Alternar menu"
+                  >
+                    {isCollapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  {isCollapsed ? "Expandir menu" : "Recolher menu"}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
       </div>
 

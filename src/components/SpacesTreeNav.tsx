@@ -220,7 +220,7 @@ const WorkspaceFolderNode: React.FC<WorkspaceFolderNodeProps> = ({
             <div className="w-3" />
           )}
           <span className="shrink-0 text-sm">{folder.icon || '📁'}</span>
-          <span className="min-w-0 flex-1 truncate text-left text-sm" style={{ color: folder.color || undefined }}>
+          <span className="min-w-0 flex-1 truncate text-left text-sm">
             {folder.name}
           </span>
         </Button>

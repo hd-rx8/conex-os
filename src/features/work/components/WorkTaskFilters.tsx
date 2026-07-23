@@ -72,10 +72,10 @@ export function WorkTaskFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Prioridades</SelectItem>
-            <SelectItem value="Urgente">Urgente</SelectItem>
-            <SelectItem value="Alta">Alta</SelectItem>
-            <SelectItem value="Média">Média</SelectItem>
-            <SelectItem value="Baixa">Baixa</SelectItem>
+            <SelectItem value="Urgente">🔴 Urgente</SelectItem>
+            <SelectItem value="Alta">🟠 Alta</SelectItem>
+            <SelectItem value="Média">🟡 Média</SelectItem>
+            <SelectItem value="Baixa">🟢 Baixa</SelectItem>
           </SelectContent>
         </Select>
         {projects.length > 0 && (

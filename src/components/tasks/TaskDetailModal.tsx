@@ -224,7 +224,12 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
               </Badge>
               {task.priority && (
                 <Badge className={getPriorityColor(task.priority)}>
-                  <Tag className="h-3 w-3 mr-1" />
+                  <span className="mr-1">
+                    {task.priority === 'Urgente' && '🔴'}
+                    {task.priority === 'Alta' && '🟠'}
+                    {task.priority === 'Média' && '🟡'}
+                    {task.priority === 'Baixa' && '🟢'}
+                  </span>
                   {task.priority}
                 </Badge>
               )}
