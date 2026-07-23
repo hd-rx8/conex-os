@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "types": ["vitest/globals"]
+  },
+  "include": [
+    "src/features/work/**/*.ts",
+    "src/features/work/**/*.tsx",
+    "src/pages/work/**/*.tsx",
+    "src/hooks/useWorkspaces.ts",
+    "src/hooks/useSpaces.ts",
+    "src/hooks/useHierarchyTasks.ts",
+    "src/types/hierarchy.ts",
+    "src/integrations/supabase/**/*.ts",
+    "src/test/**/*.ts"
+  ]
+}
