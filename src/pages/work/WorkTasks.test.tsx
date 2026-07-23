@@ -52,7 +52,18 @@ vi.mock('@/features/work/hooks/useWorkData', async () => {
     ...actual,
     useAssignedTasksQuery: () => query,
     useWorkspaceTreeQuery: () => ({
-      data: { name: 'Principal', spaces: [] },
+      data: {
+        name: 'Principal',
+        spaces: [],
+        workspace_folders: [
+          {
+            id: 'workspace-folder-1',
+            name: 'Clientes ativos',
+            lists: [],
+            spaces: [{ id: 'space-1', name: 'Website', folders: [], lists: [] }],
+          },
+        ],
+      },
     }),
     useUpdateTaskMutation: () => ({ mutateAsync: vi.fn() }),
   };
@@ -76,6 +87,7 @@ describe('WorkTasks', () => {
     expect(screen.getByText('Pendentes')).toBeInTheDocument();
     expect(screen.getByText('Atrasadas')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Lista' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Projeto')).toBeInTheDocument();
     expect(screen.getByText('Preparar proposta')).toBeInTheDocument();
   });
 });

@@ -33,6 +33,13 @@ export default function WorkBoard() {
   const tasksQuery = useWorkspaceTasksQuery(selectedWorkspaceId);
   const updateTask = useUpdateTaskMutation();
   const tasks = tasksQuery.data ?? EMPTY_TASKS;
+  const projects = useMemo(
+    () => [
+      ...(treeQuery.data?.spaces ?? []),
+      ...(treeQuery.data?.workspace_folders?.flatMap((folder) => folder.spaces) ?? []),
+    ],
+    [treeQuery.data?.spaces, treeQuery.data?.workspace_folders],
+  );
   const filteredTasks = useMemo(
     () => filterWorkTasks(tasks, filters),
     [filters, tasks],
@@ -116,7 +123,7 @@ export default function WorkBoard() {
         <WorkTaskFilters
           value={filters}
           onChange={setFilters}
-          projects={treeQuery.data?.spaces ?? []}
+          projects={projects}
         />
 
         {tasks.length === 0 ? (

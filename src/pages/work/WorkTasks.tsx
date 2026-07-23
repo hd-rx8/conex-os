@@ -68,6 +68,13 @@ export default function WorkTasks() {
     user?.id ?? 'anonymous',
   );
   const tasks = tasksQuery.data ?? EMPTY_TASKS;
+  const projects = useMemo(
+    () => [
+      ...(treeQuery.data?.spaces ?? []),
+      ...(treeQuery.data?.workspace_folders?.flatMap((folder) => folder.spaces) ?? []),
+    ],
+    [treeQuery.data?.spaces, treeQuery.data?.workspace_folders],
+  );
   const metrics = deriveWorkTaskMetrics(tasks);
   const filteredTasks = useMemo(
     () => filterWorkTasks(tasks, filters),
@@ -141,7 +148,7 @@ export default function WorkTasks() {
         <WorkTaskFilters
           value={filters}
           onChange={setFilters}
-          projects={treeQuery.data?.spaces ?? []}
+          projects={projects}
         />
 
         {tasks.length === 0 ? (

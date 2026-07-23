@@ -7,7 +7,15 @@ const queries = vi.hoisted(() => ({
     data: {
       id: 'workspace-1',
       name: 'Principal',
-      spaces: [{ id: 'space-1', name: 'Website', folders: [], lists: [] }],
+      spaces: [],
+      workspace_folders: [
+        {
+          id: 'workspace-folder-1',
+          name: 'Clientes ativos',
+          lists: [],
+          spaces: [{ id: 'space-1', name: 'Website', folders: [], lists: [] }],
+        },
+      ],
     },
     isLoading: false,
     error: null,
