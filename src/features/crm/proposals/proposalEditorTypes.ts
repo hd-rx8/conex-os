@@ -46,7 +46,7 @@ export interface ProposalEditorSnapshot {
   proposal_logo_url: string | null;
   proposal_gradient_theme: 'conexhub' | 'alt1' | 'alt2' | null;
   show_interest_rate: boolean | null;
-  client: ProposalEditorClientSnapshot;
+  client: ProposalEditorClientSnapshot | null;
   services: ProposalEditorServiceSnapshot[];
 }
 
@@ -114,6 +114,7 @@ export interface ProposalEditPayload {
 export type ProposalEditorErrorCode =
   | 'conflict'
   | 'forbidden'
+  | 'locked'
   | 'not_found'
   | 'validation'
   | 'unknown';

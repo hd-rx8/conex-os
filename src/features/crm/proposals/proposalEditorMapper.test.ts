@@ -3,7 +3,10 @@ import {
   fingerprintProposalDraft,
   mapSnapshotToDraft,
 } from './proposalEditorMapper';
-import type { ProposalEditorSnapshot } from './proposalEditorTypes';
+import type {
+  ProposalEditorErrorCode,
+  ProposalEditorSnapshot,
+} from './proposalEditorTypes';
 
 const snapshot: ProposalEditorSnapshot = {
   id: 'proposal-1',
@@ -75,5 +78,48 @@ describe('proposal editor mapper', () => {
     changed.notes = 'alterado';
     expect(fingerprintProposalDraft(changed))
       .not.toBe(fingerprintProposalDraft(draft));
+  });
+
+  it('maps an absent persisted client to an empty unselected client draft', () => {
+    const draft = mapSnapshotToDraft({
+      ...snapshot,
+      client: null,
+    });
+
+    expect(draft.clientInfo).toEqual({
+      name: '',
+      email: '',
+      company: '',
+      phone: '',
+    });
+    expect(draft.selectedClientId).toBeNull();
+  });
+
+  it('copies service feature lists without mutating the snapshot', () => {
+    const snapshotWithFeatures: ProposalEditorSnapshot = {
+      ...structuredClone(snapshot),
+      services: [{
+        ...structuredClone(snapshot.services[0]),
+        features: ['Original'],
+      }],
+    };
+    const draft = mapSnapshotToDraft(snapshotWithFeatures);
+
+    expect(draft.selectedServices[0].features)
+      .not.toBe(snapshotWithFeatures.services[0].features);
+    expect(draft.selectedServices[0].customFeatures)
+      .not.toBe(snapshotWithFeatures.services[0].features);
+    expect(draft.selectedServices[0].customFeatures)
+      .not.toBe(draft.selectedServices[0].features);
+
+    draft.selectedServices[0].customFeatures?.push('Alterado');
+    expect(draft.selectedServices[0].features).toEqual(['Original']);
+    expect(snapshotWithFeatures.services[0].features).toEqual(['Original']);
+  });
+
+  it('supports the locked editor error code', () => {
+    const errorCode: ProposalEditorErrorCode = 'locked';
+
+    expect(errorCode).toBe('locked');
   });
 });

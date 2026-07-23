@@ -106,7 +106,8 @@ export const QuoteWizardProvider = ({ children, userId }: { children: ReactNode;
     calculateSubtotal, calculateOriginalSubtotal, calculateTotal, calculateOneTimeTotal, calculateMonthlyTotal, calculateCashDiscount, calculateCashTotal,
     calculateFinalTotal, calculateInstallmentInterestRate, getTotalInstallmentValue, getSelectedPayment, clearQuote,
     services: allAvailableServicesFromHook, paymentOptions,
-    proposalTitle, setProposalTitle, proposalLogoUrl, setProposalLogoUrl, proposalGradientTheme, setProposalGradientTheme
+    proposalTitle, setProposalTitle, proposalLogoUrl, setProposalLogoUrl, proposalGradientTheme, setProposalGradientTheme,
+    showInterestRate, setShowInterestRate,
   } = useQuoteGenerator(userId, []);
 
   const { customServices, fetchCustomServices, createCustomService, updateCustomService, deleteCustomService } = useCustomServices();
@@ -120,8 +121,6 @@ export const QuoteWizardProvider = ({ children, userId }: { children: ReactNode;
   const [isNewClient, setIsNewClient] = useState(false); // Default to false (select existing)
   const [generatedShareLink, setGeneratedShareLink] = useState<string | null>(null);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
-  const [showInterestRate, setShowInterestRate] = useState(true); // Novo: controle para mostrar taxa de juros (default: true)
-
   const steps = [
     { id: 'services', name: 'Serviços' },
     { id: 'settings', name: 'Configurações' },
