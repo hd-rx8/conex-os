@@ -13,6 +13,7 @@ import MainLayout from '@/components/MainLayout';
 import { MetricCard } from '@/components/layout/MetricCard';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import {
   Table,
   TableBody,
@@ -64,6 +65,7 @@ export default function WorkOverview() {
 
   const treeQuery = useWorkspaceTreeQuery(selectedWorkspaceId);
   const tasksQuery = useWorkspaceTasksQuery(selectedWorkspaceId);
+  const allTasksQuery = useWorkspaceTasksQuery('all');
   const projects = useMemo(
     () => [
       ...(treeQuery.data?.spaces ?? []),
@@ -72,6 +74,7 @@ export default function WorkOverview() {
     [treeQuery.data?.spaces, treeQuery.data?.workspace_folders],
   );
   const tasks = tasksQuery.data ?? [];
+  const allTasks = allTasksQuery.data ?? [];
   const taskMetrics = deriveWorkTaskMetrics(tasks);
   const activeProjects = projects.filter(
     (project) => project.status === 'Ativo',
@@ -96,7 +99,7 @@ export default function WorkOverview() {
     );
   }
 
-  if (workspacesQuery.error || treeQuery.error || tasksQuery.error) {
+  if (workspacesQuery.error || treeQuery.error || tasksQuery.error || allTasksQuery.error) {
     return (
       <MainLayout module="work" >
         <WorkErrorState
@@ -104,6 +107,7 @@ export default function WorkOverview() {
             void workspacesQuery.refetch();
             void treeQuery.refetch();
             void tasksQuery.refetch();
+            void allTasksQuery.refetch();
           }}
         />
       </MainLayout>
@@ -121,7 +125,7 @@ export default function WorkOverview() {
     );
   }
 
-  if (treeQuery.isLoading || tasksQuery.isLoading || !treeQuery.data) {
+  if (treeQuery.isLoading || tasksQuery.isLoading || allTasksQuery.isLoading || !treeQuery.data) {
     return (
       <MainLayout module="work" >
         <WorkLoadingState label="Preparando sua visão geral…" />
@@ -177,7 +181,12 @@ export default function WorkOverview() {
           })}
         </section>
 
-        <WorkOverviewCharts projects={projects} tasks={tasks} />
+        <WorkOverviewCharts 
+          projects={projects} 
+          tasks={tasks} 
+          workspaces={workspaces} 
+          allTasks={allTasks} 
+        />
 
         <section className="space-y-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -238,10 +247,20 @@ export default function WorkOverview() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">{project.status}</Badge>
+                        <Badge 
+                          variant={project.status.toLowerCase() === 'ativo' ? 'outline' : 'secondary'}
+                          className={project.status.toLowerCase() === 'ativo' ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-0 shadow-none' : ''}
+                        >
+                          {project.status}
+                        </Badge>
                       </TableCell>
                       <TableCell>{projectTasks.length}</TableCell>
-                      <TableCell>{progress}%</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 max-w-[120px]">
+                          <Progress value={progress} className="h-2" />
+                          <span className="text-xs text-muted-foreground w-8 text-right">{progress}%</span>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right">
                         <ArrowUpRight className="ml-auto h-4 w-4 text-muted-foreground" />
                       </TableCell>

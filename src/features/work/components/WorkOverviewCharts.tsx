@@ -12,20 +12,25 @@ import {
 } from 'recharts';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { SpaceTree, WorkTaskItem } from '@/types/hierarchy';
+import type { SpaceTree, Workspace, WorkTaskItem } from '@/types/hierarchy';
 import { WorkEmptyState } from './WorkStates';
 
 interface WorkOverviewChartsProps {
   projects: readonly SpaceTree[];
   tasks: readonly WorkTaskItem[];
+  workspaces: readonly Workspace[];
+  allTasks: readonly WorkTaskItem[];
 }
 
 const PROJECT_COLORS = ['#3b82f6', '#10b981', '#94a3b8'];
 const TASK_COLORS = ['#f59e0b', '#3b82f6', '#10b981'];
+const WORKSPACE_COLORS = ['#8b5cf6', '#ec4899', '#f43f5e'];
 
 export function WorkOverviewCharts({
   projects,
   tasks,
+  workspaces,
+  allTasks,
 }: WorkOverviewChartsProps) {
   const projectStatus = ['Ativo', 'Concluído', 'Arquivado'].map((status) => ({
     name: status,
@@ -51,7 +56,23 @@ export function WorkOverviewCharts({
     };
   });
 
-  if (projects.length === 0 && tasks.length === 0) {
+  const workspaceProductivity = workspaces.map((ws) => {
+    const wsTasks = allTasks.filter(
+      (task) => task.context.workspace_id === ws.id,
+    );
+    const completed = wsTasks.filter(
+      (task) => task.status === 'Concluída',
+    ).length;
+    return {
+      name: ws.name,
+      progresso:
+        wsTasks.length === 0
+          ? 0
+          : Math.round((completed / wsTasks.length) * 100),
+    };
+  });
+
+  if (projects.length === 0 && tasks.length === 0 && workspaces.length === 0) {
     return (
       <WorkEmptyState
         title="Ainda não há dados para analisar"
@@ -112,7 +133,7 @@ export function WorkOverviewCharts({
           </ResponsiveContainer>
         </CardContent>
       </Card>
-      <Card className="overflow-hidden shadow-sm lg:col-span-2">
+      <Card className="overflow-hidden shadow-sm lg:col-span-1">
         <CardHeader className="pb-2">
           <CardTitle className="text-xl">Produtividade por projeto</CardTitle>
           <p className="text-sm text-muted-foreground">
@@ -127,6 +148,26 @@ export function WorkOverviewCharts({
               <YAxis unit="%" domain={[0, 100]} />
               <Tooltip formatter={(value) => `${value}%`} />
               <Bar dataKey="progresso" fill="#3977d3" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+      
+      <Card className="overflow-hidden shadow-sm lg:col-span-1">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-xl">Produtividade por workspace</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Percentual de tarefas concluídas por workspace.
+          </p>
+        </CardHeader>
+        <CardContent className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={workspaceProductivity}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <YAxis unit="%" domain={[0, 100]} />
+              <Tooltip formatter={(value) => `${value}%`} />
+              <Bar dataKey="progresso" fill="#8b5cf6" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
