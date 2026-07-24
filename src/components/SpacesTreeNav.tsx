@@ -113,7 +113,7 @@ const SpacesTreeNav: React.FC<SpacesTreeNavProps> = ({
       const res = await updateList(id, { name: newName });
       error = res.error;
     }
-    
+
     if (error) {
       toast.error(`Erro ao renomear ${type === 'space' ? 'o projeto' : type === 'folder' ? 'a pasta' : 'a lista'}.`);
     } else {
@@ -308,7 +308,7 @@ const SpaceNode: React.FC<SpaceNodeProps> = ({
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={onCreateList}>
               <Plus className="mr-2 h-4 w-4" />
-              + Lista
+              Nova Lista
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onRenameSpace}>
               <Pencil className="mr-2 h-4 w-4" />
@@ -416,51 +416,51 @@ const FolderNode: React.FC<FolderNodeProps> = ({
     <div className="w-full min-w-0">
       <div className="group flex w-full min-w-0 items-center pr-1">
         <Button
-        variant="ghost"
-        onClick={onToggle}
-        title={folder.name}
-        className={cn(
-          'h-8 w-full min-w-0 justify-start gap-2 px-3 font-normal',
-          !hasLists && 'cursor-default'
-        )}
-        disabled={!hasLists}
-      >
-        {hasLists ? (
-          isExpanded ? (
-            <ChevronDown className="h-3 w-3 shrink-0" />
+          variant="ghost"
+          onClick={onToggle}
+          title={folder.name}
+          className={cn(
+            'h-8 w-full min-w-0 justify-start gap-2 px-3 font-normal',
+            !hasLists && 'cursor-default'
+          )}
+          disabled={!hasLists}
+        >
+          {hasLists ? (
+            isExpanded ? (
+              <ChevronDown className="h-3 w-3 shrink-0" />
+            ) : (
+              <ChevronRight className="h-3 w-3 shrink-0" />
+            )
           ) : (
-            <ChevronRight className="h-3 w-3 shrink-0" />
-          )
-        ) : (
-          <div className="w-3" />
-        )}
-        <span className="shrink-0 text-sm">📂</span>
-        <span className="min-w-0 flex-1 truncate text-left text-sm">
-          {folder.name}
-        </span>
-      </Button>
+            <div className="w-3" />
+          )}
+          <span className="shrink-0 text-sm">📂</span>
+          <span className="min-w-0 flex-1 truncate text-left text-sm">
+            {folder.name}
+          </span>
+        </Button>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 transition-opacity">
-            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={onCreateList}>
-            <Plus className="mr-2 h-4 w-4" />
-            + Lista
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={onRename}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Renomear
-          </DropdownMenuItem>
-          <DropdownMenuItem className="text-destructive focus:text-destructive cursor-pointer" onSelect={() => setIsDeleteDialogOpen(true)}>
-            <Trash2 className="mr-2 h-4 w-4" />
-            Excluir
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 transition-opacity">
+              <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onCreateList}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Lista
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onRename}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Renomear
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-destructive focus:text-destructive cursor-pointer" onSelect={() => setIsDeleteDialogOpen(true)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Excluir
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -521,60 +521,60 @@ const ListNode: React.FC<ListNodeProps> = ({ list, onSelect, isSelected, onDelet
   return (
     <div className="group flex w-full min-w-0 items-center pr-1">
       <Button
-      variant="ghost"
-      onClick={() => onSelect?.(list.id)}
-      title={list.name}
-      className={cn(
-        'h-8 w-full min-w-0 justify-start gap-2 px-3 font-normal',
-        isSelected && 'bg-accent font-medium'
-      )}
-    >
-      <div className="w-3 shrink-0" />
-      <span className="shrink-0 text-sm">📋</span>
-      <span className="min-w-0 flex-1 truncate text-left text-sm">
-        {list.name}
-      </span>
-      {list.taskCount !== undefined && (
-        <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-          {list.taskCount}
+        variant="ghost"
+        onClick={() => onSelect?.(list.id)}
+        title={list.name}
+        className={cn(
+          'h-8 w-full min-w-0 justify-start gap-2 px-3 font-normal',
+          isSelected && 'bg-accent font-medium'
+        )}
+      >
+        <div className="w-3 shrink-0" />
+        <span className="shrink-0 text-sm">📋</span>
+        <span className="min-w-0 flex-1 truncate text-left text-sm">
+          {list.name}
         </span>
-      )}
-    </Button>
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 transition-opacity">
-          <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={onRename}>
-          <Pencil className="mr-2 h-4 w-4" />
-          Renomear
-        </DropdownMenuItem>
-        <DropdownMenuItem className="text-destructive focus:text-destructive cursor-pointer" onSelect={() => setIsDeleteDialogOpen(true)}>
-          <Trash2 className="mr-2 h-4 w-4" />
-          Excluir
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        {list.taskCount !== undefined && (
+          <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+            {list.taskCount}
+          </span>
+        )}
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 transition-opacity">
+            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={onRename}>
+            <Pencil className="mr-2 h-4 w-4" />
+            Renomear
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-destructive focus:text-destructive cursor-pointer" onSelect={() => setIsDeleteDialogOpen(true)}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            Excluir
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Excluir Lista</AlertDialogTitle>
-          <AlertDialogDescription>
-            Tem certeza que deseja excluir a lista <strong>{list.name}</strong>?
-            Esta ação excluirá permanentemente a lista e todas as tarefas que nela estão.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDeleteConfirm} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-            {isDeleting ? 'Excluindo...' : 'Excluir Lista'}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Lista</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a lista <strong>{list.name}</strong>?
+              Esta ação excluirá permanentemente a lista e todas as tarefas que nela estão.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {isDeleting ? 'Excluindo...' : 'Excluir Lista'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
