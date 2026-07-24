@@ -18,6 +18,7 @@ import {
   WorkLoadingState,
 } from '@/features/work/components/WorkStates';
 import { WorkTaskEditModal } from '@/features/work/components/WorkTaskEditModal';
+import { WorkTaskFilters } from '@/features/work/components/WorkTaskFilters';
 import { WorkViewSwitcher } from '@/features/work/components/WorkViewSwitcher';
 import { useWorkContext } from '@/features/work/context/workContextState';
 import {
