@@ -57,7 +57,7 @@ export default function WorkOverview() {
     const selectedExists = workspaces.some(
       (workspace) => workspace.id === selectedWorkspaceId,
     );
-    if (workspaces[0] && !selectedExists) {
+    if (workspaces[0] && !selectedExists && selectedWorkspaceId !== 'all') {
       setSelectedWorkspaceId(workspaces[0].id);
     }
   }, [selectedWorkspaceId, setSelectedWorkspaceId, workspaces]);

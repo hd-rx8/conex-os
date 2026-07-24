@@ -20,6 +20,7 @@ import { useWorkContext } from '@/features/work/context/workContextState';
 import {
   useWorkspaceTasksQuery,
   useUpdateTaskMutation,
+  useCreateTaskMutation,
   useDeleteTaskMutation,
   useWorkspaceTreeQuery,
 } from '@/features/work/hooks/useWorkData';
@@ -65,6 +66,7 @@ export default function WorkTasks() {
   const [editingTask, setEditingTask] = useState<WorkTaskItem | null>(null);
   const treeQuery = useWorkspaceTreeQuery(selectedWorkspaceId);
   const tasksQuery = useWorkspaceTasksQuery(selectedWorkspaceId);
+  const createTask = useCreateTaskMutation();
   const deleteTask = useDeleteTaskMutation();
   const updateTask = useUpdateTaskMutation();
   const { view, setView } = useWorkViewMode(
@@ -112,8 +114,21 @@ export default function WorkTasks() {
       toast.error('Não foi possível atualizar o status.');
     }
   };
-
-
+  const handleCreateTask = async (title: string, spaceId: string, listId: string, status: string) => {
+    try {
+      await createTask.mutateAsync({
+        title,
+        list_id: listId,
+        status,
+        assignee_id: user?.id,
+        creator_id: user?.id || '',
+      });
+      toast.success('Tarefa criada');
+    } catch (error) {
+      toast.error('Erro ao criar tarefa');
+      console.error(error);
+    }
+  };
 
   const handleDeleteTask = async (task: WorkTaskItem) => {
     try {
@@ -212,6 +227,9 @@ export default function WorkTasks() {
             }
             onTaskDelete={(task) => void handleDeleteTask(task)}
             onTaskArchive={(task) => void handleArchiveTask(task)}
+            onCreateTask={(title, spaceId, listId, status) => 
+              void handleCreateTask(title, spaceId, listId, status)
+            }
           />
         ) : view === 'board' ? (
           <TaskBoardView
@@ -222,6 +240,14 @@ export default function WorkTasks() {
             }
             onTaskDelete={(task) => void handleDeleteTask(task)}
             onTaskArchive={(task) => void handleArchiveTask(task)}
+            onCreateTask={(title, status) => {
+              const defaultList = lists[0];
+              if (defaultList) {
+                void handleCreateTask(title, defaultList.space_id, defaultList.id, status);
+              } else {
+                toast.error('Crie uma lista primeiro para poder adicionar tarefas.');
+              }
+            }}
           />
         ) : (
           <TaskListView
@@ -232,6 +258,9 @@ export default function WorkTasks() {
             }
             onTaskDelete={(task) => void handleDeleteTask(task)}
             onTaskArchive={(task) => void handleArchiveTask(task)}
+            onCreateTask={(title, spaceId, listId) => 
+              void handleCreateTask(title, spaceId, listId, 'Pendente')
+            }
           />
         )}
       </div>

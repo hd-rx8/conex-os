@@ -87,7 +87,7 @@ const NAV_CRM: NavigationItem[] = [
 const NAV_WORK: NavigationItem[] = [
   {
     id: 'projects-overview',
-    label: 'Visão geral',
+    label: 'Dashboard',
     icon: LayoutDashboard,
     path: WORK_HOME
   },

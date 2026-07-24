@@ -11,8 +11,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { PriorityBadge } from './PriorityBadge';
 import { cn } from '@/lib/utils';
-import type { WorkTaskItem } from '@/types/hierarchy';
+import type { TaskStatus, WorkTaskItem } from '@/types/hierarchy';
 
 interface TaskBoardViewProps {
   tasks: readonly WorkTaskItem[];
@@ -136,27 +137,34 @@ export function TaskBoardView({
                         )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              aria-label={`Ações da tarefa ${task.title}`}
+                            <div 
+                              onPointerDown={(e) => e.stopPropagation()} 
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                aria-label={`Ações da tarefa ${task.title}`}
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => onTaskClick?.(task)}>
+                            <DropdownMenuItem onSelect={() => onTaskClick?.(task)}>
                               Editar
                             </DropdownMenuItem>
                             <DropdownMenuItem 
-                              onClick={() => onTaskArchive?.(task)}
+                              onSelect={() => onTaskArchive?.(task)}
                             >
                               Arquivar
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               className="text-destructive focus:bg-destructive/10"
-                              onClick={() => {
+                              onSelect={(e) => {
+                                e.preventDefault(); // Prevent dropdown from closing immediately if confirm is cancelled
                                 if (window.confirm(`Tem certeza que deseja excluir a tarefa "${task.title}"?`)) {
                                   onTaskDelete?.(task);
                                 }
@@ -169,7 +177,7 @@ export function TaskBoardView({
                       </div>
                     </div>
                     <div className="flex items-center justify-between gap-2">
-                      <Badge variant="outline">{task.priority}</Badge>
+                      <PriorityBadge priority={task.priority} />
                       {task.due_date && (
                         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                           <CalendarDays className="h-3.5 w-3.5" />

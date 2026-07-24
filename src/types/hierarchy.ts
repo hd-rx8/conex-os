@@ -270,10 +270,15 @@ export interface HierarchyTask {
 
 export interface WorkTaskContext {
   workspace_id: string;
+  workspace_name?: string | null;
+  workspace_color?: string | null;
+  workspace_icon?: string | null;
   space_id: string | null;
   space_name: string | null;
+  space_color: string | null;
   list_id: string;
   list_name: string;
+  list_color: string | null;
 }
 
 export interface WorkTaskItem extends HierarchyTask {

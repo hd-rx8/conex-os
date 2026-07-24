@@ -81,8 +81,9 @@ const WORK_TASK_FIELDS = `
   assignee:app_users!tasks_assignee_id_fkey(id,name,email),
   creator:app_users!tasks_creator_id_fkey(id,name,email),
   list:lists!inner(
-    id,name,workspace_id,workspace_folder_id,space_id,
-    space:spaces(id,name,workspace_id)
+    id,name,color,workspace_id,workspace_folder_id,space_id,
+    space:spaces(id,name,color,workspace_id),
+    workspace:workspaces(id,name,color,icon)
   )
 `;
 
@@ -122,6 +123,29 @@ export async function fetchWorkspaces(): Promise<Workspace[]> {
 export async function fetchWorkspaceTree(
   workspaceId: string,
 ): Promise<WorkspaceTree> {
+  if (workspaceId === 'all') {
+    const { data, error } = await supabase
+      .from('workspaces')
+      .select(WORKSPACE_TREE_FIELDS);
+
+    if (error) throw normalizeWorkError(error);
+
+    const workspaces = (data as WorkspaceTreeRow[])?.map(mapWorkspaceTreeRow) ?? [];
+
+    return {
+      id: 'all',
+      name: 'Visão Geral',
+      description: '',
+      icon: '🌐',
+      color: '#000000',
+      owner: '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      workspace_folders: workspaces.flatMap(w => w.workspace_folders || []),
+      spaces: workspaces.flatMap(w => w.spaces || []),
+    };
+  }
+
   const { data, error } = await supabase
     .from('workspaces')
     .select(WORKSPACE_TREE_FIELDS)
@@ -150,8 +174,12 @@ export async function fetchWorkspaceTasks(
   workspaceId: string,
   filters?: TaskFilters,
 ): Promise<WorkTaskItem[]> {
+  const baseQuery = workspaceId === 'all' 
+    ? createTaskQuery() 
+    : createTaskQuery().eq('list.workspace_id', workspaceId);
+
   const query = applyTaskFilters(
-    createTaskQuery().eq('list.workspace_id', workspaceId),
+    baseQuery,
     filters,
   ).order('position');
 

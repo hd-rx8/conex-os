@@ -19,18 +19,23 @@ const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
   onCreateProject,
   isCollapsed = false,
 }) => {
+  const isAllWorkspaces = selectedWorkspaceId === 'all';
   const selectedWorkspace = workspaces.find((w) => w.id === selectedWorkspaceId);
+
+  const displayWorkspace = isAllWorkspaces
+    ? { name: 'Visão Geral', icon: '🌐' }
+    : selectedWorkspace;
 
   if (isCollapsed) {
     return (
       <div className="flex items-center justify-center p-2">
         <div
           role="img"
-          aria-label={`Workspace atual: ${selectedWorkspace?.name || 'Não selecionado'}`}
-          title={selectedWorkspace?.name}
+          aria-label={`Workspace atual: ${displayWorkspace?.name || 'Não selecionado'}`}
+          title={displayWorkspace?.name}
           className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-base"
         >
-          {selectedWorkspace?.icon || '🏢'}
+          {displayWorkspace?.icon || '🏢'}
         </div>
       </div>
     );
@@ -50,20 +55,26 @@ const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
             <SelectValue>
               <div className="flex min-w-0 items-center gap-2">
                 <span className="shrink-0 text-base">
-                  {selectedWorkspace?.icon || '🏢'}
+                  {displayWorkspace?.icon || '🏢'}
                 </span>
-                <span className="min-w-0 truncate" title={selectedWorkspace?.name}>
-                  {selectedWorkspace?.name || 'Selecione...'}
+                <span className="min-w-0 truncate" title={displayWorkspace?.name}>
+                  {displayWorkspace?.name || 'Selecione...'}
                 </span>
               </div>
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {workspaces.map((workspace) => (
-              <SelectItem key={workspace.id} value={workspace.id}>
+            <SelectItem value="all">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🌐</span>
+                <span className="truncate">Visão Geral</span>
+              </div>
+            </SelectItem>
+            {workspaces.map((ws) => (
+              <SelectItem key={ws.id} value={ws.id}>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">{workspace.icon || '🏢'}</span>
-                  <span>{workspace.name}</span>
+                  <span className="text-base">{ws.icon || '🏢'}</span>
+                  <span className="truncate">{ws.name}</span>
                 </div>
               </SelectItem>
             ))}

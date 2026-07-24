@@ -24,13 +24,21 @@ export type WorkTaskQueryRow = Tables<'tasks'> & {
   list: {
     id: string;
     name: string;
+    color: string | null;
     space_id: string | null;
     workspace_id: string | null;
     workspace_folder_id: string | null;
     space: {
       id: string;
       name: string;
+      color: string | null;
       workspace_id: string;
+    } | null;
+    workspace: {
+      id: string;
+      name: string;
+      color: string | null;
+      icon: string | null;
     } | null;
   };
 };
@@ -151,10 +159,15 @@ export function mapWorkTaskRow(row: WorkTaskQueryRow): WorkTaskItem {
     creator: creator ?? undefined,
     context: {
       workspace_id: workspaceId,
+      workspace_name: list.workspace?.name ?? null,
+      workspace_color: list.workspace?.color ?? null,
+      workspace_icon: list.workspace?.icon ?? null,
       space_id: list.space?.id ?? list.space_id,
       space_name: list.space?.name ?? null,
+      space_color: list.space?.color ?? null,
       list_id: list.id,
       list_name: list.name,
+      list_color: list.color ?? null,
     },
   };
 }

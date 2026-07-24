@@ -17,7 +17,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { WorkTaskItem } from '@/types/hierarchy';
+import { PriorityBadge } from './PriorityBadge';
+import { StatusBadge } from './StatusBadge';
+import type { TaskPriority, WorkTaskItem } from '@/types/hierarchy';
 
 interface TaskTableViewProps {
   tasks: readonly WorkTaskItem[];
@@ -68,6 +70,17 @@ export function TaskTableView({ tasks, onTaskClick, onStatusChange, onCreateTask
 
     return groups;
   }, [tasks]);
+
+  const [collapsedStatuses, setCollapsedStatuses] = React.useState<Record<string, boolean>>({
+    'Concluída': true
+  });
+
+  const toggleStatus = (statusKey: string) => {
+    setCollapsedStatuses(prev => ({
+      ...prev,
+      [statusKey]: !prev[statusKey]
+    }));
+  };
 
   if (tasks.length === 0) {
     if (!emptyListContext) return null;
@@ -153,14 +166,20 @@ export function TaskTableView({ tasks, onTaskClick, onStatusChange, onCreateTask
                 </TableCell>
               </TableRow>
             </TableBody>
+            {Object.entries(listData.statuses).map(([status, statusTasks]) => {
+              const statusKey = `${listId}-${status}`;
+              const isCollapsed = collapsedStatuses[statusKey] ?? (status === 'Concluída');
 
-            {/* Agrupamentos de Status dentro da Lista */}
-            {Object.entries(listData.statuses).map(([status, statusTasks]) => (
-              <TableBody key={`${listId}-${status}`}>
+              return (
+              <TableBody key={statusKey}>
                 {/* Cabeçalho do Status */}
-                <TableRow className="bg-muted/10 hover:bg-muted/10 border-t-0">
+                <TableRow 
+                  className="bg-muted/10 hover:bg-muted/20 border-t-0 cursor-pointer"
+                  onClick={() => toggleStatus(statusKey)}
+                >
                   <TableCell colSpan={6} className="py-2 border-b-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 select-none">
+                      <span className={`text-muted-foreground transition-transform ${isCollapsed ? 'rotate-[-90deg]' : 'rotate-0'}`}>▼</span>
                       <Badge variant="outline" className="uppercase text-[10px] tracking-widest">{status}</Badge>
                       <span className="text-muted-foreground text-xs">{statusTasks.length}</span>
                     </div>
@@ -168,7 +187,7 @@ export function TaskTableView({ tasks, onTaskClick, onStatusChange, onCreateTask
                 </TableRow>
 
                 {/* Linhas das Tarefas */}
-                {statusTasks.map(task => (
+                {!isCollapsed && statusTasks.map(task => (
                   <TableRow
                     key={task.id}
                     className="h-12 cursor-pointer hover:bg-muted/30"
@@ -196,22 +215,35 @@ export function TaskTableView({ tasks, onTaskClick, onStatusChange, onCreateTask
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className="font-normal">{task.status}</Badge>
+                      <StatusBadge status={task.status} />
                     </TableCell>
                     <TableCell>
                       {task.priority ? (
-                        <Badge variant="outline" className="font-normal">{task.priority}</Badge>
+                        <PriorityBadge priority={task.priority} />
                       ) : (
                         <span className="text-muted-foreground text-xs">-</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {task.assignee?.name ?? '-'}
+                    <TableCell>
+                      {task.assignee ? (
+                        <span className="flex items-center gap-2 text-sm">
+                          <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
+                            {task.assignee.name.substring(0, 2).toUpperCase()}
+                          </div>
+                          <span className="hidden xl:inline-block">{task.assignee.name}</span>
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">-</span>
+                      )}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {task.due_date
-                        ? new Date(task.due_date).toLocaleDateString('pt-BR')
-                        : '-'}
+                    <TableCell>
+                      {task.due_date ? (
+                        <span className="text-sm">
+                          {new Date(task.due_date).toLocaleDateString('pt-BR')}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">-</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -220,21 +252,21 @@ export function TaskTableView({ tasks, onTaskClick, onStatusChange, onCreateTask
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            aria-label={`Ações da tarefa ${task.title}`}
                           >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                          <DropdownMenuItem onClick={() => onTaskClick?.(task)}>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onSelect={() => onTaskClick?.(task)}>
                             Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onTaskArchive?.(task)}>
+                          <DropdownMenuItem onSelect={() => onTaskArchive?.(task)}>
                             Arquivar
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             className="text-destructive focus:bg-destructive/10"
-                            onClick={() => {
+                            onSelect={(e) => {
+                              e.preventDefault();
                               if (window.confirm(`Tem certeza que deseja excluir a tarefa "${task.title}"?`)) {
                                 onTaskDelete?.(task);
                               }
@@ -247,9 +279,8 @@ export function TaskTableView({ tasks, onTaskClick, onStatusChange, onCreateTask
                     </TableCell>
                   </TableRow>
                 ))}
-
                 {/* Input Inline de Nova Tarefa */}
-                {onCreateTask && (
+                {onCreateTask && !isCollapsed && (
                   <TableRow className="hover:bg-muted/5 border-b-0">
                     <TableCell colSpan={6} className="p-0 border-b-0">
                       <div className="flex items-center px-4 py-1 group focus-within:bg-accent/50 transition-colors">
@@ -269,7 +300,8 @@ export function TaskTableView({ tasks, onTaskClick, onStatusChange, onCreateTask
                   </TableRow>
                 )}
               </TableBody>
-            ))}
+              );
+            })}
           </React.Fragment>
         ))}
       </Table>

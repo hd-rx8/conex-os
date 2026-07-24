@@ -208,6 +208,8 @@ export default function ProjectDetails() {
           actions={<WorkViewSwitcher value={view} onChange={setView} />}
         />
 
+        <WorkTaskFilters value={filters} onChange={setFilters} />
+
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[
             { label: 'Total de tarefas', value: metrics.total, icon: Rows3, color: 'text-primary' },
@@ -272,8 +274,6 @@ export default function ProjectDetails() {
           </section>
         )}
 
-        <WorkTaskFilters value={filters} onChange={setFilters} />
-
         {projectLists.length === 0 ? (
           <WorkEmptyState
             title="Projeto sem listas"
@@ -316,6 +316,14 @@ export default function ProjectDetails() {
             }
             onTaskDelete={(task) => void handleDeleteTask(task)}
             onTaskArchive={(task) => void handleArchiveTask(task)}
+            onCreateTask={(title, status) => {
+              const defaultList = projectLists[0];
+              if (defaultList) {
+                void handleCreateTask(title, project.id, defaultList.id, status);
+              } else {
+                toast.error('Crie uma lista primeiro para poder adicionar tarefas.');
+              }
+            }}
           />
         ) : (
           <TaskListView

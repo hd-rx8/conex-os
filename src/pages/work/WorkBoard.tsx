@@ -11,12 +11,16 @@ import {
   WorkErrorState,
   WorkLoadingState,
 } from '@/features/work/components/WorkStates';
+import { WorkTaskEditModal } from '@/features/work/components/WorkTaskEditModal';
 import { WorkTaskFilters } from '@/features/work/components/WorkTaskFilters';
+import { useSession } from '@/hooks/useSession';
 import { useWorkContext } from '@/features/work/context/workContextState';
 import {
   useUpdateTaskMutation,
   useWorkspaceTasksQuery,
   useWorkspaceTreeQuery,
+  useDeleteTaskMutation,
+  useCreateTaskMutation,
 } from '@/features/work/hooks/useWorkData';
 import {
   deriveWorkTaskMetrics,
@@ -29,9 +33,14 @@ const EMPTY_TASKS: readonly WorkTaskItem[] = [];
 export default function WorkBoard() {
   const { selectedWorkspaceId } = useWorkContext();
   const [filters, setFilters] = useState<TaskFilters>({});
+  const { session } = useSession();
+  const user = session?.user;
   const treeQuery = useWorkspaceTreeQuery(selectedWorkspaceId);
   const tasksQuery = useWorkspaceTasksQuery(selectedWorkspaceId);
   const updateTask = useUpdateTaskMutation();
+  const deleteTask = useDeleteTaskMutation();
+  const createTask = useCreateTaskMutation();
+  const [editingTask, setEditingTask] = useState<WorkTaskItem | null>(null);
   const tasks = tasksQuery.data ?? EMPTY_TASKS;
   const projects = useMemo(
     () => [
@@ -71,6 +80,46 @@ export default function WorkBoard() {
       toast.success('Tarefa movida');
     } catch {
       toast.error('Não foi possível mover a tarefa.');
+    }
+  };
+
+  const handleDeleteTask = async (task: WorkTaskItem) => {
+    try {
+      await deleteTask.mutateAsync(task.id);
+      toast.success('Tarefa excluída');
+    } catch (error) {
+      toast.error('Erro ao excluir a tarefa');
+      console.error(error);
+    }
+  };
+
+  const handleArchiveTask = async (task: WorkTaskItem) => {
+    try {
+      await updateTask.mutateAsync({ id: task.id, data: { status: 'Arquivado' } });
+      toast.success('Tarefa arquivada');
+    } catch {
+      toast.error('Não foi possível arquivar a tarefa.');
+    }
+  };
+
+  const handleCreateTask = async (title: string, status: string) => {
+    const defaultList = lists[0];
+    if (!defaultList) {
+      toast.error('Crie uma lista primeiro para poder adicionar tarefas.');
+      return;
+    }
+    try {
+      await createTask.mutateAsync({
+        title,
+        list_id: defaultList.id,
+        status,
+        assignee_id: user?.id,
+        creator_id: user?.id || '',
+      });
+      toast.success('Tarefa criada');
+    } catch (error) {
+      toast.error('Erro ao criar tarefa');
+      console.error(error);
     }
   };
 
@@ -156,12 +205,22 @@ export default function WorkBoard() {
         ) : (
           <TaskBoardView
             tasks={filteredTasks}
+            onTaskClick={(task) => setEditingTask(task)}
             onStatusChange={(task, status) =>
               void handleStatusChange(task, status)
             }
+            onTaskDelete={(task) => void handleDeleteTask(task)}
+            onTaskArchive={(task) => void handleArchiveTask(task)}
+            onCreateTask={(title, status) => void handleCreateTask(title, status)}
           />
         )}
       </div>
+
+      <WorkTaskEditModal
+        task={editingTask}
+        open={!!editingTask}
+        onOpenChange={(open) => !open && setEditingTask(null)}
+      />
     </MainLayout>
   );
 }
