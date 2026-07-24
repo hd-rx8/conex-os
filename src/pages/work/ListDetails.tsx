@@ -32,6 +32,7 @@ import {
   deriveWorkTaskMetrics,
   filterWorkTasks,
 } from '@/features/work/view/workTaskSelectors';
+import { useSession } from '@/hooks/useSession';
 import type { ListTree, TaskFilters, WorkTaskItem } from '@/types/hierarchy';
 
 interface ListContext {
@@ -49,6 +50,7 @@ export default function ListDetails() {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<WorkTaskItem | null>(null);
   const navigate = useNavigate();
+  const { user } = useSession();
   const { selectedWorkspaceId } = useWorkContext();
   const { data: workspaces = [] } = useWorkspacesQuery();
   const [filters, setFilters] = useState<TaskFilters>({});
@@ -234,12 +236,7 @@ export default function ListDetails() {
 
         <WorkTaskFilters value={filters} onChange={setFilters} />
 
-        {tasks.length === 0 ? (
-          <WorkEmptyState
-            title="Lista sem tarefas"
-            description="As tarefas criadas nesta lista aparecerão aqui."
-          />
-        ) : filteredTasks.length === 0 ? (
+        {filteredTasks.length === 0 && tasks.length > 0 ? (
           <WorkEmptyState
             title="Nenhum resultado"
             description="Ajuste ou limpe os filtros para encontrar outras tarefas."
@@ -256,6 +253,14 @@ export default function ListDetails() {
             }
             onTaskDelete={(task) => void handleDeleteTask(task)}
             onTaskArchive={(task) => void handleArchiveTask(task)}
+            emptyListContext={
+              tasks.length === 0 ? {
+                listId: list.id,
+                listName: list.name,
+                spaceId: list.space_id,
+                spaceName: projectName ?? 'Projeto',
+              } : undefined
+            }
           />
         ) : view === 'board' ? (
           <TaskBoardView

@@ -193,7 +193,7 @@ export function TaskBoardView({
                     className="border-0 shadow-none focus-visible:ring-0 bg-transparent h-8 px-0 text-sm"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                        onCreateTask(e.currentTarget.value.trim(), status);
+                        onCreateTask(e.currentTarget.value.trim(), status.value);
                         e.currentTarget.value = '';
                       }
                     }}

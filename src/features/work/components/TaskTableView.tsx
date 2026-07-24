@@ -26,9 +26,15 @@ interface TaskTableViewProps {
   onCreateTask?: (title: string, spaceId: string, listId: string, status: string) => void;
   onTaskDelete?: (task: WorkTaskItem) => void;
   onTaskArchive?: (task: WorkTaskItem) => void;
+  emptyListContext?: {
+    listId: string;
+    listName: string;
+    spaceId: string;
+    spaceName: string;
+  };
 }
 
-export function TaskTableView({ tasks, onTaskClick, onStatusChange, onCreateTask, onTaskDelete, onTaskArchive }: TaskTableViewProps) {
+export function TaskTableView({ tasks, onTaskClick, onStatusChange, onCreateTask, onTaskDelete, onTaskArchive, emptyListContext }: TaskTableViewProps) {
   
   // Agrupa as tarefas por Lista e depois por Status
   const groupedData = React.useMemo(() => {
@@ -64,7 +70,55 @@ export function TaskTableView({ tasks, onTaskClick, onStatusChange, onCreateTask
   }, [tasks]);
 
   if (tasks.length === 0) {
-    return null; // Deixa o componente pai renderizar o EmptyState se não houver tarefas
+    if (!emptyListContext) return null;
+
+    return (
+      <div className="app-table-wrap rounded-md border" data-testid="work-table-view">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/40 hover:bg-muted/40">
+              <TableHead className="min-w-64">Tarefa</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Prioridade</TableHead>
+              <TableHead>Responsável</TableHead>
+              <TableHead>Prazo</TableHead>
+              <TableHead className="w-[50px]"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow className="bg-muted/60 hover:bg-muted/60">
+              <TableCell colSpan={6} className="py-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-base">{emptyListContext.listName}</span>
+                  <span className="text-xs font-normal text-muted-foreground uppercase tracking-wider">
+                    em {emptyListContext.spaceName}
+                  </span>
+                </div>
+              </TableCell>
+            </TableRow>
+            {onCreateTask && (
+              <TableRow className="hover:bg-muted/5 border-b-0">
+                <TableCell colSpan={6} className="p-0 border-b-0">
+                  <div className="flex items-center px-4 py-1 group focus-within:bg-accent/50 transition-colors">
+                    <Plus className="h-4 w-4 mr-3 text-muted-foreground group-hover:text-primary" />
+                    <Input 
+                      placeholder="Nova Tarefa (Aperte Enter para salvar)" 
+                      className="border-0 shadow-none focus-visible:ring-0 bg-transparent h-9 px-0 text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                          onCreateTask(e.currentTarget.value.trim(), emptyListContext.spaceId, emptyListContext.listId, 'Pendente');
+                          e.currentTarget.value = '';
+                        }
+                      }}
+                    />
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    );
   }
 
   return (

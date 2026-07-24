@@ -34,11 +34,13 @@ import {
   filterWorkTasks,
 } from '@/features/work/view/workTaskSelectors';
 import { useLists } from '@/hooks/useLists';
+import { useSession } from '@/hooks/useSession';
 import type { TaskFilters, WorkTaskItem } from '@/types/hierarchy';
 
 export default function ProjectDetails() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const { user } = useSession();
   const { selectedWorkspaceId } = useWorkContext();
   const [filters, setFilters] = useState<TaskFilters>({});
   const treeQuery = useWorkspaceTreeQuery(selectedWorkspaceId);
@@ -271,19 +273,17 @@ export default function ProjectDetails() {
 
         <WorkTaskFilters value={filters} onChange={setFilters} />
 
-        {projectTasks.length === 0 ? (
+        {projectLists.length === 0 ? (
           <WorkEmptyState
-            title="Projeto sem tarefas"
-            description="As tarefas das listas deste projeto aparecerão aqui."
+            title="Projeto sem listas"
+            description="Crie uma lista para começar a adicionar tarefas a este projeto."
             action={
-              projectLists.length === 0 ? (
-                <Button onClick={() => setIsCreateListModalOpen(true)}>
-                  Criar lista
-                </Button>
-              ) : undefined
+              <Button onClick={() => setIsCreateListModalOpen(true)}>
+                Criar lista
+              </Button>
             }
           />
-        ) : filteredTasks.length === 0 ? (
+        ) : filteredTasks.length === 0 && projectTasks.length > 0 ? (
           <WorkEmptyState
             title="Nenhum resultado"
             description="Ajuste ou limpe os filtros para encontrar outras tarefas."
@@ -300,6 +300,14 @@ export default function ProjectDetails() {
             }
             onTaskDelete={(task) => void handleDeleteTask(task)}
             onTaskArchive={(task) => void handleArchiveTask(task)}
+            emptyListContext={
+              projectTasks.length === 0 && projectLists.length > 0 ? {
+                listId: projectLists[0].id,
+                listName: projectLists[0].name,
+                spaceId: project.id,
+                spaceName: project.name,
+              } : undefined
+            }
           />
         ) : view === 'board' ? (
           <TaskBoardView
