@@ -158,7 +158,7 @@ const Opportunities: React.FC = () => {
   const [isDuplicatingForEdit, setIsDuplicatingForEdit] = useState(false);
 
   // Filter states
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterOwner, setFilterOwner] = useState<string>('all');
   const [filterClient, setFilterClient] = useState<string>('all');

@@ -12,7 +12,7 @@ import * as z from 'zod';
 import CreateProjectModal from '@/components/modals/CreateProjectModal';
 import CreateTaskFromProjectModal from '@/components/projects/CreateTaskFromProjectModal';
 import CreateWorkspaceModal from '@/components/modals/CreateWorkspaceModal';
-import CreateWorkspaceFolderModal from '@/components/modals/CreateWorkspaceFolderModal';
+
 import type { CreateClientData } from '@/hooks/useClients';
 import type { CreateProposalData } from '@/hooks/useProposals';
 import type { Tables } from '@/integrations/supabase/types';
@@ -303,17 +303,6 @@ const GlobalFAB: React.FC = () => {
     }
   };
 
-  const handleWorkspaceFolderSubmit = async (data: any) => {
-    setIsSubmitting(true);
-    try {
-      await modals.workspaceFolder.onSubmit(data);
-      toast.success('Pasta criada com sucesso!');
-    } catch (error: unknown) {
-      toast.error(errorMessage(error, 'Erro ao criar pasta'));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <>
@@ -383,15 +372,7 @@ const GlobalFAB: React.FC = () => {
         />
       )}
 
-      {/* Workspace Folder Modal */}
-      {modals.workspaceFolder.isOpen && modals.workspaceFolder.workspaceId && (
-        <CreateWorkspaceFolderModal
-          isOpen={modals.workspaceFolder.isOpen}
-          onClose={() => modals.workspaceFolder.setIsOpen(false)}
-          workspaceId={modals.workspaceFolder.workspaceId}
-          onCreateFolder={handleWorkspaceFolderSubmit}
-        />
-      )}
+
     </>
   );
 };

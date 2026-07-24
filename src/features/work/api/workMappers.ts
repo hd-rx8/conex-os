@@ -118,7 +118,7 @@ function mapSpace(row: WorkspaceTreeRow['spaces'][number]): SpaceTree {
     ...mapSpaceRow(space),
     folders: folders.map((folder) => mapFolder(folder, lists)),
     lists: lists
-      .filter((list) => list.folder_id === null && !list.workspace_folder_id)
+      .filter((list) => list.folder_id === null)
       .map(mapList),
   };
 }
@@ -127,18 +127,12 @@ export function mapWorkspaceTreeRow(row: WorkspaceTreeRow): WorkspaceTree {
   const { spaces, workspace_folders = [], ...workspace } = row;
 
   const allSpaces = spaces.map(mapSpace);
-  const rootSpaces = allSpaces.filter(s => !s.workspace_folder_id);
 
-  const mappedFolders = workspace_folders.map(({ lists, ...folder }) => ({
-    ...folder,
-    lists: lists.map(mapList),
-    spaces: allSpaces.filter(s => s.workspace_folder_id === folder.id),
-  }));
-
+  // We are removing workspace_folders entirely from the UI representation.
   return {
     ...workspace,
-    workspace_folders: mappedFolders,
-    spaces: rootSpaces,
+    workspace_folders: [],
+    spaces: allSpaces,
   };
 }
 

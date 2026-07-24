@@ -125,15 +125,7 @@ export const useFABActions = () => {
           onClick: () => setIsWorkspaceModalOpen(true),
           color: 'bg-emerald-600 hover:bg-emerald-700 text-white',
         },
-        {
-          id: 'new-workspace-folder',
-          label: 'Nova Pasta',
-          icon: Folder,
-          onClick: () => setIsWorkspaceFolderModalOpen(true),
-          disabled: !activeWorkspaceId,
-          disabledReason: 'Crie ou carregue um workspace primeiro.',
-          color: 'bg-amber-600 hover:bg-amber-700 text-white',
-        },
+
         {
           id: 'new-project',
           label: 'Novo Projeto',

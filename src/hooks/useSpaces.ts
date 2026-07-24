@@ -191,15 +191,29 @@ export const useLists = (spaceId?: string, folderId?: string | null) => {
 
   const invalidate = async () => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey, exact: true }),
+      queryClient.invalidateQueries({ queryKey: ['work', 'lists'] }),
       queryClient.invalidateQueries({ queryKey: ['work', 'tree'] }),
     ]);
   };
 
   const createList = async (data: CreateListData) => {
+    let finalData = { ...data };
+    if (!finalData.workspace_id && finalData.space_id) {
+      const { data: space } = await supabase
+        .from('spaces')
+        .select('workspace_id, workspace_folder_id')
+        .eq('id', finalData.space_id)
+        .single();
+        
+      if (space) {
+        finalData.workspace_id = space.workspace_id;
+        finalData.workspace_folder_id = space.workspace_folder_id;
+      }
+    }
+
     const { data: list, error } = await supabase
       .from('lists')
-      .insert(data)
+      .insert(finalData)
       .select('*')
       .single();
 

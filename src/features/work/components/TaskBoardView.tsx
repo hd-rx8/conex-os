@@ -1,6 +1,8 @@
-import { CalendarDays, MoreHorizontal } from 'lucide-react';
+import { useState } from 'react';
+import { CalendarDays, MoreHorizontal, CheckCircle2, Circle, Plus } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -16,6 +18,9 @@ interface TaskBoardViewProps {
   tasks: readonly WorkTaskItem[];
   onTaskClick?: (task: WorkTaskItem) => void;
   onStatusChange?: (task: WorkTaskItem, status: string) => void;
+  onTaskDelete?: (task: WorkTaskItem) => void;
+  onTaskArchive?: (task: WorkTaskItem) => void;
+  onCreateTask?: (title: string, status: string) => void;
 }
 
 const STATUSES = [
@@ -28,7 +33,36 @@ export function TaskBoardView({
   tasks,
   onTaskClick,
   onStatusChange,
+  onTaskDelete,
+  onTaskArchive,
+  onCreateTask,
 }: TaskBoardViewProps) {
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggingTaskId(id);
+    e.dataTransfer.setData('text/plain', id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, newStatus: string) => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData('text/plain');
+    setDraggingTaskId(null);
+    
+    if (id && onStatusChange) {
+      const task = tasks.find(t => t.id === id);
+      if (task && task.status !== newStatus) {
+        onStatusChange(task, newStatus);
+      }
+    }
+  };
+
   return (
     <div
       className="grid auto-cols-[minmax(280px,1fr)] grid-flow-col gap-4 overflow-x-auto pb-3 lg:grid-flow-row lg:grid-cols-3"
@@ -39,7 +73,12 @@ export function TaskBoardView({
         return (
           <section
             key={status.value}
-            className="min-w-[280px] rounded-xl border bg-muted/25 p-3 shadow-sm"
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, status.value)}
+            className={cn(
+              "min-w-[280px] rounded-xl border bg-muted/25 p-3 shadow-sm",
+              draggingTaskId && "border-dashed border-primary"
+            )}
             aria-labelledby={`work-column-${status.value}`}
           >
             <div className="mb-3 flex items-center justify-between">
@@ -57,7 +96,11 @@ export function TaskBoardView({
                 <Card
                   key={task.id}
                   draggable
-                  className="group bg-background shadow-sm transition-shadow hover:shadow-md"
+                  onDragStart={(e) => handleDragStart(e, task.id)}
+                  className={cn(
+                    "group bg-background shadow-sm transition-shadow hover:shadow-md cursor-grab active:cursor-grabbing",
+                    draggingTaskId === task.id && "opacity-50"
+                  )}
                 >
                   <CardContent className="space-y-3 p-3">
                     <div className="flex items-start gap-2">
@@ -73,31 +116,57 @@ export function TaskBoardView({
                           {task.context.space_name ?? 'Sem projeto'} / {task.context.list_name}
                         </p>
                       </button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            aria-label={`Alterar status de ${task.title}`}
+                      <div className="flex flex-col items-center gap-1">
+                        {onStatusChange && (
+                          <button
+                            type="button"
+                            className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring p-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onStatusChange(task, task.status === 'Concluída' ? 'Pendente' : 'Concluída');
+                            }}
+                            title={task.status === 'Concluída' ? 'Marcar como Pendente' : 'Marcar como Concluída'}
                           >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {STATUSES.map((nextStatus) => (
-                            <DropdownMenuItem
-                              key={nextStatus.value}
-                              disabled={nextStatus.value === task.status}
-                              onClick={() =>
-                                onStatusChange?.(task, nextStatus.value)
-                              }
+                            {task.status === 'Concluída' ? (
+                              <CheckCircle2 className="h-5 w-5 text-primary" />
+                            ) : (
+                              <Circle className="h-5 w-5" />
+                            )}
+                          </button>
+                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              aria-label={`Ações da tarefa ${task.title}`}
                             >
-                              Mover para {nextStatus.label}
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => onTaskClick?.(task)}>
+                              Editar
                             </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            <DropdownMenuItem 
+                              onClick={() => onTaskArchive?.(task)}
+                            >
+                              Arquivar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-destructive focus:bg-destructive/10"
+                              onClick={() => {
+                                if (window.confirm(`Tem certeza que deseja excluir a tarefa "${task.title}"?`)) {
+                                  onTaskDelete?.(task);
+                                }
+                              }}
+                            >
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <Badge variant="outline">{task.priority}</Badge>
@@ -111,9 +180,24 @@ export function TaskBoardView({
                   </CardContent>
                 </Card>
               ))}
-              {statusTasks.length === 0 && (
+              {statusTasks.length === 0 && !onCreateTask && (
                 <div className="rounded-lg border border-dashed px-3 py-8 text-center text-xs text-muted-foreground">
                   Nenhuma tarefa
+                </div>
+              )}
+              {onCreateTask && (
+                <div className="mt-2 flex items-center px-3 py-1 group focus-within:bg-accent/50 transition-colors rounded-md border border-transparent focus-within:border-border">
+                  <Plus className="h-4 w-4 mr-2 text-muted-foreground group-hover:text-primary shrink-0" />
+                  <Input 
+                    placeholder="Nova Tarefa..." 
+                    className="border-0 shadow-none focus-visible:ring-0 bg-transparent h-8 px-0 text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                        onCreateTask(e.currentTarget.value.trim(), status);
+                        e.currentTarget.value = '';
+                      }
+                    }}
+                  />
                 </div>
               )}
             </div>

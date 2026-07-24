@@ -130,6 +130,7 @@ export const useTasks = (listId?: string, spaceId?: string, userId?: string) => 
       
       // Invalidate and refetch
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['work', 'tasks'] });
       
       return { data, error: null };
     } catch (error: any) {
@@ -151,6 +152,7 @@ export const useTasks = (listId?: string, spaceId?: string, userId?: string) => 
       
       // Invalidate and refetch
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['work', 'tasks'] });
       
       return { data, error: null };
     } catch (error: any) {
@@ -171,6 +173,7 @@ export const useTasks = (listId?: string, spaceId?: string, userId?: string) => 
       
       // Invalidate and refetch
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['work', 'tasks'] });
       
       return { error: null };
     } catch (error: any) {

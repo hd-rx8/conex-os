@@ -11,7 +11,6 @@ import { useSession } from '@/hooks/useSession';
 import { UserPlus, Search, Edit, Trash2, Users as UsersIcon, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
-import MainLayout from '@/components/MainLayout';
 import { supabase } from '@/integrations/supabase/client';
 import FloatingActionButton from '@/components/FloatingActionButton';
 import { useAppModule } from '@/context/AppModuleContext';
@@ -164,9 +163,16 @@ export default function Users() {
   };
 
   return (
-    <MainLayout module={activeModule}>
-      <div className="space-y-6 relative pb-20">
-        {/* Floating Action Button */}
+    <div className="space-y-6 relative pb-20">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Usuários</h1>
+          <p className="text-muted-foreground mt-1">
+            Gerencie os usuários que têm acesso ao sistema.
+          </p>
+        </div>
+      </div>
+      {/* Floating Action Button */}
         <FloatingActionButton
           onClick={() => setIsCreateDialogOpen(true)}
           tooltip="Criar Novo Usuário"
@@ -320,6 +326,5 @@ export default function Users() {
           </DialogContent>
         </Dialog>
       </div>
-    </MainLayout>
   );
 }

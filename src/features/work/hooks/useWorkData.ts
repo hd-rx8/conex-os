@@ -191,8 +191,8 @@ export function useCreateTaskMutation(listId?: string, filters?: TaskFilters) {
     mutationFn: (data: CreateTaskData) => createTask(data),
     onSuccess: (task, data) => {
       void queryClient.invalidateQueries({
-        queryKey: workQueryKeys.tasks(listId ?? data.list_id, filters),
-        exact: true,
+        queryKey: ['work', 'tasks'],
+        exact: false,
       });
       void queryClient.invalidateQueries({
         queryKey: ['work', 'tasks', 'workspace', task.context.workspace_id],
@@ -220,12 +220,10 @@ export function useUpdateTaskMutation(listId?: string, filters?: TaskFilters) {
     mutationFn: ({ id, data }: { id: string; data: UpdateTaskData }) =>
       updateTask(id, data),
     onSuccess: (task) => {
-      if (listId) {
-        void queryClient.invalidateQueries({
-          queryKey: workQueryKeys.tasks(listId, filters),
-          exact: true,
-        });
-      }
+      void queryClient.invalidateQueries({
+        queryKey: ['work', 'tasks'],
+        exact: false,
+      });
       void queryClient.invalidateQueries({
         queryKey: ['work', 'tasks', 'workspace', task.context.workspace_id],
         exact: false,
@@ -251,12 +249,10 @@ export function useDeleteTaskMutation(listId?: string, filters?: TaskFilters) {
   return useMutation({
     mutationFn: (id: string) => deleteTask(id),
     onSuccess: () => {
-      if (listId) {
-        void queryClient.invalidateQueries({
-          queryKey: workQueryKeys.tasks(listId, filters),
-          exact: true,
-        });
-      }
+      void queryClient.invalidateQueries({
+        queryKey: ['work', 'tasks'],
+        exact: false,
+      });
     },
   });
 }

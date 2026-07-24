@@ -21,6 +21,7 @@ import { useSession } from '@/hooks/useSession';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAppModule, AppModuleType } from '@/context/AppModuleContext';
 import { useWorkspaces } from '@/hooks/useWorkspaces';
+import { useWorkspaceTreeQuery } from '@/features/work/hooks/useWorkData';
 import { useSpaces } from '@/hooks/useSpaces';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -76,7 +77,7 @@ const NAV_CRM: NavigationItem[] = [
   },
   {
     id: 'clients',
-    label: 'Clientes',
+    label: 'Base de Clientes',
     icon: Users,
     path: '/clients'
   }
@@ -119,21 +120,29 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
   const location = useLocation();
   const isMobile = useIsMobile();
   const { activeModule } = useAppModule();
-  const { workspaces, getWorkspaceTree } = useWorkspaces();
+  const { workspaces } = useWorkspaces();
   const { selectedWorkspaceId, setSelectedWorkspaceId } = useWorkContext();
 
-  const [workspaceTree, setWorkspaceTree] = useState<WorkspaceTree | null>(null);
+  const { data: workspaceTree } = useWorkspaceTreeQuery(selectedWorkspaceId || undefined);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const { createSpace } = useSpaces(selectedWorkspaceId || undefined);
 
   // Seleciona os itens de navegação com base no módulo ativo
   const navigationItems = useMemo(() => {
-    if (activeModule === 'crm') {
-      return NAV_CRM;
+    let baseNav = activeModule === 'crm' ? NAV_CRM : NAV_WORK;
+    
+    if (isCollapsed) {
+      baseNav = [...baseNav, {
+        id: 'settings',
+        label: 'Configurações',
+        icon: Settings,
+        path: '/settings'
+      }];
     }
-    return NAV_WORK;
-  }, [activeModule]);
+    
+    return baseNav;
+  }, [activeModule, isCollapsed]);
 
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set([])
@@ -145,17 +154,6 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
       setSelectedWorkspaceId(workspaces[0].id);
     }
   }, [workspaces, selectedWorkspaceId, activeModule, setSelectedWorkspaceId]);
-
-  // Carregar árvore do workspace selecionado
-  useEffect(() => {
-    const loadTree = async () => {
-      if (selectedWorkspaceId && activeModule === 'work') {
-        const tree = await getWorkspaceTree(selectedWorkspaceId);
-        setWorkspaceTree(tree);
-      }
-    };
-    loadTree();
-  }, [selectedWorkspaceId, activeModule, getWorkspaceTree]);
 
   const handleWorkspaceChange = (workspaceId: string) => {
     setSelectedWorkspaceId(workspaceId);
@@ -315,7 +313,7 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
     return (
       <div
         className={cn(
-            "fixed inset-y-0 left-0 z-50 flex w-64 min-w-0 flex-col overflow-hidden border-r bg-background shadow-xl transform transition-transform duration-300 ease-in-out",
+          "fixed inset-y-0 left-0 z-50 flex w-64 min-w-0 flex-col overflow-hidden border-r bg-background shadow-xl transform transition-transform duration-300 ease-in-out",
           isCollapsed ? "-translate-x-full" : "translate-x-0"
         )}
       >
@@ -363,11 +361,16 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
                       </h3>
                     </div>
                     <SpacesTreeNav
-                      workspaceFolders={workspaceTree.workspace_folders}
-                      spaces={workspaceTree.spaces}
-                      onSelectSpace={handleSpaceSelect}
+                      spaces={workspaceTree?.spaces || []}
+                      onSelectSpace={(id) => {
+                        handleSpaceSelect(id);
+                        setMobileOpen(false);
+                      }}
                       selectedListId={selectedListId || undefined}
-                      onSelectList={handleListSelect}
+                      onSelectList={(id) => {
+                        handleListSelect(id);
+                        setMobileOpen(false);
+                      }}
                       isCollapsed={false}
                     />
                   </div>
@@ -450,7 +453,6 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
                       </h3>
                     </div>
                     <SpacesTreeNav
-                      workspaceFolders={workspaceTree.workspace_folders}
                       spaces={workspaceTree.spaces}
                       onSelectSpace={handleSpaceSelect}
                       selectedListId={selectedListId || undefined}
@@ -472,20 +474,20 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
           isCollapsed ? "flex-col justify-center gap-4" : "justify-between gap-2"
         )}>
           <div className="flex items-center min-w-0">
-            <UserNav 
-              userName={user?.user_metadata?.full_name} 
-              userEmail={user?.email} 
+            <UserNav
+              userName={user?.user_metadata?.full_name}
+              userEmail={user?.email}
               avatarUrl={user?.user_metadata?.avatar_url}
               collapsed={isCollapsed}
             />
           </div>
-          
+
           <div className={cn(
             "flex shrink-0 items-center",
             isCollapsed ? "flex-col gap-2" : "gap-1"
           )}>
             {!isCollapsed && <SettingsButton />}
-            
+
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -514,7 +516,6 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
           isOpen={isCreateProjectOpen}
           onClose={() => setIsCreateProjectOpen(false)}
           workspaceId={selectedWorkspaceId}
-          workspaceFolders={workspaceTree?.workspace_folders || []}
           onCreateProject={handleCreateProject}
         />
       )}

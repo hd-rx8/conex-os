@@ -31,7 +31,7 @@ const AppSwitcher = () => {
   const apps: AppOption[] = [
     {
       id: 'crm',
-      name: 'CRM',
+      name: 'Vendas',
       description: 'Propostas e pipeline',
       icon: <div className="bg-teal-500 rounded-md p-4 text-white text-2xl flex items-center justify-center h-full">P</div>,
       path: '/',
@@ -40,8 +40,8 @@ const AppSwitcher = () => {
     },
     {
       id: 'work',
-      name: 'Work Management',
-      description: 'Projetos e tarefas',
+      name: 'Projetos',
+      description: 'Gestão de tarefas',
       icon: <div className="bg-indigo-500 rounded-md p-4 text-white text-2xl flex items-center justify-center h-full">G</div>,
       path: WORK_HOME,
       color: 'bg-indigo-500',
@@ -61,9 +61,9 @@ const AppSwitcher = () => {
         <Tooltip>
           <TooltipTrigger asChild>
             <DialogTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="relative"
                 aria-label="Trocar módulo"
               >
@@ -76,12 +76,12 @@ const AppSwitcher = () => {
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      
+
       <DialogContent className="sm:max-w-md p-0">
         <DialogHeader className="p-4 border-b">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="CONEX.HUB" className="h-7 w-auto" />
-            <DialogTitle>Produtos do Work OS</DialogTitle>
+            <DialogTitle>Módulos do Work OS</DialogTitle>
           </div>
         </DialogHeader>
         <div className="grid grid-cols-3 gap-4 p-6">
@@ -109,8 +109,8 @@ const AppSwitcher = () => {
               </div>
             </div>
             <div className="text-center">
-              <p className="font-medium">Descobrir</p>
-              <p className="text-xs text-muted-foreground">produtos</p>
+              <p className="font-medium">+</p>
+              <p className="text-xs text-muted-foreground">Módulos</p>
             </div>
           </div>
         </div>

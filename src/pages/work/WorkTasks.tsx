@@ -15,10 +15,13 @@ import {
 } from '@/features/work/components/WorkStates';
 import { WorkTaskFilters } from '@/features/work/components/WorkTaskFilters';
 import { WorkViewSwitcher } from '@/features/work/components/WorkViewSwitcher';
+import { WorkTaskEditModal } from '@/features/work/components/WorkTaskEditModal';
 import { useWorkContext } from '@/features/work/context/workContextState';
 import {
   useAssignedTasksQuery,
   useUpdateTaskMutation,
+  useCreateTaskMutation,
+  useDeleteTaskMutation,
   useWorkspaceTreeQuery,
 } from '@/features/work/hooks/useWorkData';
 import { useWorkViewMode } from '@/features/work/hooks/useWorkViewMode';
@@ -60,8 +63,11 @@ export default function WorkTasks() {
   const { user } = useSession();
   const { selectedWorkspaceId } = useWorkContext();
   const [filters, setFilters] = useState<TaskFilters>({});
+  const [editingTask, setEditingTask] = useState<WorkTaskItem | null>(null);
   const treeQuery = useWorkspaceTreeQuery(selectedWorkspaceId);
   const tasksQuery = useAssignedTasksQuery(selectedWorkspaceId, user?.id);
+  const createTask = useCreateTaskMutation();
+  const deleteTask = useDeleteTaskMutation();
   const updateTask = useUpdateTaskMutation();
   const { view, setView } = useWorkViewMode(
     'assigned',
@@ -106,6 +112,41 @@ export default function WorkTasks() {
       toast.success('Status atualizado');
     } catch {
       toast.error('Não foi possível atualizar o status.');
+    }
+  };
+
+  const handleCreateTask = async (title: string, spaceId: string, listId: string, status: string) => {
+    try {
+      await createTask.mutateAsync({
+        title,
+        list_id: listId,
+        status,
+        assignee_id: user?.id,
+        creator_id: user?.id || '',
+      });
+      toast.success('Tarefa criada');
+    } catch (error) {
+      toast.error('Erro ao criar tarefa');
+      console.error(error);
+    }
+  };
+
+  const handleDeleteTask = async (task: WorkTaskItem) => {
+    try {
+      await deleteTask.mutateAsync(task.id);
+      toast.success('Tarefa excluída');
+    } catch (error) {
+      toast.error('Erro ao excluir a tarefa');
+      console.error(error);
+    }
+  };
+
+  const handleArchiveTask = async (task: WorkTaskItem) => {
+    try {
+      await updateTask.mutateAsync({ id: task.id, data: { status: 'Arquivado' } });
+      toast.success('Tarefa arquivada');
+    } catch {
+      toast.error('Não foi possível arquivar a tarefa.');
     }
   };
 
@@ -179,18 +220,64 @@ export default function WorkTasks() {
             description="Ajuste ou limpe os filtros para encontrar outras tarefas."
           />
         ) : view === 'table' ? (
-          <TaskTableView tasks={filteredTasks} />
-        ) : view === 'board' ? (
-          <TaskBoardView
+          <TaskTableView
             tasks={filteredTasks}
+            onTaskClick={(task) => setEditingTask(task)}
             onStatusChange={(task, status) =>
               void handleStatusChange(task, status)
             }
+            onTaskDelete={(task) => void handleDeleteTask(task)}
+            onTaskArchive={(task) => void handleArchiveTask(task)}
+            onCreateTask={(title, spaceId, listId, status) => 
+              void handleCreateTask(title, spaceId, listId, status)
+            }
+          />
+        ) : view === 'board' ? (
+          <TaskBoardView
+            tasks={filteredTasks}
+            onTaskClick={(task) => setEditingTask(task)}
+            onStatusChange={(task, status) =>
+              void handleStatusChange(task, status)
+            }
+            onTaskDelete={(task) => void handleDeleteTask(task)}
+            onTaskArchive={(task) => void handleArchiveTask(task)}
+            onCreateTask={(title, status) => {
+              const firstProject = projects[0];
+              const listId = lists.find(l => l.space_id === firstProject?.id)?.id;
+              if (listId && firstProject) {
+                void handleCreateTask(title, firstProject.id, listId, status);
+              } else {
+                toast.error("É necessário ter pelo menos um projeto e lista para criar tarefas.");
+              }
+            }}
           />
         ) : (
-          <TaskListView tasks={filteredTasks} />
+          <TaskListView
+            tasks={filteredTasks}
+            onTaskClick={(task) => setEditingTask(task)}
+            onStatusChange={(task, status) =>
+              void handleStatusChange(task, status)
+            }
+            onTaskDelete={(task) => void handleDeleteTask(task)}
+            onTaskArchive={(task) => void handleArchiveTask(task)}
+            onCreateTask={(title) => {
+              const firstProject = projects[0];
+              const listId = lists.find(l => l.space_id === firstProject?.id)?.id;
+              if (listId && firstProject) {
+                void handleCreateTask(title, firstProject.id, listId, 'Pendente');
+              } else {
+                toast.error("É necessário ter pelo menos um projeto e lista para criar tarefas.");
+              }
+            }}
+          />
         )}
       </div>
+
+      <WorkTaskEditModal
+        task={editingTask}
+        isOpen={!!editingTask}
+        onClose={() => setEditingTask(null)}
+      />
     </MainLayout>
   );
 }

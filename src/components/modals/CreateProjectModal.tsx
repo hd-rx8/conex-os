@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import type { WorkspaceFolderTree } from '@/types/hierarchy';
-import { useWorkspaceFolders } from '@/hooks/useWorkspaceFolders';
+import type { WorkspaceFolderTree } from '@/types/hierarchy';
 
 interface CreateProjectModalProps {
   isOpen: boolean;
@@ -60,11 +60,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   const [description, setDescription] = useState('');
   const [selectedIcon, setSelectedIcon] = useState<string>(PROJECT_ICONS[0]);
   const [selectedColor, setSelectedColor] = useState<string>(PROJECT_COLORS[0]);
-  const [selectedFolderId, setSelectedFolderId] = useState<string>('root');
-  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { createWorkspaceFolder } = useWorkspaceFolders(workspaceId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,23 +72,9 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     setIsLoading(true);
 
     try {
-      let finalFolderId: string | null = selectedFolderId === 'root' ? null : selectedFolderId;
-
-      if (isCreatingFolder && newFolderName.trim()) {
-        const { data: newFolder } = await createWorkspaceFolder({
-          workspace_id: workspaceId,
-          name: newFolderName.trim(),
-          icon: '📁',
-          color: '#3B82F6',
-        });
-        if (newFolder) {
-          finalFolderId = newFolder.id;
-        }
-      }
-
       await onCreateProject({
         workspace_id: workspaceId,
-        workspace_folder_id: finalFolderId,
+        workspace_folder_id: null,
         name: name.trim(),
         description: description.trim() || null,
         icon: selectedIcon,
@@ -104,9 +86,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       setDescription('');
       setSelectedIcon(PROJECT_ICONS[0]);
       setSelectedColor(PROJECT_COLORS[0]);
-      setSelectedFolderId('root');
-      setIsCreatingFolder(false);
-      setNewFolderName('');
       onClose();
     } catch (error) {
       console.error('Error creating project:', error);
@@ -146,67 +125,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             </div>
           </div>
 
-          {/* Folder Selection */}
-          <div className="space-y-2">
-            <Label>Pasta (opcional)</Label>
-            {!isCreatingFolder ? (
-              <div className="flex gap-2">
-                <Select
-                  value={selectedFolderId}
-                  onValueChange={setSelectedFolderId}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione uma pasta" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="root">
-                      <div className="flex items-center gap-2">
-                        <span>🏢</span>
-                        <span>Nenhuma (raiz do workspace)</span>
-                      </div>
-                    </SelectItem>
-                    {workspaceFolders.map((folder) => (
-                      <SelectItem key={folder.id} value={folder.id}>
-                        <div className="flex items-center gap-2">
-                          <span>{folder.icon || '📁'}</span>
-                          <span>{folder.name}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  title="Nova pasta"
-                  onClick={() => setIsCreatingFolder(true)}
-                >
-                  <FolderPlus className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <div className="flex gap-2 items-center">
-                <Input
-                  placeholder="Nome da nova pasta"
-                  value={newFolderName}
-                  onChange={(e) => setNewFolderName(e.target.value)}
-                  autoFocus
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    setIsCreatingFolder(false);
-                    setNewFolderName('');
-                  }}
-                >
-                  <X className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </div>
-            )}
-          </div>
 
           {/* Name */}
           <div className="space-y-2">

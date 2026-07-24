@@ -69,10 +69,6 @@ const UserNav: React.FC<UserNavProps> = ({ userName, userEmail, avatarUrl, colla
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => navigate('/users')} className="cursor-pointer">
-            <UsersIcon className="mr-2 h-4 w-4" />
-            <span>Gerenciar Usuários</span>
-          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer">
             <SettingsIcon className="mr-2 h-4 w-4" />
             <span>Configurações</span>

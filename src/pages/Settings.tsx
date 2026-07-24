@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ImportExportCard } from '@/features/work/components/ImportExportCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import Users from './Users';
 
 // ─── Seção: Dados da Empresa ─────────────────────────────────────────────────
 
@@ -415,6 +416,7 @@ const Settings = () => {
           <TabsList className="bg-muted/50">
             <TabsTrigger value="geral">Geral</TabsTrigger>
             <TabsTrigger value="empresa">Dados da Empresa</TabsTrigger>
+            <TabsTrigger value="usuarios">Usuários</TabsTrigger>
             <TabsTrigger value="seguranca">Segurança e Backup</TabsTrigger>
           </TabsList>
 
@@ -482,6 +484,12 @@ const Settings = () => {
           <TabsContent value="empresa" className="space-y-6">
             <div className="max-w-4xl">
               <CompanySettingsSection />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="usuarios" className="space-y-6">
+            <div className="max-w-4xl">
+              <Users />
             </div>
           </TabsContent>
 

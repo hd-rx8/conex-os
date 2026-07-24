@@ -17,13 +17,16 @@ import {
   WorkErrorState,
   WorkLoadingState,
 } from '@/features/work/components/WorkStates';
-import { WorkTaskFilters } from '@/features/work/components/WorkTaskFilters';
+import { WorkTaskEditModal } from '@/features/work/components/WorkTaskEditModal';
 import { WorkViewSwitcher } from '@/features/work/components/WorkViewSwitcher';
 import { useWorkContext } from '@/features/work/context/workContextState';
 import {
+  useCreateTaskMutation,
+  useDeleteTaskMutation,
   useUpdateTaskMutation,
   useWorkspaceTasksQuery,
   useWorkspaceTreeQuery,
+  useWorkspacesQuery,
 } from '@/features/work/hooks/useWorkData';
 import { useWorkViewMode } from '@/features/work/hooks/useWorkViewMode';
 import {
@@ -40,10 +43,13 @@ export default function ProjectDetails() {
   const [filters, setFilters] = useState<TaskFilters>({});
   const treeQuery = useWorkspaceTreeQuery(selectedWorkspaceId);
   const tasksQuery = useWorkspaceTasksQuery(selectedWorkspaceId);
+  const createTask = useCreateTaskMutation();
   const updateTask = useUpdateTaskMutation();
+  const deleteTask = useDeleteTaskMutation();
   const { view, setView } = useWorkViewMode('project', projectId ?? 'none');
   const { createList } = useLists(projectId);
   const [isCreateListModalOpen, setIsCreateListModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<WorkTaskItem | null>(null);
   
   const { project, folderName } = useMemo(() => {
     if (!treeQuery.data) return { project: undefined, folderName: undefined };
@@ -89,6 +95,40 @@ export default function ProjectDetails() {
       toast.success('Status atualizado');
     } catch {
       toast.error('Não foi possível atualizar o status.');
+    }
+  };
+
+  const handleCreateTask = async (title: string, spaceId: string, listId: string, status: string) => {
+    try {
+      await createTask.mutateAsync({
+        title,
+        list_id: listId,
+        status,
+        creator_id: user?.id || '',
+      });
+      toast.success('Tarefa criada');
+    } catch (error) {
+      toast.error('Erro ao criar tarefa');
+      console.error(error);
+    }
+  };
+
+  const handleDeleteTask = async (task: WorkTaskItem) => {
+    try {
+      await deleteTask.mutateAsync(task.id);
+      toast.success('Tarefa excluída');
+    } catch (error) {
+      toast.error('Erro ao excluir a tarefa');
+      console.error(error);
+    }
+  };
+
+  const handleArchiveTask = async (task: WorkTaskItem) => {
+    try {
+      await updateTask.mutateAsync({ id: task.id, data: { status: 'Arquivado' } });
+      toast.success('Tarefa arquivada');
+    } catch {
+      toast.error('Não foi possível arquivar a tarefa.');
     }
   };
 
@@ -196,14 +236,14 @@ export default function ProjectDetails() {
 
         {projectLists.length > 0 && (
           <section className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">Listas do projeto</h2>
-        <Button variant="outline" size="sm" onClick={() => setIsCreateListModalOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nova Lista
-        </Button>
-      </div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Listas do projeto</h2>
+              <Button variant="outline" size="sm" onClick={() => setIsCreateListModalOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Lista
+              </Button>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {projectLists.map((list) => {
                 const count = projectTasks.filter(
                   (task) => task.context.list_id === list.id,
@@ -249,16 +289,54 @@ export default function ProjectDetails() {
             description="Ajuste ou limpe os filtros para encontrar outras tarefas."
           />
         ) : view === 'table' ? (
-          <TaskTableView tasks={filteredTasks} />
-        ) : view === 'board' ? (
-          <TaskBoardView
+          <TaskTableView
             tasks={filteredTasks}
+            onTaskClick={(task) => setEditingTask(task)}
             onStatusChange={(task, status) =>
               void handleStatusChange(task, status)
             }
+            onCreateTask={(title, spaceId, listId, status) => 
+              void handleCreateTask(title, spaceId, listId, status)
+            }
+            onTaskDelete={(task) => void handleDeleteTask(task)}
+            onTaskArchive={(task) => void handleArchiveTask(task)}
+          />
+        ) : view === 'board' ? (
+          <TaskBoardView
+            tasks={filteredTasks}
+            onTaskClick={(task) => setEditingTask(task)}
+            onStatusChange={(task, status) =>
+              void handleStatusChange(task, status)
+            }
+            onTaskDelete={(task) => void handleDeleteTask(task)}
+            onTaskArchive={(task) => void handleArchiveTask(task)}
+            onCreateTask={(title, status) => {
+              const listId = projectLists[0]?.id;
+              if (listId && selectedWorkspaceId) {
+                void handleCreateTask(title, selectedWorkspaceId, listId, status);
+              } else {
+                toast.error("É necessário ter pelo menos uma lista para criar tarefas.");
+              }
+            }}
           />
         ) : (
-          <TaskListView tasks={filteredTasks} />
+          <TaskListView
+            tasks={filteredTasks}
+            onTaskClick={(task) => setEditingTask(task)}
+            onStatusChange={(task, status) =>
+              void handleStatusChange(task, status)
+            }
+            onTaskDelete={(task) => void handleDeleteTask(task)}
+            onTaskArchive={(task) => void handleArchiveTask(task)}
+            onCreateTask={(title, status) => {
+              const listId = projectLists[0]?.id;
+              if (listId && selectedWorkspaceId) {
+                void handleCreateTask(title, selectedWorkspaceId, listId, status);
+              } else {
+                toast.error("É necessário ter pelo menos uma lista para criar tarefas.");
+              }
+            }}
+          />
         )}
       </div>
 

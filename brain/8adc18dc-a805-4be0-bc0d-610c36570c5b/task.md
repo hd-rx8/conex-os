@@ -1,0 +1,5 @@
+- `[x]` Create `src/features/settings/api/importExportApi.ts` with validation schemas and logic
+- `[x]` Create `src/features/settings/components/ImportExportCard.tsx` UI component
+- `[x]` Update `src/pages/work/WorkspaceSettings.tsx` to include `ImportExportCard`
+- `[x]` Test Export functionality
+- `[x]` Test Import functionality

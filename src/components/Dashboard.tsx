@@ -15,6 +15,8 @@ import {
   Copy,
   Trash2,
   Filter,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { useProposals, ProposalFilters } from '@/hooks/useProposals';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -56,6 +58,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { formatCurrency } = useCurrency();
+  const [showFilters, setShowFilters] = React.useState(false);
   
   const {
     proposals,
@@ -149,86 +152,110 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
 
       {/* Filtros */}
       <PageToolbar className="block">
-        <div className="mb-4 flex items-center gap-2 text-sm font-semibold">
-          <Filter className="h-4 w-4 text-primary" />
-          Filtros
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <Filter className="h-4 w-4 text-primary" />
+            Filtros
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="gap-2 text-muted-foreground"
+            onClick={() => setShowFilters((current) => !current)}
+          >
+            {showFilters ? (
+              <>
+                Ocultar <ChevronUp className="h-4 w-4" />
+              </>
+            ) : (
+              <>
+                Exibir <ChevronDown className="h-4 w-4" />
+              </>
+            )}
+          </Button>
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <div>
-            <label className="mb-2 block text-sm font-medium">Período</label>
-            <Select
-              value={filters.period}
-              onValueChange={(value) => handleFilterChange('period', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecionar período" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Hoje</SelectItem>
-                <SelectItem value="7days">Semana (7 dias)</SelectItem>
-                <SelectItem value="30days">Mês (30 dias)</SelectItem>
-                <SelectItem value="currentMonth">Mês atual</SelectItem>
-                <SelectItem value="custom">Personalizado</SelectItem>
-                <SelectItem value="all">Todos</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        
+        {showFilters && (
+          <div className="mt-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div>
+                <label className="mb-2 block text-sm font-medium">Período</label>
+                <Select
+                  value={filters.period}
+                  onValueChange={(value) => handleFilterChange('period', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar período" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="today">Hoje</SelectItem>
+                    <SelectItem value="7days">Semana (7 dias)</SelectItem>
+                    <SelectItem value="30days">Mês (30 dias)</SelectItem>
+                    <SelectItem value="currentMonth">Mês atual</SelectItem>
+                    <SelectItem value="custom">Personalizado</SelectItem>
+                    <SelectItem value="all">Todos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-medium">Tipo de Data</label>
-            <Select
-              value={filters.dateField || 'created_at'}
-              onValueChange={(value) => handleFilterChange('dateField', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Tipo de data" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="created_at">Data de Criação</SelectItem>
-                <SelectItem value="approved_at">Data de Aprovação</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">Tipo de Data</label>
+                <Select
+                  value={filters.dateField || 'created_at'}
+                  onValueChange={(value) => handleFilterChange('dateField', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tipo de data" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="created_at">Data de Criação</SelectItem>
+                    <SelectItem value="approved_at">Data de Aprovação</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-medium">Status</label>
-            <Select
-              value={filters.status}
-              onValueChange={(value) => handleFilterChange('status', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecionar status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {CANONICAL_PROPOSAL_STATUSES.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {getProposalStatusLabel(status)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {filters.period === 'custom' && (
-          <div className="mt-4 grid grid-cols-1 gap-4 border-t pt-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-medium">Data Inicial</label>
-              <Input
-                type="date"
-                value={filters.customStartDate || ''}
-                onChange={(event) => handleFilterChange('customStartDate', event.target.value)}
-              />
+              <div>
+                <label className="mb-2 block text-sm font-medium">Status</label>
+                <Select
+                  value={filters.status}
+                  onValueChange={(value) => handleFilterChange('status', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {CANONICAL_PROPOSAL_STATUSES.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {getProposalStatusLabel(status)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium">Data Final</label>
-              <Input
-                type="date"
-                value={filters.customEndDate || ''}
-                onChange={(event) => handleFilterChange('customEndDate', event.target.value)}
-              />
-            </div>
+
+            {filters.period === 'custom' && (
+              <div className="mt-4 grid grid-cols-1 gap-4 border-t pt-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-medium">Data Inicial</label>
+                  <Input
+                    type="date"
+                    value={filters.customStartDate || ''}
+                    onChange={(event) => handleFilterChange('customStartDate', event.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium">Data Final</label>
+                  <Input
+                    type="date"
+                    value={filters.customEndDate || ''}
+                    onChange={(event) => handleFilterChange('customEndDate', event.target.value)}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
       </PageToolbar>

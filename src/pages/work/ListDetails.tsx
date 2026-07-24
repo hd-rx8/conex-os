@@ -16,12 +16,16 @@ import {
   WorkLoadingState,
 } from '@/features/work/components/WorkStates';
 import { WorkTaskFilters } from '@/features/work/components/WorkTaskFilters';
+import { WorkTaskEditModal } from '@/features/work/components/WorkTaskEditModal';
 import { WorkViewSwitcher } from '@/features/work/components/WorkViewSwitcher';
 import { useWorkContext } from '@/features/work/context/workContextState';
 import {
+  useCreateTaskMutation,
+  useDeleteTaskMutation,
   useListTasksQuery,
   useUpdateTaskMutation,
   useWorkspaceTreeQuery,
+  useWorkspacesQuery,
 } from '@/features/work/hooks/useWorkData';
 import { useWorkViewMode } from '@/features/work/hooks/useWorkViewMode';
 import {
@@ -42,40 +46,29 @@ const EMPTY_TASKS: readonly WorkTaskItem[] = [];
 
 export default function ListDetails() {
   const { listId } = useParams<{ listId: string }>();
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<WorkTaskItem | null>(null);
   const navigate = useNavigate();
   const { selectedWorkspaceId } = useWorkContext();
+  const { data: workspaces = [] } = useWorkspacesQuery();
   const [filters, setFilters] = useState<TaskFilters>({});
   const treeQuery = useWorkspaceTreeQuery(selectedWorkspaceId);
   const tasksQuery = useListTasksQuery(listId);
+  const createTask = useCreateTaskMutation(listId);
   const updateTask = useUpdateTaskMutation(listId);
+  const deleteTask = useDeleteTaskMutation(listId);
   const { view, setView } = useWorkViewMode('list', listId ?? 'none');
   const listContext = useMemo<ListContext | undefined>(() => {
     if (!treeQuery.data) return undefined;
 
-    for (const workspaceFolder of treeQuery.data.workspace_folders ?? []) {
-      const canonicalList = workspaceFolder.lists.find((list) => list.id === listId);
-      if (canonicalList) {
-        return {
-          list: canonicalList,
-          workspaceFolderName: workspaceFolder.name,
-        };
-      }
-    }
-
-    // Anexa a informação de "workspaceFolderName" em todos os spaces
-    const allSpaces = [
-      ...treeQuery.data.spaces.map(s => ({ ...s, workspaceFolderName: undefined })),
-      ...(treeQuery.data.workspace_folders?.flatMap(f => f.spaces.map(s => ({ ...s, workspaceFolderName: f.name }))) || [])
-    ];
-
-    for (const project of allSpaces) {
+    // A hierarquia atual é limpa: Workspace > Projects (Spaces) > Folders > Lists
+    for (const project of treeQuery.data.spaces) {
       const directList = project.lists.find((list) => list.id === listId);
       if (directList) {
         return {
           list: directList,
           projectId: project.id,
           projectName: project.name,
-          workspaceFolderName: project.workspaceFolderName,
         };
       }
 
@@ -87,7 +80,6 @@ export default function ListDetails() {
             projectId: project.id,
             projectName: project.name,
             folderName: folder.name,
-            workspaceFolderName: project.workspaceFolderName,
           };
         }
       }
@@ -110,6 +102,40 @@ export default function ListDetails() {
       toast.success('Status atualizado');
     } catch {
       toast.error('Não foi possível atualizar o status.');
+    }
+  };
+
+  const handleCreateTask = async (title: string, spaceId: string, _listId: string, status: string) => {
+    try {
+      await createTask.mutateAsync({
+        title,
+        list_id: listId!,
+        status,
+        creator_id: user?.id || '',
+      });
+      toast.success('Tarefa criada');
+    } catch (error) {
+      toast.error('Erro ao criar tarefa');
+      console.error(error);
+    }
+  };
+
+  const handleDeleteTask = async (task: WorkTaskItem) => {
+    try {
+      await deleteTask.mutateAsync(task.id);
+      toast.success('Tarefa excluída');
+    } catch (error) {
+      toast.error('Erro ao excluir a tarefa');
+      console.error(error);
+    }
+  };
+
+  const handleArchiveTask = async (task: WorkTaskItem) => {
+    try {
+      await updateTask.mutateAsync({ id: task.id, data: { status: 'Arquivado' } });
+      toast.success('Tarefa arquivada');
+    } catch {
+      toast.error('Não foi possível arquivar a tarefa.');
     }
   };
 
@@ -162,8 +188,8 @@ export default function ListDetails() {
     );
   }
 
-  const { list, projectId, projectName, folderName, workspaceFolderName } = listContext;
-  const path = [treeQuery.data?.name ?? 'Workspace', workspaceFolderName, projectName, folderName].filter(Boolean).join(' / ');
+  const { list, projectId, projectName, folderName } = listContext;
+  const path = [treeQuery.data?.name ?? 'Workspace', projectName, folderName].filter(Boolean).join(' / ');
 
   return (
     <MainLayout module="work" >
@@ -219,18 +245,52 @@ export default function ListDetails() {
             description="Ajuste ou limpe os filtros para encontrar outras tarefas."
           />
         ) : view === 'table' ? (
-          <TaskTableView tasks={filteredTasks} />
+          <TaskTableView
+            tasks={filteredTasks}
+            onTaskClick={(task) => setEditingTask(task)}
+            onStatusChange={(task, status) =>
+              void handleStatusChange(task, status)
+            }
+            onCreateTask={(title, spaceId, _listId, status) => 
+              void handleCreateTask(title, spaceId, _listId, status)
+            }
+            onTaskDelete={(task) => void handleDeleteTask(task)}
+            onTaskArchive={(task) => void handleArchiveTask(task)}
+          />
         ) : view === 'board' ? (
           <TaskBoardView
             tasks={filteredTasks}
             onStatusChange={(task, status) =>
               void handleStatusChange(task, status)
             }
+            onTaskClick={(task) => setEditingTask(task)}
+            onTaskDelete={(task) => void handleDeleteTask(task)}
+            onTaskArchive={(task) => void handleArchiveTask(task)}
+            onCreateTask={(title, status) => {
+              void handleCreateTask(title, list.space_id, list.id, status);
+            }}
           />
         ) : (
-          <TaskListView tasks={filteredTasks} />
+          <TaskListView
+            tasks={filteredTasks}
+            onTaskClick={(task) => setEditingTask(task)}
+            onStatusChange={(task, status) =>
+              void handleStatusChange(task, status)
+            }
+            onTaskDelete={(task) => void handleDeleteTask(task)}
+            onTaskArchive={(task) => void handleArchiveTask(task)}
+            onCreateTask={(title) => {
+              void handleCreateTask(title, list.space_id, list.id, 'Pendente');
+            }}
+          />
         )}
       </div>
+
+      <WorkTaskEditModal
+        task={editingTask}
+        isOpen={!!editingTask}
+        onClose={() => setEditingTask(null)}
+      />
     </MainLayout>
   );
 }

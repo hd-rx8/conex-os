@@ -8,7 +8,7 @@ import { AppModuleProvider } from "./context/AppModuleContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import Users from "./pages/Users";
+
 import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
 import ResetPassword from "./pages/ResetPassword";
@@ -71,10 +71,6 @@ const AppContent = () => {
         <Route 
           path="/" 
           element={user ? <Index /> : <Navigate to="/login" replace />} 
-        />
-        <Route 
-          path="/users" 
-          element={user ? <Users /> : <Navigate to="/login" replace />} 
         />
         <Route 
           path="/clients"

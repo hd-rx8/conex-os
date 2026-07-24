@@ -224,6 +224,17 @@ export async function createSpace(data: CreateSpaceData): Promise<Space> {
     .single();
 
   if (error) throw normalizeWorkError(error);
+
+  // Auto-create a default list
+  await supabase.from('lists').insert({
+    name: 'Geral',
+    space_id: space.id,
+    workspace_id: space.workspace_id,
+    workspace_folder_id: space.workspace_folder_id,
+    icon: '📋',
+    color: space.color,
+  });
+
   return mapSpaceRow(space);
 }
 

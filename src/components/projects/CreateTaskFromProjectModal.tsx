@@ -34,7 +34,9 @@ import { cn } from '@/lib/utils';
 import { CalendarIcon } from 'lucide-react';
 import type { CreateTaskData } from '@/types/hierarchy';
 import { useSpaces } from '@/hooks/useSpaces';
-import { useLists } from '@/hooks/useLists';
+import { useWorkspaceTreeQuery } from '@/features/work/hooks/useWorkData';
+import { SelectGroup, SelectLabel } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
 
 const formSchema = z.object({
   title: z.string().min(3, {
@@ -73,12 +75,15 @@ const CreateTaskFromProjectModal: React.FC<CreateTaskFromProjectModalProps> = ({
   onClose: externalOnClose
 }) => {
   const { user } = useSession();
-  const { spaces } = useSpaces(workspaceId);
+  const treeQuery = useWorkspaceTreeQuery(workspaceId);
   const [internalOpen, setInternalOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [selectedSpaceId, setSelectedSpaceId] = React.useState(preselectedSpaceId || '');
 
-  const { lists } = useLists(selectedSpaceId);
+  // All spaces are now at the root since we removed workspace_folders
+  const allSpaces = treeQuery.data?.spaces || [];
+
+  const selectedSpace = allSpaces.find((s) => s.id === selectedSpaceId);
 
   // Use external control if provided, otherwise use internal state
   const open = externalIsOpen !== undefined ? externalIsOpen : internalOpen;
@@ -114,8 +119,25 @@ const CreateTaskFromProjectModal: React.FC<CreateTaskFromProjectModalProps> = ({
 
     setIsSubmitting(true);
     try {
+      let finalListId = data.list_id;
+      
+      // Auto-create list if needed
+      if (finalListId === 'auto_create_list' && selectedSpace) {
+        const { data: newList, error: listError } = await supabase.from('lists').insert({
+          name: 'Geral',
+          space_id: selectedSpace.id,
+          workspace_id: selectedSpace.workspace_id,
+          workspace_folder_id: selectedSpace.workspace_folder_id,
+          icon: '📋',
+          color: selectedSpace.color,
+        }).select('id').single();
+        
+        if (listError) throw listError;
+        finalListId = newList.id;
+      }
+
       await onCreateTask({
-        list_id: data.list_id,
+        list_id: finalListId,
         title: data.title,
         description: data.description || null,
         priority: data.priority,
@@ -187,14 +209,20 @@ const CreateTaskFromProjectModal: React.FC<CreateTaskFromProjectModalProps> = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {spaces?.map((space) => (
-                        <SelectItem key={space.id} value={space.id}>
-                          <div className="flex items-center gap-2">
-                            <span>{space.icon || '📁'}</span>
-                            <span>{space.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
+                      {treeQuery.data?.spaces && treeQuery.data.spaces.length > 0 ? (
+                        treeQuery.data.spaces.map((space) => (
+                          <SelectItem key={space.id} value={space.id}>
+                            <div className="flex items-center gap-2">
+                              <span>{space.icon || '📁'}</span>
+                              <span>{space.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="p-2 text-sm text-muted-foreground text-center">
+                          Nenhum projeto encontrado.
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -215,15 +243,36 @@ const CreateTaskFromProjectModal: React.FC<CreateTaskFromProjectModalProps> = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {lists?.map((list) => (
-                        <SelectItem key={list.id} value={list.id}>
-                          {list.name}
-                        </SelectItem>
+                      {selectedSpace?.lists && selectedSpace.lists.length > 0 && (
+                        <SelectGroup>
+                          <SelectLabel className="text-muted-foreground font-semibold">Geral (Sem Pasta)</SelectLabel>
+                          {selectedSpace.lists.map((list) => (
+                            <SelectItem key={list.id} value={list.id}>
+                              {list.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      )}
+                      {selectedSpace?.folders && selectedSpace.folders.map((folder) => (
+                        <SelectGroup key={folder.id}>
+                          <SelectLabel className="text-muted-foreground font-semibold flex items-center gap-2">
+                            <span>{folder.icon || '📁'}</span>
+                            {folder.name}
+                          </SelectLabel>
+                          {folder.lists.map((list) => (
+                            <SelectItem key={list.id} value={list.id}>
+                              {list.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
                       ))}
-                      {lists && lists.length === 0 && (
-                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                          Nenhuma lista encontrada
-                        </div>
+                      {(!selectedSpace || (selectedSpace.lists.length === 0 && selectedSpace.folders.length === 0)) && (
+                        <SelectGroup>
+                          <SelectLabel className="text-muted-foreground font-semibold">Geral (Nova Lista)</SelectLabel>
+                          <SelectItem value="auto_create_list">
+                            Criar lista "Geral"
+                          </SelectItem>
+                        </SelectGroup>
                       )}
                     </SelectContent>
                   </Select>
