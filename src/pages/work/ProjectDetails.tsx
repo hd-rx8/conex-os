@@ -296,9 +296,6 @@ export default function ProjectDetails() {
             onStatusChange={(task, status) =>
               void handleStatusChange(task, status)
             }
-            onCreateTask={(title, spaceId, listId, status) => 
-              void handleCreateTask(title, spaceId, listId, status)
-            }
             onTaskDelete={(task) => void handleDeleteTask(task)}
             onTaskArchive={(task) => void handleArchiveTask(task)}
             emptyListContext={
@@ -319,14 +316,6 @@ export default function ProjectDetails() {
             }
             onTaskDelete={(task) => void handleDeleteTask(task)}
             onTaskArchive={(task) => void handleArchiveTask(task)}
-            onCreateTask={(title, status) => {
-              const listId = projectLists[0]?.id;
-              if (listId && selectedWorkspaceId) {
-                void handleCreateTask(title, selectedWorkspaceId, listId, status);
-              } else {
-                toast.error("É necessário ter pelo menos uma lista para criar tarefas.");
-              }
-            }}
           />
         ) : (
           <TaskListView
@@ -337,14 +326,6 @@ export default function ProjectDetails() {
             }
             onTaskDelete={(task) => void handleDeleteTask(task)}
             onTaskArchive={(task) => void handleArchiveTask(task)}
-            onCreateTask={(title, status) => {
-              const listId = projectLists[0]?.id;
-              if (listId && selectedWorkspaceId) {
-                void handleCreateTask(title, selectedWorkspaceId, listId, status);
-              } else {
-                toast.error("É necessário ter pelo menos uma lista para criar tarefas.");
-              }
-            }}
           />
         )}
       </div>

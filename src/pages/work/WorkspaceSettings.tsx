@@ -110,7 +110,8 @@ const WorkspaceSettings: React.FC = () => {
           {workspaces.map((workspace) => (
             <Card
               key={workspace.id}
-              className="overflow-hidden shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+              className="cursor-pointer overflow-hidden shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+              onClick={() => navigate(`/work/workspaces/${workspace.id}`)}
             >
               <CardHeader className="pb-4">
                 <div className="flex min-w-0 items-start gap-3">
@@ -146,7 +147,10 @@ const WorkspaceSettings: React.FC = () => {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={() => setEditingWorkspace(workspace)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingWorkspace(workspace);
+                      }}
                       title="Editar"
                       aria-label={`Editar workspace ${workspace.name}`}
                     >
@@ -156,7 +160,10 @@ const WorkspaceSettings: React.FC = () => {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => setDeletingWorkspace(workspace)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeletingWorkspace(workspace);
+                      }}
                       disabled={workspace.owner !== user?.id}
                       title={workspace.owner !== user?.id ? 'Apenas o proprietário pode excluir' : 'Excluir'}
                       aria-label={`Excluir workspace ${workspace.name}`}

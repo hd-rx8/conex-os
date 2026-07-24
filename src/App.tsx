@@ -38,6 +38,7 @@ const WorkTasks = lazy(() => import("./pages/work/WorkTasks"));
 const WorkBoard = lazy(() => import("./pages/work/WorkBoard"));
 const ProjectDetails = lazy(() => import("./pages/work/ProjectDetails"));
 const WorkspaceSettings = lazy(() => import("./pages/work/WorkspaceSettings"));
+const WorkspaceDetails = lazy(() => import("./pages/work/WorkspaceDetails"));
 const ListDetails = lazy(() => import("./pages/work/ListDetails"));
 
 const queryClient = new QueryClient();
@@ -177,6 +178,16 @@ const AppContent = () => {
             user ? (
               <ModuleProtectedRoute requiredModule="work" redirectTo="/">
                 <WorkspaceSettings />
+              </ModuleProtectedRoute>
+            ) : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path={`${WORK_WORKSPACES}/:workspaceId`}
+          element={
+            user ? (
+              <ModuleProtectedRoute requiredModule="work" redirectTo="/">
+                <WorkspaceDetails />
               </ModuleProtectedRoute>
             ) : <Navigate to="/login" replace />
           }
